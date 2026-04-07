@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>runi.myddns</groupId>
+    <artifactId>MobArmyWars</artifactId>
+    <version>1.1</version>
+    <packaging>jar</packaging>
+    <name>MobArmyWars</name>
+    <scm>
+        <connection>scm:git:file://${project.basedir}/.git</connection>
+        <developerConnection>scm:git:file://${project.basedir}/.git</developerConnection>
+        <url>file://${project.basedir}</url>
+    </scm>
+    <properties>
+        <java.version>21</java.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <build.number>${buildNumber}</build.number>
+    </properties>
+    <build>
+        <defaultGoal>clean package</defaultGoal>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>buildnumber-maven-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>create</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <doCheck>false</doCheck>
+                    <doUpdate>false</doUpdate>
+                    <revisionOnScmFailure>true</revisionOnScmFailure>
+                    <buildNumberPropertiesFile>${project.basedir}/buildNumber.properties</buildNumberPropertiesFile>
+                    <format>{0,number,000}</format>
+                    <items>
+                        <item>buildNumber</item>
+                    </items>
+                </configuration>
+            </plugin>
+
+            <!-- 🧩 Compiler -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <release>${java.version}</release>
+                </configuration>
+            </plugin>
+
+            <!-- 🧱 Backup + Kopieren -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>backup-and-copy</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <!-- Pfade anpassen -->
+                                <property name="plugin.dir" value="C:\Users\ronny\Desktop\Server 1.21.11\plugins" />
+                                <property name="backup.dir" value="Z:\Dokumente\Games\Minecraft\Backup\JAR" />
+                                <mkdir dir="F:\Minecraft-Java\Programmieren\Backup\JAR" />
+
+                                <!-- 🧩 Neue Version in Backup speichern (mit fortlaufender Nummer) -->
+                                <copy file="${project.build.directory}/${project.build.finalName}.jar"
+                                      tofile="Z:\Dokumente\Games\Minecraft\Backup\JAR\MobArmyWars-v1.1.${buildNumber}.jar"
+                                      overwrite="true"
+                                      failonerror="false" />
+
+                                <!-- 🧩 Im Plugin-Ordner immer gleiche Datei überschreiben -->
+                                <copy file="${project.build.directory}/${project.build.finalName}.jar"
+                                      tofile="C:\Users\ronny\Desktop\Server 1.21.11\plugins\MobArmyWars-v1.1.jar"
+                                      overwrite="true"
+                                      failonerror="false" />
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+                <includes>
+                    <include>**/*</include>
+                </includes>
+            </resource>
+        </resources>
+    </build>
+
+    <repositories>
+        <repository>
+            <id>enginehub-repo</id>
+            <url>https://maven.enginehub.org/repo/</url>
+        </repository>
+        <repository>
+            <id>spigotmc-repo</id>
+            <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
+        </repository>
+        <repository>
+            <id>sonatype</id>
+            <url>https://oss.sonatype.org/content/groups/public/</url>
+        </repository>
+        <repository>
+            <id>papermc</id>
+            <url>https://repo.papermc.io/repository/maven-public/</url>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.papermc.paper</groupId>
+            <artifactId>paper-api</artifactId>
+            <version>1.21.5-R0.1-SNAPSHOT</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+</project>
