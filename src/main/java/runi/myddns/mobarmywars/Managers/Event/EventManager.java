@@ -168,6 +168,13 @@ public class EventManager {
             player.getWorld().spawnParticle(Particle.PORTAL, player.getLocation(), 100, 0.5, 1, 0.5, 0.1);
             Sounds.playTeleport(player);
             resetPlayerState(player);
+
+            if (team.equalsIgnoreCase("blau")) {
+                plugin.getTeamEquipmentManager().giveEquipment(player, "blue");
+            } else if (team.equalsIgnoreCase("rot")) {
+                plugin.getTeamEquipmentManager().giveEquipment(player, "red");
+            }
+
             plugin.getBundleManager().giveTeamBundle(player);
 
             plugin.getEventResume().savePhase(ResumeManager.PHASE_TEAMWELT);
@@ -247,6 +254,8 @@ public class EventManager {
                     }
 
                     TeleportManager.teleportToWaveSelection(player);
+
+                    plugin.getArenaCompassManager().giveMonsterCompass(player);
 
                     player.spawnParticle(
                             Particle.PORTAL,
@@ -330,7 +339,7 @@ public class EventManager {
             p.setBedSpawnLocation(null, true);
             p.setGameMode(GameMode.SURVIVAL);
 
-            TeleportManager.teleport(p, "world_mobarmylobby");
+            TeleportManager.teleport(p, "world_mobarmy_lobby");
 
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
                 if (!p.isOnline()) return;
@@ -363,6 +372,7 @@ public class EventManager {
 
         plugin.getTeamManager().loadTeams();
         plugin.getTeamScoreboardManager().rebuildBoard();
+        plugin.getTeamEquipmentManager().resetAllEquipment();
 
         for (Player p : Bukkit.getOnlinePlayers()) {
             plugin.getScoreboardSwitcher().switchToTeam(p);

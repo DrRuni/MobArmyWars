@@ -11,7 +11,6 @@ import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.ScoreboardManager;
 import org.bukkit.scoreboard.Team;
-import runi.myddns.mobarmywars.Arena.ArenaManager;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,7 +21,7 @@ import java.util.UUID;
 public class ArenaScoreboardManager {
 
     private final JavaPlugin plugin;
-    private final ArenaManager arenaManager;
+    private final ArenaEventManager arenaManager;
     private final Map<String, Integer> killCounts = new HashMap<>();
     private final Map<UUID, Scoreboard> playerBoards = new HashMap<>();
 
@@ -36,7 +35,7 @@ public class ArenaScoreboardManager {
     private static final String EMPTY_1 = ChatColor.BLACK + "";
     private static final String EMPTY_2 = ChatColor.DARK_GRAY + "";
 
-    public ArenaScoreboardManager(JavaPlugin plugin, ArenaManager arenaManager) {
+    public ArenaScoreboardManager(JavaPlugin plugin, ArenaEventManager arenaManager) {
         this.plugin = plugin;
         this.arenaManager = arenaManager;
 

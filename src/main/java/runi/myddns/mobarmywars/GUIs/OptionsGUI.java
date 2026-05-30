@@ -16,30 +16,39 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class OptionenGUI implements Listener {
+public class OptionsGUI implements Listener {
 
     private final MobArmyMain plugin;
     private static final String TITLE = ChatColor.BLUE + "MobArmyWars Optionen";
 
-    public OptionenGUI(MobArmyMain plugin) {
+    public OptionsGUI(MobArmyMain plugin) {
         this.plugin = plugin;
     }
 
     public void open(Player player) {
-        Inventory inv = Bukkit.createInventory(null, 36, TITLE);
+        Inventory inv = Bukkit.createInventory(null, 45, TITLE);
 
-        inv.setItem(2, createItem(Material.ENCHANTED_GOLDEN_APPLE, "Start MobArmyWars",
-                "Startet den Countdown, falls Zeit > 0"));
-        inv.setItem(4, createItem(Material.HONEY_BLOCK, "Event Pause",
-                "Pausiert den Timer und friert Spieler ein"));
-        inv.setItem(6, createItem(Material.TOTEM_OF_UNDYING, "Event fortsetzen (Resume)",
+        inv.setItem(11, createItem(Material.ENCHANTED_GOLDEN_APPLE, "Start MobArmyWars",
+                "",
+                "Startet den Countdown"));
+
+        inv.setItem(13, createItem(Material.HONEY_BLOCK, "Event Pause",
+                "",
+                "Pausiert den Timer"));
+
+        inv.setItem(15, createItem(Material.TOTEM_OF_UNDYING, "Event fortsetzen (Resume)",
+                "",
                 "Setzt Timer und Event fort"));
-        inv.setItem(21, createItem(Material.CLOCK, "Timer",
-                "Öffne das Timer-Menü"));
-        inv.setItem(23, createItem(Material.COMPARATOR, "Event Einstellungen",
-                "Teleport & Reset-Optionen"));
 
-        inv.setItem(31, createBackButton("Menü schließen"));
+        inv.setItem(30, createItem(Material.CLOCK, "Timer",
+                "",
+                "Öffne das Timer-Menü"));
+
+        inv.setItem(32, createItem(Material.COMPARATOR, "Setup",
+                "",
+                "Zugang zu allen Einstellungen"));
+
+        inv.setItem(40, createBackButton("Menü schließen"));
 
         player.openInventory(inv);
     }
@@ -117,7 +126,7 @@ public class OptionenGUI implements Listener {
                 plugin.getTimerGUI().open(player);
             }
 
-            case "Event Einstellungen" -> {
+            case "Setup" -> {
                 Sounds.playClick(player);
                 plugin.getEventSettingsGUI().open(player);
             }

@@ -1,4 +1,4 @@
-package runi.myddns.mobarmywars.Arena;
+package runi.myddns.mobarmywars.Managers.Event;
 
 import org.bukkit.configuration.file.YamlConfiguration;
 

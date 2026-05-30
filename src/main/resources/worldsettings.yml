@@ -1,5 +1,20 @@
 # Globale Welteneinstellungen
 
-randomizer-enabled: true
 keep-inventory: true
+randomizer-enabled: true
 night-vision-enabled: true
+mob-spawning: true
+daylight-cycle: true
+difficulty: normal
+world-time: 6000
+
+# Arena Kompass
+arena-compass-enabled: false
+
+# Blockierte Sporneier
+randomizer:
+  blocked_spawn_eggs:
+    - ENDER_DRAGON_SPAWN_EGG
+    - WITHER_SPAWN_EGG
+    - WARDEN_SPAWN_EGG
+    - ELDER_GUARDIAN_SPAWN_EGG

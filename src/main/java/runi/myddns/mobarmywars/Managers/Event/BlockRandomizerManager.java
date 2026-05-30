@@ -26,19 +26,16 @@ public class BlockRandomizerManager implements Listener {
     private final File dataFile;
     private FileConfiguration dataConfig;
     private boolean globalRandomizerEnabled;
-    private final File disabledEggsFile;
-    private FileConfiguration disabledEggsConfig;
+    private final File worldSettingsFile;
+    private FileConfiguration worldSettingsConfig;
 
     public BlockRandomizerManager(MobArmyMain plugin) {
         this.plugin = plugin;
         this.globalRandomizerEnabled = plugin.getWorldSettings().isRandomizerEnabled();
         this.dataFile = new File(plugin.getDataFolder(), "RandomBlock.yml");
         this.dataConfig = YamlConfiguration.loadConfiguration(dataFile);
-        this.disabledEggsFile = new File(plugin.getDataFolder(), "disabled_spawn_egg.yml");
-        if (!disabledEggsFile.exists()) {
-            plugin.saveResource("disabled_spawn_egg.yml", false);
-        }
-        this.disabledEggsConfig = YamlConfiguration.loadConfiguration(disabledEggsFile);
+        this.worldSettingsFile = new File(plugin.getDataFolder(), "weltensettings.yml");
+        this.worldSettingsConfig = YamlConfiguration.loadConfiguration(worldSettingsFile);
 
         loadBlockedSpawnEggs();
         loadBlockDrops();
@@ -64,7 +61,9 @@ public class BlockRandomizerManager implements Listener {
             return;
         }
 
-        if (world.getName().equalsIgnoreCase("world_mobarmylobby")) {
+        String worldName = world.getName().toLowerCase();
+
+        if (!worldName.equals("world_rot") && !worldName.equals("world_blau")) {
             return;
         }
 
@@ -182,21 +181,28 @@ public class BlockRandomizerManager implements Listener {
 
     private void saveBlockedSpawnEggs() {
         List<String> eggNames = new ArrayList<>();
+
         for (Material material : blockedSpawnEggs) {
             eggNames.add(material.name());
         }
 
-        disabledEggsConfig.set("blocked_spawn_eggs", eggNames);
+        worldSettingsConfig.set("randomizer.blocked_spawn_eggs", eggNames);
 
         try {
-            disabledEggsConfig.save(disabledEggsFile);
+            worldSettingsConfig.save(worldSettingsFile);
         } catch (IOException e) {
-            plugin.getLogger().warning("Fehler beim Speichern der disabled_spawn_egg.yml: " + e.getMessage());
+            plugin.getLogger().warning(
+                    "Fehler beim Speichern der weltensettings.yml: " + e.getMessage()
+            );
         }
     }
 
     public void loadBlockedSpawnEggs() {
-        List<String> eggNames = disabledEggsConfig.getStringList("blocked_spawn_eggs");
+        worldSettingsConfig = YamlConfiguration.loadConfiguration(worldSettingsFile);
+
+        List<String> eggNames =
+                worldSettingsConfig.getStringList("randomizer.blocked_spawn_eggs");
+
         blockedSpawnEggs.clear();
 
         for (String name : eggNames) {

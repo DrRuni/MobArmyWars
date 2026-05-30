@@ -14,6 +14,12 @@ import java.io.*;
 public class WorldManager {
 
     private final MobArmyMain plugin;
+
+    private static final String TEMPLATE_ZIP = "world_mobarmy.zip";
+
+    private static final String WORLD_LOBBY = "world_mobarmy_lobby";
+    private static final String WORLD_ARENA = "world_mobarmy_arena";
+
     private long teamSeed;
     private boolean isWorldResetRunning = false;
 
@@ -23,84 +29,79 @@ public class WorldManager {
 
     public void checkWorldsOnStartup() {
 
-        checkLobbyWorld();
+        checkTemplateWorlds();
         checkTeamWorlds();
 
         loadWorlds(
-                "world_mobarmylobby",
+                WORLD_LOBBY,
+                WORLD_ARENA,
                 "world_rot",
                 "world_blau",
                 "world_rot_nether",
                 "world_blau_nether"
         );
 
-        plugin.getWorldSettings().applyKeepInventory();
+        plugin.getWorldSettings().applyAllSettings();
     }
 
-    private void checkLobbyWorld() {
-        if (!worldExists("world_mobarmylobby")) {
-            Bukkit.getConsoleSender().sendMessage(ConsoleColor.BLOOD_ORANGE + "       Lobby-Welt wird aus ZIP entpackt" + ConsoleColor.RESET);
-            copyLobbyZipIfMissing();
-            extractLobbyWorldFromZip();
-        } else {
-            Bukkit.getConsoleSender().sendMessage("");
-            Bukkit.getConsoleSender().sendMessage(ConsoleColor.LIME + "              Lobby-Welt vorhanden" + ConsoleColor.RESET);
-            Bukkit.getConsoleSender().sendMessage("");
-        }
+    private void checkTemplateWorlds() {
+
+        copyTemplateZipIfMissing();
+
+        checkTemplateWorld(WORLD_LOBBY, "Lobby-Welt");
+        checkTemplateWorld(WORLD_ARENA, "Arena-Welt");
     }
 
-    public void resetLobbyWorld() {
+    public void resetArenaWorld() {
 
-        List<Player> players = getPlayersInWorld("world_mobarmylobby");
+        List<Player> players = getPlayersInWorld(WORLD_ARENA);
 
         for (Player p : players) {
             if (p.isOnline()) {
-                TeleportManager.teleportToOverworld(p);
+                TeleportManager.teleport(p, WORLD_LOBBY);
             }
         }
 
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
 
-            unloadAndDeleteWorld("world_mobarmylobby");
+            unloadAndDeleteWorld(WORLD_ARENA);
 
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
 
-                extractLobbyWorldFromZip();
+                extractTemplateWorldFromZip(WORLD_ARENA);
 
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
 
-                    loadWorld("world_mobarmylobby");
-                    plugin.getWorldSettings().applyKeepInventory();
+                    loadWorld(WORLD_ARENA);
+                    plugin.getWorldSettings().applyAllSettings();
 
                     Bukkit.getScheduler().runTaskLater(plugin, () -> {
 
                         for (Player p : players) {
                             if (p.isOnline()) {
-                                TeleportManager.teleport(p, "world_mobarmylobby");
+                                TeleportManager.teleport(p, WORLD_ARENA);
                             }
                         }
 
                         for (Player player : Bukkit.getOnlinePlayers()) {
                             player.sendMessage("");
-                            player.sendMessage(ChatColor.GREEN + "✔ LOBBY-Welt wurde neu generiert!");
-                            player.sendMessage("");
+                            player.sendMessage(ChatColor.GREEN + "✔ ARENA-Welt wurde neu geladen!");
                             player.sendMessage("");
                             player.sendMessage(ChatColor.DARK_RED + "  Die Spieler- und Eventdaten sind noch geladen,");
                             player.sendMessage(ChatColor.DARK_RED + "  diese können nur über " + ChatColor.GOLD + "Reset Spielfortschritt ");
-                            player.sendMessage(ChatColor.DARK_RED + "  zurückgsetzt werden!");
-
-                            player.sendMessage("");
+                            player.sendMessage(ChatColor.DARK_RED + "  zurückgesetzt werden!");
                             player.sendMessage("");
                         }
 
                         Bukkit.getConsoleSender().sendMessage(
-                                ConsoleColor.LIME + "           LOBBY-Welt neu erstellt" + ConsoleColor.RESET);
-                        endWorldReset();
+                                ConsoleColor.LIME + "           ARENA-Welt neu erstellt" + ConsoleColor.RESET
+                        );
 
                         endWorldReset();
+
                     }, 40L); // Spieler zurück
-                }, 40L); // Worlds laden
-            }, 40L); // Unload/Delete
+                }, 40L); // World laden
+            }, 40L); // Entpacken
         }, 60L); // Teleports
     }
 
@@ -214,7 +215,7 @@ public class WorldManager {
 
         for (Player p : merge(rotPlayers, blauPlayers)) {
             if (p.isOnline()) {
-                TeleportManager.teleport(p, "world_mobarmylobby");
+                TeleportManager.teleport(p, "world_mobarmy_lobby");
             }
         }
 
@@ -245,7 +246,10 @@ public class WorldManager {
                             "world_blau_nether"
                     );
 
-                    plugin.getWorldSettings().applyKeepInventory();
+                    plugin.getWorldSettings().applyToWorld(Bukkit.getWorld("world_rot"));
+                    plugin.getWorldSettings().applyToWorld(Bukkit.getWorld("world_blau"));
+                    plugin.getWorldSettings().applyToWorld(Bukkit.getWorld("world_rot_nether"));
+                    plugin.getWorldSettings().applyToWorld(Bukkit.getWorld("world_blau_nether"));
 
                     Bukkit.getScheduler().runTaskLater(plugin, () -> {
 
@@ -286,13 +290,33 @@ public class WorldManager {
     private void loadWorldsWithPreload(String... names) {
         for (String name : names) {
             World world = loadWorld(name);
-            preloadSpawnChunks(world, 4);
+            preloadSpawnChunks(world, name.endsWith("_nether") ? 1 : 2);
         }
     }
 
+    private File getDimensionWorldFolder(String name) {
+        return new File(Bukkit.getWorldContainer(), "world/dimensions/minecraft/" + name);
+    }
+
     private boolean worldExists(String name) {
-        File dir = new File(Bukkit.getWorldContainer(), name);
-        return dir.exists() && new File(dir, "level.dat").exists();
+        World loaded = Bukkit.getWorld(name);
+        if (loaded != null) {
+            return true;
+        }
+
+        File legacyDir = new File(Bukkit.getWorldContainer(), name);
+        if (new File(legacyDir, "level.dat").exists()) {
+            return true;
+        }
+
+        File dimensionDir = getDimensionWorldFolder(name);
+
+        return dimensionDir.exists() && (
+                new File(dimensionDir, "region").exists()
+                        || new File(dimensionDir, "entities").exists()
+                        || new File(dimensionDir, "poi").exists()
+                        || new File(dimensionDir, "paper-world.yml").exists()
+        );
     }
 
     private World loadWorld(String name) {
@@ -312,13 +336,27 @@ public class WorldManager {
     }
 
     private void unloadAndDeleteWorld(String name) {
-
         World w = Bukkit.getWorld(name);
+
+        File actualFolder = null;
+
         if (w != null) {
+            actualFolder = w.getWorldFolder();
             Bukkit.unloadWorld(w, false);
         }
 
-        deleteDirectoryRecursively(new File(Bukkit.getWorldContainer(), name));
+        if (actualFolder != null) {
+            deleteDirectoryRecursively(actualFolder);
+        }
+
+        File legacyFolder = new File(Bukkit.getWorldContainer(), name);
+        deleteDirectoryRecursively(legacyFolder);
+
+        File dimensionFolder = new File(
+                Bukkit.getWorldContainer(),
+                "world/dimensions/minecraft/" + name
+        );
+        deleteDirectoryRecursively(dimensionFolder);
     }
 
     private List<Player> getPlayersInWorld(String worldName) {
@@ -332,17 +370,17 @@ public class WorldManager {
         return all;
     }
 
-    private void copyLobbyZipIfMissing() {
+    private void copyTemplateZipIfMissing() {
 
-        File zip = new File(plugin.getDataFolder(), "world_mobarmylobby.zip");
+        File zip = new File(plugin.getDataFolder(), TEMPLATE_ZIP);
         if (zip.exists()) return;
 
         plugin.getDataFolder().mkdirs();
 
-        try (InputStream in = plugin.getResource("world_mobarmylobby.zip")) {
+        try (InputStream in = plugin.getResource(TEMPLATE_ZIP)) {
 
             if (in == null) {
-                plugin.getLogger().severe("❌ world_mobarmylobby.zip nicht im Plugin-JAR gefunden!");
+                plugin.getLogger().severe("❌ " + TEMPLATE_ZIP + " nicht im Plugin-JAR gefunden!");
                 return;
             }
 
@@ -351,25 +389,48 @@ public class WorldManager {
             }
 
         } catch (IOException e) {
-            plugin.getLogger().severe("❌ Fehler beim Kopieren der Lobby-ZIP: " + e.getMessage());
+            plugin.getLogger().severe("❌ Fehler beim Kopieren der Template-ZIP: " + e.getMessage());
         }
     }
 
-    private void extractLobbyWorldFromZip() {
+    private void extractTemplateWorldFromZip(String worldName) {
 
-        File zipFile = new File(plugin.getDataFolder(), "world_mobarmylobby.zip");
-        if (!zipFile.exists()) return;
+        File zipFile = new File(plugin.getDataFolder(), TEMPLATE_ZIP);
+        if (!zipFile.exists()) {
+            plugin.getLogger().severe("❌ Template-ZIP nicht gefunden: " + TEMPLATE_ZIP);
+            return;
+        }
 
         File worldContainer = Bukkit.getWorldContainer();
+        File legacyTargetRoot = new File(worldContainer, worldName);
+
+        // Alte Reste vermeiden
+        deleteDirectoryRecursively(legacyTargetRoot);
+        deleteDirectoryRecursively(new File(worldContainer, "world/dimensions/minecraft/" + worldName));
+
+        boolean found = false;
 
         try (ZipInputStream zis = new ZipInputStream(new FileInputStream(zipFile))) {
 
             ZipEntry entry;
             while ((entry = zis.getNextEntry()) != null) {
 
-                if (!entry.getName().startsWith("world_mobarmylobby/")) continue;
+                String prefix = worldName + "/";
 
-                File target = new File(worldContainer, entry.getName());
+                if (!entry.getName().startsWith(prefix)) {
+                    zis.closeEntry();
+                    continue;
+                }
+
+                found = true;
+
+                String relativePath = entry.getName().substring(prefix.length());
+                if (relativePath.isEmpty()) {
+                    zis.closeEntry();
+                    continue;
+                }
+
+                File target = new File(legacyTargetRoot, relativePath);
 
                 if (entry.isDirectory()) {
                     target.mkdirs();
@@ -379,11 +440,17 @@ public class WorldManager {
                         zis.transferTo(fos);
                     }
                 }
+
                 zis.closeEntry();
             }
 
         } catch (IOException e) {
-            plugin.getLogger().severe("❌ Fehler beim Entpacken der Lobby-Welt: " + e.getMessage());
+            plugin.getLogger().severe("❌ Fehler beim Entpacken der Welt " + worldName + ": " + e.getMessage());
+            return;
+        }
+
+        if (!found) {
+            plugin.getLogger().severe("❌ Welt " + worldName + " wurde in " + TEMPLATE_ZIP + " nicht gefunden!");
         }
     }
 
@@ -411,7 +478,6 @@ public class WorldManager {
                 int[] c = queue.poll();
                 if (c == null) {
                     task.cancel();
-                    world.setKeepSpawnInMemory(true);
                     return;
                 }
                 if (!world.isChunkLoaded(c[0], c[1])) {
@@ -465,5 +531,29 @@ public class WorldManager {
 
     private void endWorldReset() {
         isWorldResetRunning = false;
+    }
+
+    private void checkTemplateWorld(String worldName, String displayName) {
+
+        if (!worldExists(worldName)) {
+            Bukkit.getConsoleSender().sendMessage(
+                    ConsoleColor.BLOOD_ORANGE +
+                            "     " + displayName + " wird aus ZIP entpackt" +
+                            ConsoleColor.RESET
+            );
+
+            Bukkit.getConsoleSender().sendMessage("");
+
+            extractTemplateWorldFromZip(worldName);
+
+        } else {
+            Bukkit.getConsoleSender().sendMessage(
+                    ConsoleColor.LIME +
+                            "              " + displayName + " vorhanden" +
+                            ConsoleColor.RESET
+            );
+
+            Bukkit.getConsoleSender().sendMessage("");
+        }
     }
 }

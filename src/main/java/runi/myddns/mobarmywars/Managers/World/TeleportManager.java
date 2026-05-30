@@ -1,7 +1,6 @@
 package runi.myddns.mobarmywars.Managers.World;
 
 import org.bukkit.*;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import runi.myddns.mobarmywars.MobArmyMain;
 
@@ -24,7 +23,7 @@ public class TeleportManager {
                 player.teleport(world.getSpawnLocation());
             }
 
-            case "world_mobarmylobby" -> {
+            case "world_mobarmy_lobby" -> {
                 teleportToLobbySpawn(player, world);
             }
 
@@ -34,28 +33,20 @@ public class TeleportManager {
 
     private static void teleportToLobbySpawn(Player player, World world) {
 
-        var config = MobArmyMain.getInstance().getConfig();
-        ConfigurationSection section = config.getConfigurationSection("lobbyspawn");
+        double minX = 3.0;
+        double minY = 69.0;
+        double minZ = -2.5;
 
-        if (section == null) {
-            player.teleport(world.getSpawnLocation());
-            return;
-        }
+        double maxX = 6.0;
+        double maxY = 69.0;
+        double maxZ = 0.5;
 
-        ConfigurationSection min = section.getConfigurationSection("min");
-        ConfigurationSection max = section.getConfigurationSection("max");
+        float yaw = -90.0f;
+        float pitch = 0.0f;
 
-        if (min == null || max == null) {
-            player.teleport(world.getSpawnLocation());
-            return;
-        }
-
-        double x = random(min.getDouble("x"), max.getDouble("x"));
-        double y = random(min.getDouble("y"), max.getDouble("y"));
-        double z = random(min.getDouble("z"), max.getDouble("z"));
-
-        float yaw = (float) section.getDouble("yaw", 0f);
-        float pitch = (float) section.getDouble("pitch", 0f);
+        double x = random(minX, maxX);
+        double y = random(minY, maxY);
+        double z = random(minZ, maxZ);
 
         Location loc = new Location(world, x, y, z, yaw, pitch);
         player.teleport(loc);
@@ -70,12 +61,20 @@ public class TeleportManager {
             return;
         }
 
-        Location target = plugin
-                .getArenaConfig()
-                .getTeamSpawn("wave-auswahl", team);
+        World world = Bukkit.getWorld("world_mobarmy_lobby");
+        if (world == null) {
+            player.sendMessage(ChatColor.RED + "❌ Arena-Welt ist nicht geladen!");
+            return;
+        }
 
-        if (target == null) {
-            player.sendMessage(ChatColor.RED + "❌ Kein Spawnpunkt für dein Team gefunden!");
+        Location target;
+
+        if (team.equalsIgnoreCase("rot")) {
+            target = new Location(world, 104.5, 75.0, -98.5, 0f, 27f);
+        } else if (team.equalsIgnoreCase("blau")) {
+            target = new Location(world, 75.5, 75.0, -98.5, 0f, 27f);
+        } else {
+            player.sendMessage(ChatColor.RED + "❌ Ungültiges Team: " + team);
             return;
         }
 
@@ -127,7 +126,7 @@ public class TeleportManager {
     private static void saveResumeLocation(Player player, String targetWorldName) {
 
         if (player == null || targetWorldName == null) return;
-        if (!targetWorldName.equalsIgnoreCase("world_mobarmylobby")) return;
+        if (!targetWorldName.equalsIgnoreCase("world_mobarmy_lobby")) return;
 
         World currentWorld = player.getWorld();
         if (currentWorld == null) return;

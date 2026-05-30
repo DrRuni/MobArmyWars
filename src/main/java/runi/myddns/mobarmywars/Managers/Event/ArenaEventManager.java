@@ -1,4 +1,4 @@
-package runi.myddns.mobarmywars.Arena;
+package runi.myddns.mobarmywars.Managers.Event;
 
 import com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent;
 import net.md_5.bungee.api.chat.TextComponent;
@@ -15,8 +15,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.Sound;
-import runi.myddns.mobarmywars.Managers.Event.ArenaScoreboardManager;
-import runi.myddns.mobarmywars.Managers.Event.BlockRandomizerManager;
 import runi.myddns.mobarmywars.Managers.World.ResumeManager;
 import runi.myddns.mobarmywars.Managers.World.TeleportManager;
 import runi.myddns.mobarmywars.MobArmyMain;
@@ -24,7 +22,7 @@ import runi.myddns.mobarmywars.MobArmyMain;
 import java.util.*;
 import java.util.List;
 
-public class ArenaManager implements Listener {
+public class ArenaEventManager implements Listener {
 
     private final MobArmyMain plugin;
     private BlockRandomizerManager randomizer;
@@ -57,7 +55,7 @@ public class ArenaManager implements Listener {
             EntityType.BEE
     );
 
-    public ArenaManager(MobArmyMain plugin) {
+    public ArenaEventManager(MobArmyMain plugin) {
         this.plugin = plugin;
         this.scoreboardManager = new ArenaScoreboardManager(plugin, this);
 
@@ -152,9 +150,9 @@ public class ArenaManager implements Listener {
             return;
         }
 
-        World arenaWorld = Bukkit.getWorld("world_mobarmylobby");
+        World arenaWorld = Bukkit.getWorld("world_mobarmy_arena");
         if (arenaWorld == null) {
-            Bukkit.getLogger().warning("❗ world_mobarmylobby konnte nicht gefunden werden – Wave abgebrochen!");
+            Bukkit.getLogger().warning("❗ world_mobarmy_arena konnte nicht gefunden werden – Wave abgebrochen!");
             return;
         }
 
@@ -600,7 +598,7 @@ public class ArenaManager implements Listener {
 
             for (Player p : Bukkit.getOnlinePlayers()) {
                 String world = p.getWorld().getName().toLowerCase();
-                if (world.contains("mobarmylobby") || world.contains("rot") || world.contains("blau")) {
+                if (world.equals("world_mobarmy_lobby")) {
 
                     p.sendTitle(
                             ChatColor.GREEN + "✅ Alle Teams bereit!",
@@ -690,7 +688,7 @@ public class ArenaManager implements Listener {
         teamBossBars.clear();
         scoreboardManager.clearAllBoards();
 
-        World world = Bukkit.getWorld("world_mobarmylobby");
+        World world = Bukkit.getWorld("world_mobarmy_arena");
         if (world != null) {
             clearMobsInRegion(world,
                     new Location(world, 238, 96, 381),
@@ -704,9 +702,7 @@ public class ArenaManager implements Listener {
     }
 
     private boolean isArenaWorld(World world) {
-        if (world == null) return false;
-        String name = world.getName().toLowerCase();
-        return name.contains("mobarmylobby") || name.contains("rot") || name.contains("blau");
+        return world != null && world.getName().equalsIgnoreCase("world_mobarmy_arena");
     }
 
     public ArenaScoreboardManager getScoreboardManager() {

@@ -42,12 +42,6 @@ public class ScoreboardSwitcher {
         activeBoards.put(player, BoardType.ARENA);
     }
 
-    public void resetToTeamForAll() {
-        for (Player player : plugin.getServer().getOnlinePlayers()) {
-            switchToTeam(player);
-        }
-    }
-
     public BoardType getActiveBoard(Player player) {
         return activeBoards.getOrDefault(player, BoardType.NONE);
     }
@@ -55,5 +49,16 @@ public class ScoreboardSwitcher {
     public void removePlayer(Player player) {
         activeBoards.remove(player);
         arenaBoardManager.removeBoard(player);
+    }
+
+    public void forceTeamForAll() {
+        teamBoardManager.rebuildBoard();
+
+        for (Player player : plugin.getServer().getOnlinePlayers()) {
+            activeBoards.remove(player);
+            arenaBoardManager.removeBoard(player);
+            teamBoardManager.setBoard(player);
+            activeBoards.put(player, BoardType.TEAM);
+        }
     }
 }

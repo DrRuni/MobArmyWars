@@ -1,9 +1,6 @@
-package runi.myddns.mobarmywars.Managers.Event;
+package runi.myddns.mobarmywars.Managers.World;
 
-import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.Location;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -16,6 +13,9 @@ import runi.myddns.mobarmywars.Utils.Message;
 import runi.myddns.mobarmywars.Utils.Sounds;
 
 public class ButtonManager implements Listener {
+
+    private static final String WORLD_LOBBY = "world_mobarmy_lobby";
+    private static final String WORLD_ARENA = "world_mobarmy_arena";
 
     private final MobArmyMain plugin;
 
@@ -33,9 +33,9 @@ public class ButtonManager implements Listener {
 
         if (!block.getType().name().contains("BUTTON")) return;
 
-        World pluginWorld = Bukkit.getWorld("world_mobarmylobby");
+        World pluginWorld = Bukkit.getWorld(WORLD_LOBBY);
         if (pluginWorld == null) {
-            Bukkit.getLogger().warning("❗ world_mobarmylobby ist nicht geladen!");
+            Bukkit.getLogger().warning("❗ " + WORLD_LOBBY + " ist nicht geladen!");
             return;
         }
 
@@ -44,7 +44,7 @@ public class ButtonManager implements Listener {
         String team = plugin.getTeamManager().getPlayerTeam(player);
 
         // Waveauswahl Mobs
-        if (isButtonAt(clicked, "world_mobarmylobby", 104, 75, -95) || isButtonAt(clicked, "world_mobarmylobby", 75, 75, -95)) {
+        if (isButtonAt(clicked, WORLD_LOBBY, 104, 75, -95) || isButtonAt(clicked, WORLD_LOBBY, 75, 75, -95)) {
             Sounds.playClick(player);
             new BukkitRunnable() {
                 @Override
@@ -62,20 +62,21 @@ public class ButtonManager implements Listener {
         }
 
         // Waveauswahl Ready Rot
-        if (handleReadyButton(player, clicked, "Rot", "world_mobarmylobby", 102, 75, -95, ChatColor.RED)) {
+        if (handleReadyButton(player, clicked, "Rot", WORLD_LOBBY, 102, 75, -95, ChatColor.RED)) {
             Sounds.playClick(player);
             event.setCancelled(true);
             return;
         }
 
         // Waveauswahl Ready Blau
-        if (handleReadyButton(player, clicked, "Blau", "world_mobarmylobby", 73, 75, -95, ChatColor.BLUE)) {
+        if (handleReadyButton(player, clicked, "Blau", WORLD_LOBBY, 73, 75, -95, ChatColor.BLUE)) {
             Sounds.playClick(player);
             event.setCancelled(true);
+            return;
         }
 
         // Team Auswahl
-        if (isButtonAt(clicked, "world_mobarmylobby", 28, 65, 2)) {
+        if (isButtonAt(clicked, WORLD_LOBBY, 28, 65, 2)) {
 
             new BukkitRunnable() {
                 @Override
@@ -90,10 +91,10 @@ public class ButtonManager implements Listener {
         }
 
         // ▶ START EVENT
-        if (isButtonAt(clicked, "world_mobarmylobby", 28, 65, -4)) {
+        if (isButtonAt(clicked, WORLD_LOBBY, 28, 65, -4)) {
 
             if (!player.isOp()) {
-                Message.sendToPlayer(player,ChatColor.RED + "❌ Nur Operatoren dürfen das Event starten!");
+                Message.sendToPlayer(player, ChatColor.RED + "❌ Nur Operatoren dürfen das Event starten!");
                 event.setCancelled(true);
                 return;
             }
@@ -108,63 +109,6 @@ public class ButtonManager implements Listener {
             }.runTaskLater(plugin, 1L);
 
             event.setCancelled(true);
-            return;
-        }
-
-        // ⏫ TIMER +1 STUNDE
-        if (isButtonAt(clicked, "world_mobarmylobby", 0, 67, -3)) {
-
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    plugin.getTimerManager().addTime(3600);
-                }
-            }.runTaskLater(plugin, 1L);
-
-            event.setCancelled(true);
-            return;
-        }
-
-        // ⏬ TIMER -1 STUNDE
-        if (isButtonAt(clicked, "world_mobarmylobby", 0, 66, -3)) {
-
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    plugin.getTimerManager().removeTime(3600);
-                }
-            }.runTaskLater(plugin, 1L);
-
-            event.setCancelled(true);
-            return;
-        }
-
-        // ⏫ TIMER +10 MINUTEN
-        if (isButtonAt(clicked, "world_mobarmylobby", 0, 67, 0)) {
-
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    plugin.getTimerManager().addTime(600);
-                }
-            }.runTaskLater(plugin, 1L);
-
-            event.setCancelled(true);
-            return;
-        }
-
-        // ⏬ TIMER -10 MINUTEN
-        if (isButtonAt(clicked, "world_mobarmylobby", 0, 66, 0)) {
-
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    plugin.getTimerManager().removeTime(600);
-                }
-            }.runTaskLater(plugin, 1L);
-
-            event.setCancelled(true);
-            return;
         }
     }
 
@@ -185,16 +129,23 @@ public class ButtonManager implements Listener {
 
             for (Player p : Bukkit.getOnlinePlayers()) {
 
-                String team = plugin.getTeamManager().getPlayerTeam(p);
-
-                if (team != null && team.equalsIgnoreCase(expectedTeam)) {
-
-                    String w = p.getWorld().getName().toLowerCase();
-                    if (!(w.contains("mobarena") || w.contains("rot") || w.contains("blau")))
-                        continue;
-
-                    p.sendMessage(color + "✔ " + player.getName() + " hat sich als BEREIT markiert!");
+                String w = p.getWorld().getName().toLowerCase();
+                if (!(w.contains("mobarmy_lobby") || w.contains("rot") || w.contains("blau"))) {
+                    continue;
                 }
+
+                p.sendTitle(
+                        color + "✔ Team " + expectedTeam + " bereit!",
+                        ChatColor.GRAY + player.getName() + " hat gedrückt",
+                        10, 40, 10
+                );
+
+                p.playSound(
+                        p.getLocation(),
+                        Sound.BLOCK_NOTE_BLOCK_PLING,
+                        1f,
+                        1.4f
+                );
             }
 
             plugin.getArenaManager().markPlayerReady(player);

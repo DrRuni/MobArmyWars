@@ -1,4 +1,4 @@
-package runi.myddns.mobarmywars.Arena;
+package runi.myddns.mobarmywars.Managers.Event;
 
 import org.bukkit.*;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -73,7 +73,7 @@ public class ArenaConfig {
     private World getArenaWorld(String arenaId) {
         String worldName = config.getString(
                 "arenas." + arenaId + ".world",
-                "world_mobarmylobby"
+                "world_mobarmy_arena"
         );
 
         World world = Bukkit.getWorld(worldName);

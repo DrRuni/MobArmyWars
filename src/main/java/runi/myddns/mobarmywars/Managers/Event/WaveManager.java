@@ -1,7 +1,5 @@
-package runi.myddns.mobarmywars.Arena;
+package runi.myddns.mobarmywars.Managers.Event;
 
-import runi.myddns.mobarmywars.Managers.Event.ArenaScoreboardManager;
-import runi.myddns.mobarmywars.Managers.Event.MobSaveManager;
 import runi.myddns.mobarmywars.MobArmyMain;
 
 import java.util.*;

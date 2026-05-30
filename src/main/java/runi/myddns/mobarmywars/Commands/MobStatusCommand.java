@@ -8,6 +8,7 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 import runi.myddns.mobarmywars.Managers.Event.MobSaveManager;
 import runi.myddns.mobarmywars.Managers.Event.TeamManager;
+import runi.myddns.mobarmywars.Managers.World.WorldManager;
 
 import java.util.Collections;
 import java.util.List;
@@ -28,12 +29,6 @@ public class MobStatusCommand implements CommandExecutor, TabCompleter {
 
         if (!(sender instanceof Player player)) {
             sender.sendMessage("Nur Spieler können diesen Befehl ausführen.");
-            return true;
-        }
-
-        if (!teamManager.isArenaWorld(player)) {
-            player.sendMessage(ChatColor.RED +
-                    "❌ Dieser Befehl kann nur in den MobArmy-Welten verwendet werden!");
             return true;
         }
 

@@ -84,7 +84,7 @@ public class SpawnEggGUI implements Listener {
         Inventory gui = Bukkit.createInventory(
                 null,
                 54,
-                ChatColor.DARK_AQUA + "Spawneier Einstellungen"
+                ChatColor.BLUE + "Spawneier Einstellungen"
         );
 
         int[] bossSlots = {11, 12, 14, 15};
@@ -116,9 +116,9 @@ public class SpawnEggGUI implements Listener {
             }
         }
 
-        ItemStack back = new ItemStack(Material.BARRIER);
+        ItemStack back = new ItemStack(Material.ARROW);
         ItemMeta meta = back.getItemMeta();
-        meta.setDisplayName(ChatColor.RED + "Zurück");
+        meta.setDisplayName(ChatColor.DARK_AQUA + "Zurück");
         back.setItemMeta(meta);
         gui.setItem(49, back);
 
@@ -137,9 +137,9 @@ public class SpawnEggGUI implements Listener {
 
         if (clickedItem == null || !clickedItem.hasItemMeta()) return;
 
-        if (clickedItem.getType() == Material.BARRIER) {
+        if (clickedItem.getType() == Material.ARROW) {
             Sounds.playClick(player);
-            plugin.getEventSettingsGUI().open(player);
+            plugin.getWorldSettingsGUI().open(player);
             return;
         }
 

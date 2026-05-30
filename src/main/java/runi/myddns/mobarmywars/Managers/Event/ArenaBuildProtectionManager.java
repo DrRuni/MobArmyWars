@@ -1,4 +1,4 @@
-package runi.myddns.mobarmywars.Arena;
+package runi.myddns.mobarmywars.Managers.Event;
 
 import org.bukkit.*;
 import org.bukkit.Tag;
@@ -26,10 +26,16 @@ public class ArenaBuildProtectionManager implements Listener {
     private final Map<String, Set<BlockPos>> placedBlocks = new HashMap<>();
     private final Map<String, ArenaData> arenas = new HashMap<>();
 
+    private final List<ProtectedArea> opProtectedLobbyAreas = new ArrayList<>();
+    private record ProtectedArea(String world, Location corner1, Location corner2) { }
     private record BlockPos(String world, int x, int y, int z) { }
 
     private BlockPos toPos(Location loc) {
         return new BlockPos(loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
+    }
+
+    private boolean canBypassLobbyProtection(Player player) {
+        return player.isOp();
     }
 
     public record ArenaData(
@@ -74,7 +80,7 @@ public class ArenaBuildProtectionManager implements Listener {
 
             String name = sec.getString("name", key);
             String description = sec.getString("description", "");
-            String worldName = sec.getString("world", "world_mobarmylobby");
+            String worldName = sec.getString("world", "world_mobarmy_arena");
             World world = Bukkit.getWorld(worldName);
 
             if (world == null) {
@@ -104,9 +110,51 @@ public class ArenaBuildProtectionManager implements Listener {
         }
     }
 
-    private String fmt(Location l) {
-        if (l == null) return "null";
-        return "(" + l.getBlockX() + "," + l.getBlockY() + "," + l.getBlockZ() + ")";
+    public void loadSpawnProtectionAreas() {
+        File file = new File(plugin.getDataFolder(), "spawns.yml");
+
+        if (!file.exists()) {
+            Bukkit.getLogger().warning("[MobArmyWars] ⚠ spawns.yml nicht gefunden – Lobby-Schutzbereiche nicht geladen!");
+            return;
+        }
+
+        FileConfiguration cfg = YamlConfiguration.loadConfiguration(file);
+        opProtectedLobbyAreas.clear();
+
+        loadWaveArea(cfg, "wave-auswahl.rot");
+        loadWaveArea(cfg, "wave-auswahl.blau");
+    }
+
+    private void loadWaveArea(FileConfiguration cfg, String path) {
+        String worldName = cfg.getString("wave-auswahl.world", "world_mobarmy_lobby");
+        World world = Bukkit.getWorld(worldName);
+
+        if (world == null) {
+            Bukkit.getLogger().warning("[MobArmyWars] ⚠ Welt '" + worldName + "' für " + path + " nicht gefunden!");
+            return;
+        }
+
+        Location c1 = toLoc(world, cfg.getIntegerList(path + ".corner1"));
+        Location c2 = toLoc(world, cfg.getIntegerList(path + ".corner2"));
+
+        if (c1 == null || c2 == null) {
+            Bukkit.getLogger().warning("[MobArmyWars] ⚠ Ungültige Corner für " + path);
+            return;
+        }
+        opProtectedLobbyAreas.add(new ProtectedArea(worldName, c1, c2));
+    }
+
+    private boolean isInsideOpProtectedLobbyArea(Location loc) {
+        if (loc == null || loc.getWorld() == null) return false;
+
+        for (ProtectedArea area : opProtectedLobbyAreas) {
+            if (!area.world().equalsIgnoreCase(loc.getWorld().getName())) continue;
+
+            if (isInside(loc, area.corner1(), area.corner2())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private Location toLoc(World w, List<Integer> list) {
@@ -233,7 +281,22 @@ public class ArenaBuildProtectionManager implements Listener {
         Material type = e.getBlock().getType();
 
         String worldName = loc.getWorld().getName().toLowerCase();
-        if (!worldName.contains("mobarmylobby")) {
+
+        // Lobby: komplett schützen, außer OP
+        if (worldName.equals("world_mobarmy_lobby")) {
+            if (isInsideOpProtectedLobbyArea(loc)) {
+                e.setCancelled(true);
+                return;
+            }
+
+            if (!canBypassLobbyProtection(p)) {
+                e.setCancelled(true);
+            }
+            return;
+        }
+
+        // Nur Arena-Welt hier weiter behandeln
+        if (!worldName.equals("world_mobarmy_arena")) {
             return;
         }
 
@@ -245,6 +308,7 @@ public class ArenaBuildProtectionManager implements Listener {
             return;
         }
 
+        // Naturblöcke in Arena-Zonen dürfen entfernt werden, aber ohne Drops/XP
         if (isAllowedNaturalBlock(type)) {
             if (!isInsideAnyTeamArea(loc, arena)) {
                 e.setCancelled(true);
@@ -274,6 +338,7 @@ public class ArenaBuildProtectionManager implements Listener {
         BlockPos pos = toPos(loc);
         Set<BlockPos> placed = placedBlocks.get(team.toLowerCase());
 
+        // Nur selbst gesetzte Blöcke dürfen wieder abgebaut werden
         if (placed == null || !placed.remove(pos)) {
             e.setCancelled(true);
         }
@@ -288,11 +353,27 @@ public class ArenaBuildProtectionManager implements Listener {
                 return;
             }
         }
+
         Player p = e.getPlayer();
         Location loc = e.getBlock().getLocation();
 
         String worldName = loc.getWorld().getName().toLowerCase();
-        if (getArenaByLocation(loc) == null) {
+
+        // Lobby: komplett schützen, außer OP
+        if (worldName.equals("world_mobarmy_lobby")) {
+            if (isInsideOpProtectedLobbyArea(loc)) {
+                e.setCancelled(true);
+                return;
+            }
+
+            if (!canBypassLobbyProtection(p)) {
+                e.setCancelled(true);
+            }
+            return;
+        }
+
+        // Nur Arena-Welt hier weiter behandeln
+        if (!worldName.equals("world_mobarmy_arena")) {
             return;
         }
 
@@ -325,23 +406,36 @@ public class ArenaBuildProtectionManager implements Listener {
     @EventHandler
     public void onExplosion(EntityExplodeEvent e) {
         World w = e.getLocation().getWorld();
-        if (w == null) return;
 
-        if (w.getName().toLowerCase().contains("mobarmy")) {
+        if (isProtectedMobArmyWorld(w)) {
             e.blockList().clear();
         }
     }
 
     @EventHandler
     public void onBlockBurn(BlockBurnEvent e) {
-        e.setCancelled(true);
+        World w = e.getBlock().getWorld();
+
+        if (isProtectedMobArmyWorld(w)) {
+            e.setCancelled(true);
+        }
     }
 
     @EventHandler
     public void onFireSpread(BlockSpreadEvent e) {
-        if (e.getSource().getType() == Material.FIRE) {
+        World w = e.getBlock().getWorld();
+
+        if (isProtectedMobArmyWorld(w) && e.getSource().getType() == Material.FIRE) {
             e.setCancelled(true);
         }
+    }
+
+    private boolean isProtectedMobArmyWorld(World world) {
+        if (world == null) return false;
+
+        String name = world.getName().toLowerCase();
+        return name.equals("world_mobarmy_lobby")
+                || name.equals("world_mobarmy_arena");
     }
 
     private boolean isInsideTeamArea(Location loc, String team, ArenaData arena) {

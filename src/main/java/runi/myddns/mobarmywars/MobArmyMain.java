@@ -2,7 +2,6 @@ package runi.myddns.mobarmywars;
 
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
-import runi.myddns.mobarmywars.Arena.*;
 import runi.myddns.mobarmywars.Managers.Event.*;
 import runi.myddns.mobarmywars.Utils.ConsoleColor;
 import runi.myddns.mobarmywars.Commands.*;
@@ -33,7 +32,7 @@ public class MobArmyMain extends JavaPlugin {
     public WaveManager waveManager;
     private MobSaveManager mobSaveManager;
     public WaveStorage waveStorage;
-    public ArenaManager arenaManager;
+    public ArenaEventManager arenaManager;
     public EventManager eventManager;
     public ArenaScoreboardManager scoreboardManager;
     public MobSaveListener mobSaveListener;
@@ -45,16 +44,23 @@ public class MobArmyMain extends JavaPlugin {
     private PortalManager portalManager;
     private PlayerEffectManager playerEffectManager;
     private ArenaConfig arenaConfig;
-    public OptionenGUI optionenGUI;
+    public OptionsGUI optionenGUI;
     public TimerGUI timerGUI;
-    public EventSettingsGUI eventSettingsGUI;
+    public SetupGUI eventSettingsGUI;
     public TeleportGUI mobArmySettingsGUI;
     public TeamSelectionGUI teamSelectionGUI;
     public BundleGUI bundleGUI;
     public SpawnEggGUI spawnEggGUI;
-//    private ArenaSettingsGUI arenaSettingsGUI;
+    private ArenaSettingsGUI arenaSettingsGUI;
+    private WorldSettingsGUI worldSettingsGUI;
+    private PlayerGUI playerGUI;
+    private PlayerActionGUI playerActionGUI;
+    private TeamSettingsGUI teamSettingsGUI;
     private TeamScoreboardManager teamScoreboardManager;
     private ScoreboardSwitcher scoreboardSwitcher;
+    private ArenaCompassManager arenaCompassManager;
+    private TeamEquipmentManager teamEquipmentManager;
+    private TeamEquipmentGUI teamEquipmentGUI;
 
     private boolean arenaRunning = false;
     public boolean isArenaRunning() { return arenaRunning; }
@@ -77,17 +83,17 @@ public class MobArmyMain extends JavaPlugin {
     public void onEnable() {
         instance = this;
 
-        worldSettings = new WorldSettings(this);
-        worldManager = new WorldManager(this);
-        worldManager.checkWorldsOnStartup();
-
         extractServerIconIfMissing();
         saveDefaultConfig();
         createArenaCoordFile();
+        createSpawnsFile();
+
+        worldSettings = new WorldSettings(this);
+        worldManager = new WorldManager(this);
+
+        worldManager.checkWorldsOnStartup();
 
         initializeMobArmyWars();
-
-
 
         teamManager.loadTeams();
         teamScoreboardManager.rebuildBoard();
@@ -119,13 +125,14 @@ public class MobArmyMain extends JavaPlugin {
         blockRandomizerManager = new BlockRandomizerManager(this);
 
         arenaConfig = new ArenaConfig(this);
-        arenaManager = new ArenaManager(this);
+        arenaManager = new ArenaEventManager(this);
         arenaManager.setRandomizer(blockRandomizerManager);
 
         teamManager = new TeamManager(this);
 
         arenaBuildProtectionManager = new ArenaBuildProtectionManager(this);
         arenaBuildProtectionManager.loadFromConfig();
+        arenaBuildProtectionManager.loadSpawnProtectionAreas();
 
         mobSaveManager = new MobSaveManager(this, teamManager);
 
@@ -153,18 +160,25 @@ public class MobArmyMain extends JavaPlugin {
 
         teamScoreboardManager = new TeamScoreboardManager(this);
         scoreboardSwitcher = new ScoreboardSwitcher(this, teamScoreboardManager, scoreboardManager);
+        arenaCompassManager = new ArenaCompassManager(this);
+        teamEquipmentManager = new TeamEquipmentManager(this);
 
         // ============================================================
         // GUIs
         // ============================================================
-        optionenGUI = new OptionenGUI(this);
+        optionenGUI = new OptionsGUI(this);
         timerGUI = new TimerGUI(this, timerManager);
-        eventSettingsGUI = new EventSettingsGUI(this, blockRandomizerManager);
+        eventSettingsGUI = new SetupGUI(this);
         mobArmySettingsGUI = new TeleportGUI(this);
         teamSelectionGUI = new TeamSelectionGUI(this, teamManager);
         bundleGUI = new BundleGUI(this, teamManager);
         spawnEggGUI = new SpawnEggGUI(blockRandomizerManager, this, timerManager);
-//        arenaSettingsGUI = new ArenaSettingsGUI(this);
+        arenaSettingsGUI = new ArenaSettingsGUI(this);
+        worldSettingsGUI = new WorldSettingsGUI(this, blockRandomizerManager);
+        playerGUI = new PlayerGUI(this);
+        playerActionGUI = new PlayerActionGUI(this);
+        teamSettingsGUI = new TeamSettingsGUI(this);
+        teamEquipmentGUI = new TeamEquipmentGUI(this);
 
         // ============================================================
         // Listener registrieren
@@ -186,16 +200,22 @@ public class MobArmyMain extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new ButtonManager(this), this);
         Bukkit.getPluginManager().registerEvents(new ArenaMobTargetListener(this), this);
         Bukkit.getPluginManager().registerEvents(new BundleListener(bundleGUI, teamManager, bundleManager), this);
-//        Bukkit.getPluginManager().registerEvents(arenaSettingsGUI, this);
+        Bukkit.getPluginManager().registerEvents(arenaSettingsGUI, this);
+        Bukkit.getPluginManager().registerEvents(worldSettingsGUI, this);
+        Bukkit.getPluginManager().registerEvents(new UltraHardcoreListener(this), this);
+        Bukkit.getPluginManager().registerEvents(arenaCompassManager, this);
+        Bukkit.getPluginManager().registerEvents(playerGUI, this);
+        Bukkit.getPluginManager().registerEvents(playerActionGUI, this);
+        getServer().getPluginManager().registerEvents(teamSettingsGUI, this);
+        getServer().getPluginManager().registerEvents(teamEquipmentGUI, this);
+        Bukkit.getPluginManager().registerEvents(new ScoreboardSwitchListener(this), this);
 
         waveStorage.loadWaves();
 
         Bukkit.getScheduler().runTaskLater(this, () -> {
             try {
-                var m = arenaBuildProtectionManager.getClass()
-                        .getDeclaredMethod("loadFromConfig");
-                m.setAccessible(true);
-                m.invoke(arenaBuildProtectionManager);
+                arenaBuildProtectionManager.loadFromConfig();
+                arenaBuildProtectionManager.loadSpawnProtectionAreas();
             } catch (Exception ex) {
                 Bukkit.getLogger().severe("[MobArmyWars] Fehler beim Nachladen der BuildProtection!");
                 ex.printStackTrace();
@@ -279,8 +299,22 @@ public class MobArmyMain extends JavaPlugin {
         File f = new File(getDataFolder(), "arena-koordinaten.yml");
         if (!f.exists()) {
             saveResource("arena-koordinaten.yml", false);
+
+            Bukkit.getConsoleSender().sendMessage("");
             Bukkit.getConsoleSender().sendMessage(ConsoleColor.LIME + "   Datei - " +
-                    ConsoleColor.GOLD + "'arena-koordinaten.yml' erstellt." + ConsoleColor.RESET);
+                    ConsoleColor.GOLD + "'arena-koordinaten.yml'" + ConsoleColor.LIME + " erstellt." + ConsoleColor.RESET);
+        }
+    }
+
+    private void createSpawnsFile() {
+        File f = new File(getDataFolder(), "spawns.yml");
+
+        if (!f.exists()) {
+            saveResource("spawns.yml", false);
+
+            Bukkit.getConsoleSender().sendMessage(ConsoleColor.LIME + "   Datei - " +
+                    ConsoleColor.GOLD + "'spawns.yml'" + ConsoleColor.LIME + " erstellt." + ConsoleColor.RESET);
+            Bukkit.getConsoleSender().sendMessage("");
         }
     }
 
@@ -293,15 +327,15 @@ public class MobArmyMain extends JavaPlugin {
     public BlockRandomizerManager getBlockRandomizerManager() { return blockRandomizerManager; }
     public WaveManager getWaveManager() { return waveManager; }
     public WaveStorage getWaveStorage() { return waveStorage; }
-    public ArenaManager getArenaManager() { return arenaManager; }
+    public ArenaEventManager getArenaManager() { return arenaManager; }
     public EventManager getEventManager() { return eventManager; }
     public ArenaScoreboardManager getScoreboardManager() { return scoreboardManager; }
     public MobSaveListener getMobSaveListener() { return mobSaveListener; }
     public BundleManager getBundleManager() { return bundleManager; }
     public ArenaBuildProtectionManager getArenaBuildProtectionManager() { return arenaBuildProtectionManager; }
-    public OptionenGUI getOptionenGUI() { return optionenGUI; }
+    public OptionsGUI getOptionenGUI() { return optionenGUI; }
     public TimerGUI getTimerGUI() { return timerGUI; }
-    public EventSettingsGUI getEventSettingsGUI() { return eventSettingsGUI; }
+    public SetupGUI getEventSettingsGUI() { return eventSettingsGUI; }
     public TeleportGUI getMobArmySettingsGUI() { return mobArmySettingsGUI; }
     public TeamSelectionGUI getTeamSelectionGUI() { return teamSelectionGUI; }
     public BundleGUI getBundleGUI() { return bundleGUI; }
@@ -325,6 +359,13 @@ public class MobArmyMain extends JavaPlugin {
     }
     public PlayerEffectManager getPlayerEffectManager() { return playerEffectManager; }
     public TeamScoreboardManager getTeamScoreboardManager() { return teamScoreboardManager; }
-    public ScoreboardSwitcher getScoreboardSwitcher() {return scoreboardSwitcher; }
-//    public ArenaSettingsGUI getArenaSettingsGUI() {return arenaSettingsGUI; }
+    public ScoreboardSwitcher getScoreboardSwitcher() { return scoreboardSwitcher; }
+    public ArenaSettingsGUI getArenaSettingsGUI() { return arenaSettingsGUI; }
+    public WorldSettingsGUI getWorldSettingsGUI() { return worldSettingsGUI; }
+    public ArenaCompassManager getArenaCompassManager() { return arenaCompassManager; }
+    public PlayerGUI getPlayerGUI() { return playerGUI; }
+    public PlayerActionGUI getPlayerActionGUI() { return playerActionGUI; }
+    public TeamSettingsGUI getTeamSettingsGUI() { return teamSettingsGUI; }
+    public TeamEquipmentManager getTeamEquipmentManager() { return teamEquipmentManager; }
+    public TeamEquipmentGUI getTeamEquipmentGUI() { return teamEquipmentGUI; }
 }
