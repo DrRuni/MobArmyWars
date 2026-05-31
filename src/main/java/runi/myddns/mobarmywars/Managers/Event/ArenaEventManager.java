@@ -727,20 +727,20 @@ public class ArenaEventManager implements Listener {
         player.sendMessage(ChatColor.GOLD + "===============================");
     }
 
-    @EventHandler
-    public void onEntityRemove(EntityRemoveFromWorldEvent event) {
-        if (!arenaRunning) return;
-
-        Entity e = event.getEntity();
-        if (!(e instanceof LivingEntity living)) return;
-
-        Byte arenaMob = living.getPersistentDataContainer().get(
-                new NamespacedKey(plugin, "arenaMob"),
-                PersistentDataType.BYTE
-        );
-
-        if (arenaMob == null || arenaMob != (byte) 1) return;
-    }
+//    @EventHandler
+//    public void onEntityRemove(EntityRemoveFromWorldEvent event) {
+//        if (!arenaRunning) return;
+//
+//        Entity e = event.getEntity();
+//        if (!(e instanceof LivingEntity living)) return;
+//
+//        Byte arenaMob = living.getPersistentDataContainer().get(
+//                new NamespacedKey(plugin, "arenaMob"),
+//                PersistentDataType.BYTE
+//        );
+//
+//        if (arenaMob == null || arenaMob != (byte) 1) return;
+//    }
 
     public void setRandomizer(BlockRandomizerManager randomizer) { this.randomizer = randomizer;
     }
