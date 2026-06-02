@@ -41,17 +41,7 @@ public class MobSaveManager {
         this.teamManager = teamManager;
         this.timerManager = timerManager;
 
-        File dataFolder = plugin.getDataFolder();
-        if (!dataFolder.exists()) dataFolder.mkdirs();
-
-        this.mobDataFile = new File(dataFolder, "mobData.yml");
-
-        try {
-            if (!mobDataFile.exists()) mobDataFile.createNewFile();
-        } catch (IOException e) {
-            plugin.getLogger().severe("❌ Konnte mobData.yml nicht erstellen!");
-            e.printStackTrace();
-        }
+        this.mobDataFile = new File(plugin.getDataFolder(), "mobData.yml");
 
         this.mobData = YamlConfiguration.loadConfiguration(mobDataFile);
         loadSavedMobs();

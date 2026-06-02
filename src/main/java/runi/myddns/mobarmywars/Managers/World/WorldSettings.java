@@ -46,10 +46,6 @@ public class WorldSettings {
     public void load() {
         file = new File(plugin.getDataFolder(), "worldsettings.yml");
 
-        if (!file.exists()) {
-            plugin.saveResource("worldsettings.yml", false);
-        }
-
         config = YamlConfiguration.loadConfiguration(file);
 
         boolean changed = false;

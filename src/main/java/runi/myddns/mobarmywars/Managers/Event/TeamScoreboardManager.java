@@ -7,6 +7,9 @@ import org.bukkit.scoreboard.*;
 import runi.myddns.mobarmywars.MobArmyMain;
 
 import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class TeamScoreboardManager {
 
@@ -128,21 +131,50 @@ public class TeamScoreboardManager {
         int score = 15;
         int empty = 0;
 
+        Set<String> savedPlayers = plugin.getTeamManager().getAllTeamPlayers();
+
         sidebar.getScore(emptyLine(empty++)).setScore(score--);
 
         sidebar.getScore(ChatColor.RED + "Team Rot:").setScore(score--);
-        for (String name : teamRot.getEntries()) {
-            sidebar.getScore(ChatColor.GREEN + "- " + name).setScore(score--);
+        for (String name : savedPlayers) {
+            if (plugin.getTeamManager().getPlayerTeam(Bukkit.getOfflinePlayer(name)).equalsIgnoreCase("Rot")) {
+                sidebar.getScore(formatPlayerName(name)).setScore(score--);
+            }
         }
 
         sidebar.getScore(emptyLine(empty++)).setScore(score--);
 
         sidebar.getScore(ChatColor.BLUE + "Team Blau:").setScore(score--);
-        for (String name : teamBlau.getEntries()) {
-            sidebar.getScore(ChatColor.GREEN + "- " + name).setScore(score--);
+        for (String name : savedPlayers) {
+            if (plugin.getTeamManager().getPlayerTeam(Bukkit.getOfflinePlayer(name)).equalsIgnoreCase("Blau")) {
+                sidebar.getScore(formatPlayerName(name)).setScore(score--);
+            }
+        }
+
+        List<Player> noTeamPlayers = Bukkit.getOnlinePlayers().stream()
+                .filter(p -> plugin.getTeamManager().getPlayerTeam(p).equalsIgnoreCase("Kein Team"))
+                .collect(Collectors.toList());
+
+        if (!noTeamPlayers.isEmpty()) {
+            sidebar.getScore(emptyLine(empty++)).setScore(score--);
+
+            sidebar.getScore(ChatColor.WHITE + "Kein Team:").setScore(score--);
+            for (Player online : noTeamPlayers) {
+                sidebar.getScore(ChatColor.WHITE + "- " + online.getName()).setScore(score--);
+            }
         }
 
         sidebar.getScore(emptyLine(empty)).setScore(score);
+    }
+
+    private String formatPlayerName(String name) {
+        Player player = Bukkit.getPlayerExact(name);
+
+        if (player != null && player.isOnline()) {
+            return ChatColor.GREEN + "- " + name;
+        }
+
+        return ChatColor.GRAY + "- " + name;
     }
 
     public Scoreboard getScoreboard() {

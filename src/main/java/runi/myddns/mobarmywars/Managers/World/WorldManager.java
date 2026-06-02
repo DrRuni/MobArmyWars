@@ -46,10 +46,68 @@ public class WorldManager {
 
     private void checkTemplateWorlds() {
 
-        copyTemplateZipIfMissing();
-
         checkTemplateWorld(WORLD_LOBBY, "Lobby-Welt");
         checkTemplateWorld(WORLD_ARENA, "Arena-Welt");
+    }
+
+    public void resetLobbyWorld() {
+
+        List<Player> players = getPlayersInWorld(WORLD_LOBBY);
+
+        for (Player p : players) {
+            if (p.isOnline()) {
+                TeleportManager.teleport(p, WORLD_ARENA);
+
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    if (p.isOnline()) {
+                        p.sendActionBar(ChatColor.RED + "⚠ Lobby-Welt wird neu geladen...");
+                        p.playSound(p.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 0.8f);
+                    }
+                }, 10L);
+            }
+        }
+
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+
+            unloadAndDeleteWorld(WORLD_LOBBY);
+
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+
+                extractTemplateWorldFromZip(WORLD_LOBBY);
+
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+
+                    loadWorld(WORLD_LOBBY);
+                    plugin.getWorldSettings().applyAllSettings();
+
+                    Bukkit.getScheduler().runTaskLater(plugin, () -> {
+
+                        for (Player p : players) {
+                            if (p.isOnline()) {
+                                TeleportManager.teleport(p, WORLD_LOBBY);
+                            }
+                        }
+
+                        for (Player player : Bukkit.getOnlinePlayers()) {
+                            player.sendMessage(ChatColor.GREEN + "✔ LOBBY-Welt wurde neu geladen!");
+                            player.sendMessage("");
+                            player.sendMessage(ChatColor.DARK_RED + "  Die Spieler- und Eventdaten sind noch geladen,");
+                            player.sendMessage(ChatColor.DARK_RED + "  diese können nur über " + ChatColor.GOLD + "Reset Spielfortschritt ");
+                            player.sendMessage(ChatColor.DARK_RED + "  zurückgesetzt werden!");
+                            player.sendMessage("");
+                        }
+
+                        Bukkit.getConsoleSender().sendMessage("");
+                        Bukkit.getConsoleSender().sendMessage(
+                                ConsoleColor.LIME + "        LOBBY-Welt neu erstellt" + ConsoleColor.RESET);
+                        Bukkit.getConsoleSender().sendMessage("");
+
+                        endWorldReset();
+
+                    }, 40L);
+                }, 40L);
+            }, 40L);
+        }, 60L);
     }
 
     public void resetArenaWorld() {
@@ -59,6 +117,13 @@ public class WorldManager {
         for (Player p : players) {
             if (p.isOnline()) {
                 TeleportManager.teleport(p, WORLD_LOBBY);
+
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    if (p.isOnline()) {
+                        p.sendActionBar(ChatColor.RED + "⚠ Arena-Welt wird neu geladen...");
+                        p.playSound(p.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 0.8f);
+                    }
+                }, 10L);
             }
         }
 
@@ -77,11 +142,6 @@ public class WorldManager {
 
                     Bukkit.getScheduler().runTaskLater(plugin, () -> {
 
-                        for (Player p : players) {
-                            if (p.isOnline()) {
-                                TeleportManager.teleport(p, WORLD_ARENA);
-                            }
-                        }
 
                         for (Player player : Bukkit.getOnlinePlayers()) {
                             player.sendMessage("");
@@ -93,13 +153,14 @@ public class WorldManager {
                             player.sendMessage("");
                         }
 
+                        Bukkit.getConsoleSender().sendMessage("");
                         Bukkit.getConsoleSender().sendMessage(
-                                ConsoleColor.LIME + "           ARENA-Welt neu erstellt" + ConsoleColor.RESET
-                        );
+                                ConsoleColor.LIME + "        ARENA-Welt neu erstellt" + ConsoleColor.RESET);
+                        Bukkit.getConsoleSender().sendMessage("");
 
                         endWorldReset();
 
-                    }, 40L); // Spieler zurück
+                    }, 40L); // Abschluss
                 }, 40L); // World laden
             }, 40L); // Entpacken
         }, 60L); // Teleports
@@ -121,14 +182,14 @@ public class WorldManager {
         if (!rotWorld) {
             Bukkit.getConsoleSender().sendMessage(
                     ConsoleColor.RED +
-                            "     Teamwelt ROT wird erzeugt!" +
+                            "        Teamwelt ROT wird erzeugt!" +
                             ConsoleColor.RESET);
             Bukkit.getConsoleSender().sendMessage("");
             createWorld("world_rot", World.Environment.NORMAL, teamSeed);
         } else {
             Bukkit.getConsoleSender().sendMessage(
                     ConsoleColor.LIME +
-                            "           Teamwelt - " +
+                            "        Teamwelt - " +
                             ConsoleColor.RED + "ROT" +
                             ConsoleColor.LIME + " vorhanden!" +
                             ConsoleColor.RESET);
@@ -139,14 +200,14 @@ public class WorldManager {
         if (!rotNether) {
             Bukkit.getConsoleSender().sendMessage(
                     ConsoleColor.RED +
-                            "     Netherwelt ROT wird erzeugt!" +
+                            "        Netherwelt ROT wird erzeugt!" +
                             ConsoleColor.RESET);
             Bukkit.getConsoleSender().sendMessage("");
             createWorld("world_rot_nether", World.Environment.NETHER, teamSeed);
         } else {
             Bukkit.getConsoleSender().sendMessage(
                     ConsoleColor.LIME +
-                            "           Netherwelt - " +
+                            "        Netherwelt - " +
                             ConsoleColor.RED + "ROT" +
                             ConsoleColor.LIME + " vorhanden!" +
                             ConsoleColor.RESET);
@@ -157,14 +218,14 @@ public class WorldManager {
         if (!blauWorld) {
             Bukkit.getConsoleSender().sendMessage(
                     ConsoleColor.DARK_AQUA +
-                            "     Teamwelt BLAU wird erzeugt!" +
+                            "        Teamwelt BLAU wird erzeugt!" +
                             ConsoleColor.RESET);
             Bukkit.getConsoleSender().sendMessage("");
             createWorld("world_blau", World.Environment.NORMAL, teamSeed);
         } else {
             Bukkit.getConsoleSender().sendMessage(
                     ConsoleColor.LIME +
-                            "           Teamwelt - " +
+                            "        Teamwelt - " +
                             ConsoleColor.DARK_AQUA + "BLAU " +
                             ConsoleColor.LIME + "vorhanden!" +
                             ConsoleColor.RESET);
@@ -175,14 +236,14 @@ public class WorldManager {
         if (!blauNether) {
             Bukkit.getConsoleSender().sendMessage(
                     ConsoleColor.DARK_AQUA +
-                            "     Netherwelt BLAU wird erzeugt!" +
+                            "        Netherwelt BLAU wird erzeugt!" +
                             ConsoleColor.RESET);
             Bukkit.getConsoleSender().sendMessage("");
             createWorld("world_blau_nether", World.Environment.NETHER, teamSeed);
         } else {
             Bukkit.getConsoleSender().sendMessage(
                     ConsoleColor.LIME +
-                            "           Netherwelt - " +
+                            "        Netherwelt - " +
                             ConsoleColor.DARK_AQUA + "BLAU " +
                             ConsoleColor.LIME + "vorhanden!" +
                             ConsoleColor.RESET);
@@ -202,7 +263,7 @@ public class WorldManager {
         Bukkit.getConsoleSender().sendMessage("");
         Bukkit.getConsoleSender().sendMessage(
                 ConsoleColor.BLOOD_ORANGE +
-                        "           Team-Welten werden ZURÜCKGESETZT!" + ConsoleColor.RESET);
+                        "        Team-Welten werden ZURÜCKGESETZT!" + ConsoleColor.RESET);
         Bukkit.getConsoleSender().sendMessage("");
 
         List<Player> rotPlayers = new ArrayList<>();
@@ -216,6 +277,13 @@ public class WorldManager {
         for (Player p : merge(rotPlayers, blauPlayers)) {
             if (p.isOnline()) {
                 TeleportManager.teleport(p, "world_mobarmy_lobby");
+
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    if (p.isOnline()) {
+                        p.sendActionBar(ChatColor.RED + "⚠ Team-Welten werden neu generiert...");
+                        p.playSound(p.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 0.8f);
+                    }
+                }, 10L);
             }
         }
 
@@ -271,7 +339,7 @@ public class WorldManager {
                         }
                         Bukkit.getConsoleSender().sendMessage("");
                         Bukkit.getConsoleSender().sendMessage(
-                                ConsoleColor.LIME + "           TEAM-Welten neu erstellt" + ConsoleColor.RESET);
+                                ConsoleColor.LIME + "        TEAM-Welten neu erstellt" + ConsoleColor.RESET);
                         Bukkit.getConsoleSender().sendMessage("");
 
                         endWorldReset();
@@ -368,29 +436,6 @@ public class WorldManager {
         List<Player> all = new ArrayList<>(a);
         all.addAll(b);
         return all;
-    }
-
-    private void copyTemplateZipIfMissing() {
-
-        File zip = new File(plugin.getDataFolder(), TEMPLATE_ZIP);
-        if (zip.exists()) return;
-
-        plugin.getDataFolder().mkdirs();
-
-        try (InputStream in = plugin.getResource(TEMPLATE_ZIP)) {
-
-            if (in == null) {
-                plugin.getLogger().severe("❌ " + TEMPLATE_ZIP + " nicht im Plugin-JAR gefunden!");
-                return;
-            }
-
-            try (FileOutputStream out = new FileOutputStream(zip)) {
-                in.transferTo(out);
-            }
-
-        } catch (IOException e) {
-            plugin.getLogger().severe("❌ Fehler beim Kopieren der Template-ZIP: " + e.getMessage());
-        }
     }
 
     private void extractTemplateWorldFromZip(String worldName) {
@@ -538,7 +583,7 @@ public class WorldManager {
         if (!worldExists(worldName)) {
             Bukkit.getConsoleSender().sendMessage(
                     ConsoleColor.BLOOD_ORANGE +
-                            "     " + displayName + " wird aus ZIP entpackt" +
+                            "        " + displayName + " wird aus ZIP entpackt" +
                             ConsoleColor.RESET
             );
 
@@ -549,7 +594,7 @@ public class WorldManager {
         } else {
             Bukkit.getConsoleSender().sendMessage(
                     ConsoleColor.LIME +
-                            "              " + displayName + " vorhanden" +
+                            "        " + displayName + " vorhanden" +
                             ConsoleColor.RESET
             );
 

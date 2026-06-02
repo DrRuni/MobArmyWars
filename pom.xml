@@ -6,7 +6,7 @@
 
     <groupId>runi.myddns</groupId>
     <artifactId>MobArmyWars</artifactId>
-    <version>1.3</version>
+    <version>1.4</version>
     <packaging>jar</packaging>
     <name>MobArmyWars</name>
     <scm>
@@ -77,13 +77,13 @@
 
                                 <!-- 🧩 Neue Version in Backup speichern (mit fortlaufender Nummer) -->
                                 <copy file="${project.build.directory}/${project.build.finalName}.jar"
-                                      tofile="Z:\Dokumente\Games\Minecraft\Backup\JAR\MobArmyWars-v1.3.${buildNumber}.jar"
+                                      tofile="Z:\Dokumente\Games\Minecraft\Backup\JAR\MobArmyWars-v1.4.${buildNumber}.jar"
                                       overwrite="true"
                                       failonerror="false" />
 
                                 <!-- 🧩 Im Plugin-Ordner immer gleiche Datei überschreiben -->
                                 <copy file="${project.build.directory}/${project.build.finalName}.jar"
-                                      tofile="C:\Users\ronny\Desktop\Server 26.1.2\plugins\MobArmyWars-v1.3.jar"
+                                      tofile="C:\Users\ronny\Desktop\Server 26.1.2\plugins\MobArmyWars-v1.4.jar"
                                       overwrite="true"
                                       failonerror="false" />
                             </target>

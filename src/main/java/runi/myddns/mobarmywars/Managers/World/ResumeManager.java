@@ -30,57 +30,10 @@ public class ResumeManager {
 
     public ResumeManager(MobArmyMain plugin) {
         this.plugin = plugin;
-        createFileIfNotExists();
+        file = new File(plugin.getDataFolder(), "eventdaten.yml");
         loadConfig();
 
         this.locationManager = new PlayerLocationManager(config);
-    }
-
-    private void createFileIfNotExists() {
-        file = new File(plugin.getDataFolder(), "eventdaten.yml");
-
-        if (!file.exists()) {
-            try {
-                writeFreshFile();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    private void writeFreshFile() throws IOException {
-        String content =
-                "# Hier werden alle benötigten Daten für das Resume-Event gespeichert\n" +
-                        "#\n" +
-                        "# event.started = Gibt an, ob das Event bereits gestartet wurde\n" +
-                        "# event.paused  = Gibt an, ob das Event aktuell pausiert ist\n" +
-                        "#\n" +
-                        "# phase = Aktuelle Event-Phase\n" +
-                        "# 0 = Lobby\n" +
-                        "# 1 = Teamwelt\n" +
-                        "# 2 = Wave-Auswahl\n" +
-                        "# 3 = Arena\n" +
-                        "#\n" +
-                        "# timer.time    = Gespeicherte Zeit des Event-Timers\n" +
-                        "# timer.forward = true = hochzählen, false = runterzählen\n" +
-                        "#\n" +
-                        "# players = Hier werden Spielerdaten gespeichert\n" +
-                        "# z.B. letzter Standort, Spawnpunkt oder weitere Resume-Daten\n" +
-                        "\n" +
-                        "event:\n" +
-                        "  started: false\n" +
-                        "  paused: false\n" +
-                        "\n" +
-                        "phase: 0\n" +
-                        "\n" +
-                        "timer:\n" +
-                        "  time: 3600\n" +
-                        "  forward: false\n" +
-                        "\n" +
-                        "players: {}\n";
-
-        file.getParentFile().mkdirs();
-        java.nio.file.Files.writeString(file.toPath(), content);
     }
 
     private void loadConfig() {

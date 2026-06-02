@@ -1,0 +1,29 @@
+# Hier werden alle benötigten Daten für das Resume-Event gespeichert
+#
+# event.started = Gibt an, ob das Event bereits gestartet wurde
+# event.paused  = Gibt an, ob das Event aktuell pausiert ist
+#
+# phase = Aktuelle Event-Phase
+# 0 = Lobby
+# 1 = Teamwelt
+# 2 = Wave-Auswahl
+# 3 = Arena
+#
+# timer.time    = Gespeicherte Zeit des Event-Timers
+# timer.forward = true = hochzählen, false = runterzählen
+#
+# players = Hier werden Spielerdaten gespeichert
+# z.B. letzter Standort, Spawnpunkt oder weitere Resume-Daten
+file-version: 1
+
+event:
+  started: false
+  paused: true
+
+phase: 0
+
+timer:
+  time: 3600
+  forward: false
+
+players: {}

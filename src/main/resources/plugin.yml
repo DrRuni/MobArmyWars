@@ -43,6 +43,12 @@ commands:
     description: Team-Befehle
     usage: /team <join|leave> [rot|blau]
 
+  reset:
+    description: Reset-Befehle für MobArmyWars
+    usage: /reset <arena|lobby|teamworld|playerdata>
+    permission: mobarmy.admin
+    permission-message: "§c❌ Keine Berechtigung!"
+
 permissions:
   mobarmy.admin:
     default: op
