@@ -32,7 +32,7 @@ public class BlockRandomizerManager implements Listener {
     public BlockRandomizerManager(MobArmyMain plugin) {
         this.plugin = plugin;
         this.globalRandomizerEnabled = plugin.getWorldSettings().isRandomizerEnabled();
-        this.dataFile = new File(plugin.getDataFolder(), "RandomBlock.yml");
+        this.dataFile = new File(plugin.getDataFolder(), "randomblock.yml");
         this.dataConfig = YamlConfiguration.loadConfiguration(dataFile);
         this.worldSettingsFile = new File(plugin.getDataFolder(), "weltensettings.yml");
         this.worldSettingsConfig = YamlConfiguration.loadConfiguration(worldSettingsFile);
@@ -162,7 +162,7 @@ public class BlockRandomizerManager implements Listener {
         try {
             dataConfig.save(dataFile);
         } catch (IOException e) {
-            plugin.getLogger().warning("Fehler beim Speichern der RandomBlock.yml: " + e.getMessage());
+            plugin.getLogger().warning("Fehler beim Speichern der randomblock.yml: " + e.getMessage());
         }
     }
 
@@ -223,7 +223,7 @@ public class BlockRandomizerManager implements Listener {
             dataConfig.save(dataFile);
         } catch (IOException e) {
             plugin.getLogger().warning(
-                    "Fehler beim Zurücksetzen der RandomBlock.yml: " + e.getMessage()
+                    "Fehler beim Zurücksetzen der randomblock.yml: " + e.getMessage()
             );
         }
     }

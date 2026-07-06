@@ -46,8 +46,11 @@ public class PlayerJoinListener implements Listener {
 
                 if (team.equalsIgnoreCase("Rot") || team.equalsIgnoreCase("Blau")) {
                     plugin.getTeamScoreboardManager().addPlayerToTeam(player, team);
+                } else {
+                    plugin.getTeamScoreboardManager().updateBoard();
                 }
 
+                plugin.getTeamScoreboardManager().setBoard(player);
                 plugin.getScoreboardSwitcher().switchToTeam(player);
 
             }, 20L * 7);

@@ -3,17 +3,12 @@ package runi.myddns.mobarmywars;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 import runi.myddns.mobarmywars.Managers.Event.*;
+import runi.myddns.mobarmywars.Utils.PluginFileManager;
 import runi.myddns.mobarmywars.Utils.ConsoleColor;
 import runi.myddns.mobarmywars.Commands.*;
 import runi.myddns.mobarmywars.GUIs.*;
 import runi.myddns.mobarmywars.Listeners.*;
 import runi.myddns.mobarmywars.Managers.World.*;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 
 public class MobArmyMain extends JavaPlugin {
 
@@ -73,6 +68,8 @@ public class MobArmyMain extends JavaPlugin {
         Bukkit.getConsoleSender().sendMessage(
                 ConsoleColor.COPPER + "  ═══════════════  MobArmyWars  ═══════════════" + ConsoleColor.RESET);
         Bukkit.getConsoleSender().sendMessage(
+                ConsoleColor.COPPER + "                      V1.4" + ConsoleColor.RESET);
+        Bukkit.getConsoleSender().sendMessage(
                 ConsoleColor.COPPER + "                  L O A D I N G" + ConsoleColor.RESET);
         Bukkit.getConsoleSender().sendMessage("");
 
@@ -83,10 +80,8 @@ public class MobArmyMain extends JavaPlugin {
     public void onEnable() {
         instance = this;
 
-        extractServerIconIfMissing();
-        saveDefaultConfig();
-        createArenaCoordFile();
-        createSpawnsFile();
+        PluginFileManager pluginFileManager = new PluginFileManager(this);
+        pluginFileManager.checkFilesOnStartup();
 
         worldSettings = new WorldSettings(this);
         worldManager = new WorldManager(this);
@@ -240,9 +235,7 @@ public class MobArmyMain extends JavaPlugin {
         getCommand("team").setExecutor(teamCmd);
         getCommand("team").setTabCompleter(teamCmd);
 
-        MobStatusCommand mobStatusCommand =
-                new MobStatusCommand(mobSaveManager, teamManager);
-
+        MobStatusCommand mobStatusCommand = new MobStatusCommand(mobSaveManager, teamManager);
         getCommand("mobstatus").setExecutor(mobStatusCommand);
         getCommand("mobstatus").setTabCompleter(mobStatusCommand);
 
@@ -252,70 +245,18 @@ public class MobArmyMain extends JavaPlugin {
         getCommand("setphase").setExecutor(setPhaseCommand);
         getCommand("setphase").setTabCompleter(setPhaseCommand);
 
+        ResetCommand resetCommand = new ResetCommand(this);
+        getCommand("reset").setExecutor(resetCommand);
+        getCommand("reset").setTabCompleter(resetCommand);
+
         Bukkit.getConsoleSender().sendMessage("");
         Bukkit.getConsoleSender().sendMessage(
                 ConsoleColor.DARK_GOLDEN_LIME + "  ═══════════════  MobArmyWars  ═══════════════" + ConsoleColor.RESET);
         Bukkit.getConsoleSender().sendMessage(
+                ConsoleColor.DARK_GOLDEN_LIME + "                      V1.4" + ConsoleColor.RESET);
+        Bukkit.getConsoleSender().sendMessage(
                 ConsoleColor.DARK_GOLDEN_LIME + "                    R E A D Y" + ConsoleColor.RESET);
         Bukkit.getConsoleSender().sendMessage("");
-    }
-
-    private void extractServerIconIfMissing() {
-
-        File serverIcon = new File("server-icon.png");
-
-        if (serverIcon.exists()) {
-            return;
-        }
-
-        if (getResource("server-icon.png") == null) {
-            getLogger().warning("⚠️ Keine server-icon.png im Plugin gefunden!");
-            return;
-        }
-
-        try (InputStream in = getResource("server-icon.png")) {
-
-            if (in == null) {
-                getLogger().warning("⚠️ Keine server-icon.png im Plugin gefunden!");
-                return;
-            }
-            Files.copy(
-                    in,
-                    serverIcon.toPath(),
-                    StandardCopyOption.REPLACE_EXISTING
-            );
-            Bukkit.getConsoleSender().sendMessage(
-                    ConsoleColor.LIME + "   MobArmyWars-ServerIcon wurde erstellt!" + ConsoleColor.RESET);
-            Bukkit.getConsoleSender().sendMessage(
-                    ConsoleColor.GRAY + "   Wird erst nach erneutem Serverstart geladen." + ConsoleColor.RESET);
-
-        } catch (IOException e) {
-            getLogger().severe("❌ Fehler beim Kopieren der server-icon.png!");
-            e.printStackTrace();
-        }
-    }
-
-    private void createArenaCoordFile() {
-        File f = new File(getDataFolder(), "arena-koordinaten.yml");
-        if (!f.exists()) {
-            saveResource("arena-koordinaten.yml", false);
-
-            Bukkit.getConsoleSender().sendMessage("");
-            Bukkit.getConsoleSender().sendMessage(ConsoleColor.LIME + "   Datei - " +
-                    ConsoleColor.GOLD + "'arena-koordinaten.yml'" + ConsoleColor.LIME + " erstellt." + ConsoleColor.RESET);
-        }
-    }
-
-    private void createSpawnsFile() {
-        File f = new File(getDataFolder(), "spawns.yml");
-
-        if (!f.exists()) {
-            saveResource("spawns.yml", false);
-
-            Bukkit.getConsoleSender().sendMessage(ConsoleColor.LIME + "   Datei - " +
-                    ConsoleColor.GOLD + "'spawns.yml'" + ConsoleColor.LIME + " erstellt." + ConsoleColor.RESET);
-            Bukkit.getConsoleSender().sendMessage("");
-        }
     }
 
     public void setEventResume(ResumeManager eventResume) {

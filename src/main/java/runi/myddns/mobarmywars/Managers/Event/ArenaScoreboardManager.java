@@ -48,14 +48,6 @@ public class ArenaScoreboardManager {
 
     private void initScoreboardFile() {
         scoreboardFile = new File(plugin.getDataFolder(), "scoreboard.yml");
-        if (!scoreboardFile.exists()) {
-            try {
-                scoreboardFile.createNewFile();
-            } catch (IOException e) {
-                plugin.getLogger().severe("❌ Konnte scoreboard.yml nicht erstellen!");
-                e.printStackTrace();
-            }
-        }
         scoreboardConfig = YamlConfiguration.loadConfiguration(scoreboardFile);
     }
 

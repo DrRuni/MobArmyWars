@@ -123,12 +123,6 @@ public class TeamManager implements Listener {
     private void saveTeamToFile(String playerName, String team) {
         File teamsFile = new File(plugin.getDataFolder(), "teams.yml");
 
-        if (!teamsFile.exists()) {
-            try {
-                teamsFile.createNewFile();
-            } catch (IOException ignored) {}
-        }
-
         YamlConfiguration teamsConfig = YamlConfiguration.loadConfiguration(teamsFile);
         teamsConfig.set("teams." + playerName, team);
 

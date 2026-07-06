@@ -1,8 +1,8 @@
 name: MobArmyWars
-version: "1.3"
+version: "1.4"
 author: Runi
 main: runi.myddns.mobarmywars.MobArmyMain
-api-version: "1.21"
+api-version: "26.1.2"
 
 commands:
   arenasummary:
@@ -42,6 +42,12 @@ commands:
   team:
     description: Team-Befehle
     usage: /team <join|leave> [rot|blau]
+
+  reset:
+    description: Reset-Befehle für MobArmyWars
+    usage: /reset <arena|lobby|teamworld|playerdata>
+    permission: mobarmy.admin
+    permission-message: "§c❌ Keine Berechtigung!"
 
 permissions:
   mobarmy.admin:

@@ -71,18 +71,25 @@ public class SetupGUI implements Listener {
                 ChatColor.RED + "Setzt Arena & Spielstatus zurück"
         ));
 
-        inv.setItem(31, createItem(
+        inv.setItem(30, createItem(
                 Material.STRUCTURE_BLOCK,
                 ChatColor.DARK_RED + "Reset Team-Welten",
                 "",
                 ChatColor.RED + "Welten Rot & Blau werden neu generiert"
         ));
 
-        inv.setItem(34, createItem(
+        inv.setItem(32, createItem(
                 Material.STRUCTURE_BLOCK,
                 ChatColor.DARK_RED + "Reset Lobby-Welt",
                 "",
                 ChatColor.RED + "Lobby wird komplett zurückgesetzt"
+        ));
+
+        inv.setItem(34, createItem(
+                Material.STRUCTURE_BLOCK,
+                ChatColor.DARK_RED + "Reset Arena-Welt",
+                "",
+                ChatColor.RED + "Arena wird komplett zurückgesetzt"
         ));
 
         inv.setItem(40, createItem(
@@ -158,10 +165,15 @@ public class SetupGUI implements Listener {
 
                 Sounds.playReset(player);
                 player.closeInventory();
-                player.sendMessage("");
-                player.sendMessage("");
-                player.sendMessage("");
-                player.sendMessage(ChatColor.GOLD + "⏳ Die Team-Welten werden gleich neu generiert, evtl. wirst du gleich an einem sicheren Ort teleportiert!");
+
+                for (Player online : Bukkit.getOnlinePlayers()) {
+                    online.sendTitle(
+                            ChatColor.DARK_RED + "⚠ Reset aktiviert!",
+                            ChatColor.GOLD + player.getName() + " hat den Team-Welten-Reset gestartet",
+                            10, 100, 20
+                    );
+                    online.playSound(online.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.2f);
+                }
 
                 Bukkit.getScheduler().runTaskLater(
                         MobArmyMain.getInstance(),
@@ -181,10 +193,43 @@ public class SetupGUI implements Listener {
 
                 Sounds.playReset(player);
                 player.closeInventory();
-                player.sendMessage("");
-                player.sendMessage("");
-                player.sendMessage("");
-                player.sendMessage(ChatColor.GOLD + "⏳ Arena wird gleich neu erstellt, evtl wirst du gleich an einem sicheren Ort teleportiert!");
+
+                for (Player online : Bukkit.getOnlinePlayers()) {
+                    online.sendTitle(
+                            ChatColor.DARK_RED + "⚠ Lobby-Reset!",
+                            ChatColor.GOLD + player.getName() + " hat den Lobby-Welt-Reset gestartet",
+                            10, 100, 20
+                    );
+                    online.playSound(online.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.2f);
+                }
+
+                Bukkit.getScheduler().runTaskLater(
+                        MobArmyMain.getInstance(),
+                        () -> wm.resetLobbyWorld(),
+                        80L
+                );
+            }
+
+            case "Reset Arena-Welt" -> {
+                WorldManager wm = MobArmyMain.getInstance().getWorldManager();
+
+                if (!wm.tryStartWorldReset()) {
+                    player.sendMessage(ChatColor.RED + "⚠ Es läuft bereits ein Welt-Reset!");
+                    Sounds.playDanger(player);
+                    return;
+                }
+
+                Sounds.playReset(player);
+                player.closeInventory();
+
+                for (Player online : Bukkit.getOnlinePlayers()) {
+                    online.sendTitle(
+                            ChatColor.DARK_RED + "⚠ Arena-Reset!",
+                            ChatColor.GOLD + player.getName() + " hat den Arena-Welt-Reset gestartet",
+                            10, 100, 20
+                    );
+                    online.playSound(online.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.2f);
+                }
 
                 Bukkit.getScheduler().runTaskLater(
                         MobArmyMain.getInstance(),

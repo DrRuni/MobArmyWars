@@ -26,14 +26,6 @@ public class TeamEquipmentManager {
     }
 
     public void load() {
-        if (!plugin.getDataFolder().exists()) {
-            plugin.getDataFolder().mkdirs();
-        }
-
-        if (!file.exists()) {
-            plugin.saveResource("team-equipment.yml", false);
-        }
-
         this.config = YamlConfiguration.loadConfiguration(file);
 
         setDefault("blue");
