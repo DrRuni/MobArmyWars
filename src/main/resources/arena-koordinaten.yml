@@ -1,0 +1,41 @@
+arenas:
+  wave-auswahl:
+    name: "Wave Auswahl"
+    description: "MobWellen Konfiguration"
+    world: "world_mobarmylobby"
+    rot:
+      corner1: [100, 78, -100]
+      corner2: [106, 74, -94]
+      teamspawn: [104, 75, -98, 0, 27]
+    blau:
+      corner1: [71, 78, -100]
+      corner2: [77, 74, -94]
+      teamspawn: [75, 75, -98, 0, 27]
+
+  japanisches-dorf:
+    name: "Japanisches Dorf"
+    description: "Eine traditionelle japanische Arena."
+    world: "world_mobarmylobby"
+    rot:
+      corner1: [160, 57, 271]
+      corner2: [238, 96, 381]
+      teamspawn: [213, 65, 356]
+      mobSpawns:
+        - [175, 63, 356]
+        - [163, 64, 305]
+        - [184, 63, 283]
+        - [228, 63, 306]
+        - [204, 63, 353]
+        - [174, 63, 361]
+
+    blau:
+      corner1: [23, 57, 271]
+      corner2: [101, 96, 381]
+      teamspawn: [76, 65, 356]
+      mobSpawns:
+        - [37, 63, 362]
+        - [33, 63, 330]
+        - [47, 63, 279]
+        - [61, 63, 298]
+        - [88, 63, 307]
+        - [77, 63, 330]
