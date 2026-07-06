@@ -6,7 +6,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDeathEvent;
-import runi.myddns.mobarmywars.Managers.MobSaveManager;
+import runi.myddns.mobarmywars.Managers.Event.MobSaveManager;
 import runi.myddns.mobarmywars.MobArmyMain;
 
 import java.util.HashSet;

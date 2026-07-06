@@ -1,17 +1,13 @@
 package runi.myddns.mobarmywars;
 
 import org.bukkit.Bukkit;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
-import runi.myddns.mobarmywars.Arena.*;
+import runi.myddns.mobarmywars.Managers.Event.*;
 import runi.myddns.mobarmywars.Utils.ConsoleColor;
 import runi.myddns.mobarmywars.Commands.*;
 import runi.myddns.mobarmywars.GUIs.*;
 import runi.myddns.mobarmywars.Listeners.*;
-import runi.myddns.mobarmywars.Managers.*;
-import runi.myddns.mobarmywars.World.*;
+import runi.myddns.mobarmywars.Managers.World.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,27 +32,35 @@ public class MobArmyMain extends JavaPlugin {
     public WaveManager waveManager;
     private MobSaveManager mobSaveManager;
     public WaveStorage waveStorage;
-    public ArenaManager arenaManager;
-    public EventManager eventManager;
+    public ArenaEventManager arenaManager;
+    public TeamweltEventManager eventManager;
     public ArenaScoreboardManager scoreboardManager;
     public MobSaveListener mobSaveListener;
     public BundleManager bundleManager;
     public ArenaBuildProtectionManager arenaBuildProtectionManager;
-    private ScoreboardController scoreboardController;
     private ResumeManager eventResume;
     private WorldSettings worldSettings;
     private PlayerLocationManager playerLocationManager;
     private PortalManager portalManager;
-
+    private PlayerEffectManager playerEffectManager;
     private ArenaConfig arenaConfig;
-
-    public OptionenGUI optionenGUI;
+    public OptionsGUI optionenGUI;
     public TimerGUI timerGUI;
-    public EventSettingsGUI eventSettingsGUI;
+    public SetupGUI eventSettingsGUI;
     public TeleportGUI mobArmySettingsGUI;
     public TeamSelectionGUI teamSelectionGUI;
     public BundleGUI bundleGUI;
     public SpawnEggGUI spawnEggGUI;
+    private ArenaSettingsGUI arenaSettingsGUI;
+    private WorldSettingsGUI worldSettingsGUI;
+    private PlayerGUI playerGUI;
+    private PlayerActionGUI playerActionGUI;
+    private TeamSettingsGUI teamSettingsGUI;
+    private TeamScoreboardManager teamScoreboardManager;
+    private ScoreboardSwitcher scoreboardSwitcher;
+    private ArenaCompassManager arenaCompassManager;
+    private TeamEquipmentManager teamEquipmentManager;
+    private TeamEquipmentGUI teamEquipmentGUI;
 
     private boolean arenaRunning = false;
     public boolean isArenaRunning() { return arenaRunning; }
@@ -79,16 +83,19 @@ public class MobArmyMain extends JavaPlugin {
     public void onEnable() {
         instance = this;
 
-        worldManager = new WorldManager(this);
-        worldManager.checkWorldsOnStartup();
-
         extractServerIconIfMissing();
         saveDefaultConfig();
         createArenaCoordFile();
 
-        scoreboardController = new ScoreboardController(this);
+        worldSettings = new WorldSettings(this);
+        worldManager = new WorldManager(this);
+
+        worldManager.checkWorldsOnStartup();
 
         initializeMobArmyWars();
+
+        teamManager.loadTeams();
+        teamScoreboardManager.rebuildBoard();
     }
 
     @Override
@@ -113,15 +120,14 @@ public class MobArmyMain extends JavaPlugin {
         if (alreadyInitialized) return;
         alreadyInitialized = true;
 
-        worldSettings = new WorldSettings(this);
+        playerEffectManager = new PlayerEffectManager(this);
         blockRandomizerManager = new BlockRandomizerManager(this);
 
         arenaConfig = new ArenaConfig(this);
-        arenaManager = new ArenaManager(this);
+        arenaManager = new ArenaEventManager(this);
         arenaManager.setRandomizer(blockRandomizerManager);
 
         teamManager = new TeamManager(this);
-        teamManager.loadTeams();
 
         arenaBuildProtectionManager = new ArenaBuildProtectionManager(this);
         arenaBuildProtectionManager.loadFromConfig();
@@ -135,16 +141,8 @@ public class MobArmyMain extends JavaPlugin {
         scoreboardManager = arenaManager.getScoreboardManager();
         waveManager.setScoreboardManager(scoreboardManager);
 
-        teamManager.enableTeamScoreboard();
-
         eventResume = new ResumeManager(this);
-        if (eventResume.isEventStarted() && !eventResume.isEventPaused()) {
-            mobSaveManager.setMobSaveMode(MobSaveManager.MobSaveMode.ENABLED);
-        } else {
-            mobSaveManager.setMobSaveMode(MobSaveManager.MobSaveMode.DISABLED);
-        }
-
-        timerManager = new TimerManager(this, teamManager);
+        timerManager = new TimerManager(this);
         mobSaveManager.setTimerManager(timerManager);
 
         mobSaveListener = new MobSaveListener(this, mobSaveManager);
@@ -152,58 +150,62 @@ public class MobArmyMain extends JavaPlugin {
         bundleManager = new BundleManager(this);
         bundleManager.setTeamManager(teamManager);
 
-        eventManager = new EventManager(this, mobSaveManager);
+        eventManager = new TeamweltEventManager(this, mobSaveManager);
         playerLocationManager = new PlayerLocationManager(getEventResume().getConfig());
 
         portalManager = new PortalManager(this);
         portalManager.loadAllPortals();
 
+        teamScoreboardManager = new TeamScoreboardManager(this);
+        scoreboardSwitcher = new ScoreboardSwitcher(this, teamScoreboardManager, scoreboardManager);
+        arenaCompassManager = new ArenaCompassManager(this);
+        teamEquipmentManager = new TeamEquipmentManager(this);
+
         // ============================================================
         // GUIs
         // ============================================================
-        optionenGUI = new OptionenGUI(this);
+        optionenGUI = new OptionsGUI(this);
         timerGUI = new TimerGUI(this, timerManager);
-        eventSettingsGUI = new EventSettingsGUI(this, blockRandomizerManager);
+        eventSettingsGUI = new SetupGUI(this);
         mobArmySettingsGUI = new TeleportGUI(this);
         teamSelectionGUI = new TeamSelectionGUI(this, teamManager);
         bundleGUI = new BundleGUI(this, teamManager);
         spawnEggGUI = new SpawnEggGUI(blockRandomizerManager, this, timerManager);
+        arenaSettingsGUI = new ArenaSettingsGUI(this);
+        worldSettingsGUI = new WorldSettingsGUI(this, blockRandomizerManager);
+        playerGUI = new PlayerGUI(this);
+        playerActionGUI = new PlayerActionGUI(this);
+        teamSettingsGUI = new TeamSettingsGUI(this);
+        teamEquipmentGUI = new TeamEquipmentGUI(this);
 
-        teamManager.enableTeamScoreboard();
         // ============================================================
         // Listener registrieren
         // ============================================================
-        Bukkit.getPluginManager().registerEvents(
-                new PauseListener(this), this);
-
-        Bukkit.getPluginManager().registerEvents(
-                new PlayerDataListener(this), this);
-
-        Bukkit.getPluginManager().registerEvents(
-                new PlayerRespawnListener(this), this);
-
-        Bukkit.getPluginManager().registerEvents(
-                new PortalListener(this), this);
-
+        Bukkit.getPluginManager().registerEvents(new PauseListener(this), this);
+        Bukkit.getPluginManager().registerEvents(new PlayerJoinListener(this), this);
+        Bukkit.getPluginManager().registerEvents(new PlayerRespawnListener(this), this);
+        Bukkit.getPluginManager().registerEvents(new PortalListener(this), this);
         Bukkit.getPluginManager().registerEvents(blockRandomizerManager, this);
         Bukkit.getPluginManager().registerEvents(mobSaveListener, this);
         Bukkit.getPluginManager().registerEvents(timerManager, this);
         Bukkit.getPluginManager().registerEvents(teamManager, this);
-
         Bukkit.getPluginManager().registerEvents(optionenGUI, this);
         Bukkit.getPluginManager().registerEvents(timerGUI, this);
         Bukkit.getPluginManager().registerEvents(eventSettingsGUI, this);
         Bukkit.getPluginManager().registerEvents(mobArmySettingsGUI, this);
         Bukkit.getPluginManager().registerEvents(teamSelectionGUI, this);
         Bukkit.getPluginManager().registerEvents(spawnEggGUI, this);
-
-
-
         Bukkit.getPluginManager().registerEvents(new ButtonManager(this), this);
         Bukkit.getPluginManager().registerEvents(new ArenaMobTargetListener(this), this);
-        Bukkit.getPluginManager().registerEvents(
-                new BundleListener(bundleGUI, teamManager, bundleManager), this
-        );
+        Bukkit.getPluginManager().registerEvents(new BundleListener(bundleGUI, teamManager, bundleManager), this);
+        Bukkit.getPluginManager().registerEvents(arenaSettingsGUI, this);
+        Bukkit.getPluginManager().registerEvents(worldSettingsGUI, this);
+        Bukkit.getPluginManager().registerEvents(new UltraHardcoreListener(this), this);
+        Bukkit.getPluginManager().registerEvents(arenaCompassManager, this);
+        Bukkit.getPluginManager().registerEvents(playerGUI, this);
+        Bukkit.getPluginManager().registerEvents(playerActionGUI, this);
+        getServer().getPluginManager().registerEvents(teamSettingsGUI, this);
+        getServer().getPluginManager().registerEvents(teamEquipmentGUI, this);
 
         waveStorage.loadWaves();
 
@@ -245,6 +247,10 @@ public class MobArmyMain extends JavaPlugin {
 
         getCommand("arenasummary").setExecutor(new ArenaSummaryCommand(this));
 
+        SetPhaseCommand setPhaseCommand = new SetPhaseCommand(this);
+        getCommand("setphase").setExecutor(setPhaseCommand);
+        getCommand("setphase").setTabCompleter(setPhaseCommand);
+
         Bukkit.getConsoleSender().sendMessage("");
         Bukkit.getConsoleSender().sendMessage(
                 ConsoleColor.DARK_GOLDEN_LIME + "  ═══════════════  MobArmyWars  ═══════════════" + ConsoleColor.RESET);
@@ -277,10 +283,10 @@ public class MobArmyMain extends JavaPlugin {
                     serverIcon.toPath(),
                     StandardCopyOption.REPLACE_EXISTING
             );
-
-            Bukkit.getConsoleSender().sendMessage("");
-            Bukkit.getConsoleSender().sendMessage(ConsoleColor.LIME + "   MobArmyWars-ServerIcon wurde erstellt!" + ConsoleColor.RESET);
-            Bukkit.getConsoleSender().sendMessage("");
+            Bukkit.getConsoleSender().sendMessage(
+                    ConsoleColor.LIME + "   MobArmyWars-ServerIcon wurde erstellt!" + ConsoleColor.RESET);
+            Bukkit.getConsoleSender().sendMessage(
+                    ConsoleColor.GRAY + "   Wird erst nach erneutem Serverstart geladen." + ConsoleColor.RESET);
 
         } catch (IOException e) {
             getLogger().severe("❌ Fehler beim Kopieren der server-icon.png!");
@@ -297,29 +303,6 @@ public class MobArmyMain extends JavaPlugin {
         }
     }
 
-    @Override
-    public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-
-        if (cmd.getName().equalsIgnoreCase("arenasummary")) {
-
-            if (sender instanceof Player player) {
-
-                if (arenaManager != null) {
-                    arenaManager.showArenaSummary(player);
-                } else {
-                    player.sendMessage("Arena ist noch nicht geladen!");
-                }
-
-            } else {
-                sender.sendMessage("Nur Spieler können die Auswertung sehen.");
-            }
-
-            return true;
-        }
-
-        return false;
-    }
-
     public void setEventResume(ResumeManager eventResume) {
         this.eventResume = eventResume;
     }
@@ -329,25 +312,23 @@ public class MobArmyMain extends JavaPlugin {
     public BlockRandomizerManager getBlockRandomizerManager() { return blockRandomizerManager; }
     public WaveManager getWaveManager() { return waveManager; }
     public WaveStorage getWaveStorage() { return waveStorage; }
-    public ArenaManager getArenaManager() { return arenaManager; }
-    public EventManager getEventManager() { return eventManager; }
+    public ArenaEventManager getArenaManager() { return arenaManager; }
+    public TeamweltEventManager getEventManager() { return eventManager; }
     public ArenaScoreboardManager getScoreboardManager() { return scoreboardManager; }
     public MobSaveListener getMobSaveListener() { return mobSaveListener; }
     public BundleManager getBundleManager() { return bundleManager; }
     public ArenaBuildProtectionManager getArenaBuildProtectionManager() { return arenaBuildProtectionManager; }
-    public OptionenGUI getOptionenGUI() { return optionenGUI; }
+    public OptionsGUI getOptionenGUI() { return optionenGUI; }
     public TimerGUI getTimerGUI() { return timerGUI; }
-    public EventSettingsGUI getEventSettingsGUI() { return eventSettingsGUI; }
+    public SetupGUI getEventSettingsGUI() { return eventSettingsGUI; }
     public TeleportGUI getMobArmySettingsGUI() { return mobArmySettingsGUI; }
     public TeamSelectionGUI getTeamSelectionGUI() { return teamSelectionGUI; }
     public BundleGUI getBundleGUI() { return bundleGUI; }
     public SpawnEggGUI getSpawnEggGUI() { return spawnEggGUI; }
-    public ScoreboardController getScoreboardController() { return scoreboardController; }
     public ResumeManager getEventResume() { return eventResume; }
     public WorldManager getWorldManager() {
         return worldManager;
     }
-
     public ArenaConfig getArenaConfig() {
         return arenaConfig;
     }
@@ -357,10 +338,19 @@ public class MobArmyMain extends JavaPlugin {
     public WorldSettings getWorldSettings() {
         return worldSettings;
     }
-    public PlayerLocationManager getPlayerLocationManager() {
-        return playerLocationManager;
-    }
+    public PlayerLocationManager getPlayerLocationManager() { return playerLocationManager; }
     public PortalManager getPortalManager() {
         return portalManager;
     }
+    public PlayerEffectManager getPlayerEffectManager() { return playerEffectManager; }
+    public TeamScoreboardManager getTeamScoreboardManager() { return teamScoreboardManager; }
+    public ScoreboardSwitcher getScoreboardSwitcher() { return scoreboardSwitcher; }
+    public ArenaSettingsGUI getArenaSettingsGUI() { return arenaSettingsGUI; }
+    public WorldSettingsGUI getWorldSettingsGUI() { return worldSettingsGUI; }
+    public ArenaCompassManager getArenaCompassManager() { return arenaCompassManager; }
+    public PlayerGUI getPlayerGUI() { return playerGUI; }
+    public PlayerActionGUI getPlayerActionGUI() { return playerActionGUI; }
+    public TeamSettingsGUI getTeamSettingsGUI() { return teamSettingsGUI; }
+    public TeamEquipmentManager getTeamEquipmentManager() { return teamEquipmentManager; }
+    public TeamEquipmentGUI getTeamEquipmentGUI() { return teamEquipmentGUI; }
 }

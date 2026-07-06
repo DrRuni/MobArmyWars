@@ -6,7 +6,6 @@ import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
-import runi.myddns.mobarmywars.Utils.WorldMessageManager;
 import runi.myddns.mobarmywars.MobArmyMain;
 
 import java.util.List;
@@ -27,21 +26,14 @@ public class ResumeCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        String world = player.getWorld().getName().toLowerCase();
-        boolean allowed =
-                world.equals("world_mobarmylobby") ||
-                        world.equals("world_rot") ||
-                        world.equals("world_blau");
-
-        if (!allowed) {
-            player.sendMessage(ChatColor.RED + "❌ Du kannst diesen Befehl nur in dn MobArmyWars-Welten nutzen!");
+        if (!player.isOp()) {
+            player.sendMessage(ChatColor.RED + "❌ Nur OPs dürfen diesen Befehl ausführen!");
             return true;
         }
 
         if (cmd.getName().equalsIgnoreCase("resume")) {
             if (args.length == 1 && args[0].equalsIgnoreCase("mobarmy")) {
                 plugin.getEventResume().resumeEvent();
-                WorldMessageManager.sendToArenaWorlds(ChatColor.GREEN + "✔ Resume ausgeführt!");
                 return true;
             }
 
@@ -52,7 +44,6 @@ public class ResumeCommand implements CommandExecutor, TabCompleter {
         if (cmd.getName().equalsIgnoreCase("mobarmy")) {
             if (args.length == 1 && args[0].equalsIgnoreCase("resume")) {
                 plugin.getEventResume().resumeEvent();
-                WorldMessageManager.sendToArenaWorlds(ChatColor.GREEN + "✔ Resume ausgeführt!");
                 return true;
             }
 

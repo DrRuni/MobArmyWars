@@ -11,10 +11,9 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import runi.myddns.mobarmywars.Managers.TimerManager;
+import runi.myddns.mobarmywars.Managers.Event.TimerManager;
 import runi.myddns.mobarmywars.MobArmyMain;
 import runi.myddns.mobarmywars.Utils.Sounds;
-import runi.myddns.mobarmywars.Utils.WorldMessageManager;
 
 import java.util.Arrays;
 
@@ -29,45 +28,50 @@ public class TimerGUI implements Listener {
     }
 
     public void open(Player player) {
-        Inventory inv = Bukkit.createInventory(null, 36, ChatColor.DARK_AQUA + "Timer");
+        Inventory inv = Bukkit.createInventory(null, 36, ChatColor.BLUE + "Timer");
 
         inv.setItem(2,  item(Material.SLIME_BLOCK,
                 ChatColor.GREEN + "Play",
+                "",
                 ChatColor.GRAY + "Startet den Timer (vorwärts)"
         ));
 
         inv.setItem(4,  item(Material.HONEY_BLOCK,
                 ChatColor.GOLD  + "Pause",
+                "",
                 ChatColor.GRAY + "Pausiert den Timer"
         ));
 
         inv.setItem(6,  item(Material.REDSTONE_BLOCK,
                 ChatColor.RED + "Stop",
+                "",
                 ChatColor.GRAY + "Beendet den Timer",
                 ChatColor.GRAY + "Setzt ihn auf 0 zurück"
         ));
 
         inv.setItem(20, item(Material.GREEN_DYE,
                 ChatColor.GREEN + "1 Stunde",
+                "",
                 ChatColor.GRAY + "Linksklick: +1 Stunde",
                 ChatColor.GRAY + "Rechtsklick: -1 Stunde"
         ));
 
         inv.setItem(22, item(Material.ORANGE_DYE,
                 ChatColor.GOLD  + "10 Minuten",
+                "",
                 ChatColor.GRAY + "Linksklick: +10 Minuten",
                 ChatColor.GRAY + "Rechtsklick: -10 Minuten"
         ));
 
         inv.setItem(24, item(Material.RED_DYE,
                 ChatColor.RED   + "1 Minute",
+                "",
                 ChatColor.GRAY + "Linksklick: +1 Minute",
                 ChatColor.GRAY + "Rechtsklick: -1 Minute"
         ));
 
-        inv.setItem(27, item(Material.ARROW,
-                ChatColor.DARK_AQUA + "Zurück",
-                ChatColor.GRAY + "Zurück zu den Optionen"
+        inv.setItem(31, item(Material.ARROW,
+                ChatColor.DARK_AQUA + "Zurück"
         ));
 
         player.openInventory(inv);
@@ -94,16 +98,37 @@ public class TimerGUI implements Listener {
         String name = ChatColor.stripColor(clicked.getItemMeta().getDisplayName());
         ClickType click = e.getClick();
 
-        Sounds.playClick(player);
-
         switch (name) {
-            case "Play" -> timerManager.startTimer();
-            case "Pause" -> timerManager.pauseTimer();
-            case "Stop" -> timerManager.stopTimer();
-            case "Zurück" -> plugin.getOptionenGUI().open(player);
-            case "1 Stunde" -> handleTimeClick(player, click, 3600);
-            case "10 Minuten" -> handleTimeClick(player, click, 600);
-            case "1 Minute" -> handleTimeClick(player, click, 60);
+
+            case "Zurück" -> {
+                Sounds.playBack(player);
+                plugin.getOptionenGUI().open(player);
+            }
+
+            case "Play" -> {
+                Sounds.playClick(player);
+                timerManager.startTimer();
+            }
+            case "Pause" -> {
+                Sounds.playClick(player);
+                timerManager.pauseTimer();
+            }
+            case "Stop" -> {
+                Sounds.playClick(player);
+                timerManager.stopTimer();
+            }
+            case "1 Stunde" -> {
+                Sounds.playClick(player);
+                handleTimeClick(player, click, 3600);
+            }
+            case "10 Minuten" -> {
+                Sounds.playClick(player);
+                handleTimeClick(player, click, 600);
+            }
+            case "1 Minute" -> {
+                Sounds.playClick(player);
+                handleTimeClick(player, click, 60);
+            }
         }
 
         timerManager.updateBossBar(null);
@@ -112,10 +137,16 @@ public class TimerGUI implements Listener {
     private void handleTimeClick(Player player, ClickType click, int seconds) {
         if (click == ClickType.LEFT || click == ClickType.SHIFT_LEFT) {
             timerManager.addTime(seconds);
-            WorldMessageManager.sendToArenaWorlds(ChatColor.GREEN + "+" + shortFmt(seconds) + ChatColor.GRAY + " hinzugefügt.");
+
+            for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+                onlinePlayer.sendMessage(ChatColor.GREEN + "+" + shortFmt(seconds) + ChatColor.GRAY + " hinzugefügt.");
+            }
         } else if (click == ClickType.RIGHT || click == ClickType.SHIFT_RIGHT) {
             timerManager.removeTime(seconds);
-            WorldMessageManager.sendToArenaWorlds(ChatColor.RED + "-" + shortFmt(seconds) + ChatColor.GRAY + " entfernt.");
+
+            for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+                onlinePlayer.sendMessage(ChatColor.RED + "-" + shortFmt(seconds) + ChatColor.GRAY + " entfernt.");
+            }
         }
     }
 
