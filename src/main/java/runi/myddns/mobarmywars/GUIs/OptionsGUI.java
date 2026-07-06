@@ -26,29 +26,29 @@ public class OptionsGUI implements Listener {
     }
 
     public void open(Player player) {
-        Inventory inv = Bukkit.createInventory(null, 36, TITLE);
+        Inventory inv = Bukkit.createInventory(null, 45, TITLE);
 
-        inv.setItem(2, createItem(Material.ENCHANTED_GOLDEN_APPLE, "Start MobArmyWars",
+        inv.setItem(11, createItem(Material.ENCHANTED_GOLDEN_APPLE, "Start MobArmyWars",
                 "",
                 "Startet den Countdown"));
 
-        inv.setItem(4, createItem(Material.HONEY_BLOCK, "Event Pause",
+        inv.setItem(13, createItem(Material.HONEY_BLOCK, "Event Pause",
                 "",
                 "Pausiert den Timer"));
 
-        inv.setItem(6, createItem(Material.TOTEM_OF_UNDYING, "Event fortsetzen (Resume)",
+        inv.setItem(15, createItem(Material.TOTEM_OF_UNDYING, "Event fortsetzen (Resume)",
                 "",
                 "Setzt Timer und Event fort"));
 
-        inv.setItem(21, createItem(Material.CLOCK, "Timer",
+        inv.setItem(30, createItem(Material.CLOCK, "Timer",
                 "",
                 "Öffne das Timer-Menü"));
 
-        inv.setItem(23, createItem(Material.COMPARATOR, "Setup",
+        inv.setItem(32, createItem(Material.COMPARATOR, "Setup",
                 "",
                 "Zugang zu allen Einstellungen"));
 
-        inv.setItem(31, createBackButton("Menü schließen"));
+        inv.setItem(40, createBackButton("Menü schließen"));
 
         player.openInventory(inv);
     }

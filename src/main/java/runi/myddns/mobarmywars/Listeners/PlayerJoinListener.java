@@ -30,7 +30,7 @@ public class PlayerJoinListener implements Listener {
             boolean restored = plugin.getEventResume().restorePlayerPosition(player);
 
             if (!restored) {
-                TeleportManager.teleport(player, "world_mobarmylobby");
+                TeleportManager.teleport(player, "world_mobarmy_lobby");
             }
 
             plugin.getPlayerEffectManager().applyNightVision(player);
@@ -43,12 +43,11 @@ public class PlayerJoinListener implements Listener {
                 plugin.getTimerManager().addPlayerToBossBar(player);
 
                 String team = plugin.getTeamManager().getPlayerTeam(player);
-                if (!team.equalsIgnoreCase("Kein Team")) {
+
+                if (team.equalsIgnoreCase("Rot") || team.equalsIgnoreCase("Blau")) {
                     plugin.getTeamScoreboardManager().addPlayerToTeam(player, team);
                 }
 
-                plugin.getTeamManager().loadTeams();
-                plugin.getTeamScoreboardManager().rebuildBoard();
                 plugin.getScoreboardSwitcher().switchToTeam(player);
 
             }, 20L * 7);

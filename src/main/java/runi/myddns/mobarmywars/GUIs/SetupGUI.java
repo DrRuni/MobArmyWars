@@ -27,7 +27,7 @@ public class SetupGUI implements Listener {
     }
 
     public void open(Player player) {
-        Inventory inv = Bukkit.createInventory(null, 54, TITLE);
+        Inventory inv = Bukkit.createInventory(null, 45, TITLE);
 
         inv.setItem(4, createItem(
                 Material.ENDER_PEARL,
@@ -43,12 +43,18 @@ public class SetupGUI implements Listener {
                 "Öffne das Welt-Einstellungs-Menü"
         ));
 
-        inv.setItem(13, createItem(
+        inv.setItem(12, createItem(
                 Material.PLAYER_HEAD,
                 ChatColor.GOLD + "Spieler-Verwaltung",
                 "",
-                ChatColor.DARK_RED +
-                "kommt demnächst!"
+                "Öffnet Spieler-Einstellungen"
+        ));
+
+        inv.setItem(14, createItem(
+                Material.SHIELD,
+                ChatColor.GOLD + "Team Einstellungen",
+                "",
+                "Öffnet die Team-Einstellungen"
         ));
 
         inv.setItem(16, createItem(
@@ -58,35 +64,28 @@ public class SetupGUI implements Listener {
                 "Öffnet die Arena-Einstellungen"
         ));
 
-        inv.setItem(22, createItem(
-                Material.COMMAND_BLOCK,
-                ChatColor.GOLD + "Team Einstellungen",
-                "",
-                "Öffnet die Team-Einstellungen"
-        ));
-
-        inv.setItem(37, createItem(
+        inv.setItem(28, createItem(
                 Material.WITHER_SKELETON_SKULL,
                 ChatColor.DARK_RED + "Reset Spielfortschritt",
                 "",
                 ChatColor.RED + "Setzt Arena & Spielstatus zurück"
         ));
 
-        inv.setItem(40, createItem(
+        inv.setItem(31, createItem(
                 Material.STRUCTURE_BLOCK,
                 ChatColor.DARK_RED + "Reset Team-Welten",
                 "",
                 ChatColor.RED + "Welten Rot & Blau werden neu generiert"
         ));
 
-        inv.setItem(43, createItem(
+        inv.setItem(34, createItem(
                 Material.STRUCTURE_BLOCK,
                 ChatColor.DARK_RED + "Reset Lobby-Welt",
                 "",
                 ChatColor.RED + "Lobby wird komplett zurückgesetzt"
         ));
 
-        inv.setItem(49, createItem(
+        inv.setItem(40, createItem(
                 Material.ARROW,
                 ChatColor.DARK_AQUA + "Zurück"
         ));
@@ -135,7 +134,7 @@ public class SetupGUI implements Listener {
 
             case "Spieler-Verwaltung" -> {
                 Sounds.playClick(player);
-//                plugin.getPlayerGUI().open(player);
+                plugin.getPlayerGUI().open(player);
             }
 
             case "Team Einstellungen" -> {
@@ -185,11 +184,11 @@ public class SetupGUI implements Listener {
                 player.sendMessage("");
                 player.sendMessage("");
                 player.sendMessage("");
-                player.sendMessage(ChatColor.GOLD + "⏳ Lobby-Welt wird gleich neu erstellt, evtl wirst du gleich an einem sicheren Ort teleportiert!");
+                player.sendMessage(ChatColor.GOLD + "⏳ Arena wird gleich neu erstellt, evtl wirst du gleich an einem sicheren Ort teleportiert!");
 
                 Bukkit.getScheduler().runTaskLater(
                         MobArmyMain.getInstance(),
-                        () -> wm.resetLobbyWorld(),
+                        () -> wm.resetArenaWorld(),
                         80L
                 );
             }

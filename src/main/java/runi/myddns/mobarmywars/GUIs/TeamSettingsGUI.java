@@ -28,7 +28,7 @@ public class TeamSettingsGUI implements Listener {
     }
 
     public void open(Player player) {
-        Inventory inv = Bukkit.createInventory(null, 27, TITLE);
+        Inventory inv = Bukkit.createInventory(null, 45, TITLE);
 
         inv.setItem(11, createItem(
                 Material.PURPLE_BANNER,
@@ -51,7 +51,7 @@ public class TeamSettingsGUI implements Listener {
                 "Equipment für Rot und Blau einstellen"
         ));
 
-        inv.setItem(22, createItem(
+        inv.setItem(40, createItem(
                 Material.ARROW,
                 ChatColor.DARK_AQUA + "Zurück"
         ));
@@ -108,18 +108,18 @@ public class TeamSettingsGUI implements Listener {
 
             case "Teams zurücksetzen" -> {
                 Sounds.playReset(player);
+
                 plugin.getTeamManager().resetTeams();
 
-                Bukkit.getOnlinePlayers().stream()
-                        .filter(p -> List.of("world_mobarmylobby", "world_rot", "world_blau")
-                                .contains(p.getWorld().getName().toLowerCase()))
-                        .forEach(p -> plugin.getBundleManager().removeTeamBundle(p));
+                for (Player p : Bukkit.getOnlinePlayers()) {
+                    plugin.getBundleManager().removeTeamBundle(p);
+                }
+
+                plugin.getScoreboardSwitcher().forceTeamForAll();
 
                 for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
                     onlinePlayer.sendMessage(ChatColor.RED + "❌ Alle Teams wurden zurückgesetzt!");
                 }
-
-                Sounds.playClick(player);
             }
 
             case "Team Equipment" -> {

@@ -30,12 +30,12 @@ public class WorldSettings {
     private long worldTime = 0L;
 
     private static final List<String> WORLDS = List.of(
-            "world_mobarmylobby",
+            "world_mobarmy_lobby",
             "world_rot",
             "world_rot_nether",
             "world_blau",
             "world_blau_nether",
-            "world_arena"
+            "world_mobarmy_arena"
     );
 
     public WorldSettings(MobArmyMain plugin) {

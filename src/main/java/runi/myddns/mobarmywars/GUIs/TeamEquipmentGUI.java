@@ -122,11 +122,10 @@ public class TeamEquipmentGUI implements Listener {
 
         List<String> lore = new ArrayList<>();
         lore.add("");
-        lore.add(ChatColor.GRAY + "Aktuelle Stufe: " + ChatColor.YELLOW + level);
         lore.add(ChatColor.GRAY + "Aktuell: " + plugin.getTeamEquipmentManager().getLevelName(type, level));
         lore.add("");
-        lore.add(ChatColor.GREEN + "Klicken: nächste Stufe");
-        lore.add(ChatColor.DARK_GRAY + "Nach jedem Klick wird gespeichert.");
+        lore.add(ChatColor.GREEN + "Linksklick: + Stufe");
+        lore.add(ChatColor.RED + "Rechtsklick: - Stufe");
 
         meta.setLore(lore);
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_UNBREAKABLE);
@@ -231,7 +230,11 @@ public class TeamEquipmentGUI implements Listener {
             return;
         }
 
-        plugin.getTeamEquipmentManager().nextLevel(action.team(), action.type());
+        if (e.isRightClick()) {
+            plugin.getTeamEquipmentManager().previousLevel(action.team(), action.type());
+        } else {
+            plugin.getTeamEquipmentManager().nextLevel(action.team(), action.type());
+        }
 
         Sounds.playClick(player);
 

@@ -1,0 +1,27 @@
+# Team Equipment
+team-equipment:
+  blue:
+    helmet: 0
+    chestplate: 0
+    leggings: 0
+    boots: 0
+    sword: 0
+    axe: 0
+    pickaxe: 0
+    bow: 0
+    food: 0
+    shield: 0
+    op_food: 0
+
+  red:
+    helmet: 0
+    chestplate: 0
+    leggings: 0
+    boots: 0
+    sword: 0
+    axe: 0
+    pickaxe: 0
+    bow: 0
+    food: 0
+    shield: 0
+    op_food: 0

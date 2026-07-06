@@ -27,9 +27,10 @@ public class TeamSelectionGUI implements Listener {
 
         Inventory gui = Bukkit.createInventory(null, 9, GUI_TITLE);
 
-        gui.setItem(2, createMenuItem(Material.RED_WOOL, ChatColor.RED + "Team Rot"));
+        gui.setItem(2, createMenuItem(Material.BLUE_WOOL, ChatColor.BLUE + "Team Blau"));
         gui.setItem(4, createMenuItem(Material.WHITE_WOOL, ChatColor.GRAY + "Kein Team"));
-        gui.setItem(6, createMenuItem(Material.BLUE_WOOL, ChatColor.BLUE + "Team Blau"));
+        gui.setItem(6, createMenuItem(Material.RED_WOOL, ChatColor.RED + "Team Rot"));
+
 
         player.openInventory(gui);
     }

@@ -12,7 +12,7 @@ import runi.myddns.mobarmywars.Utils.Sounds;
 import runi.myddns.mobarmywars.MobArmyMain;
 import runi.myddns.mobarmywars.Managers.World.TeleportManager;
 
-public class TeamweltEventManager {
+public class EventManager {
 
     private final MobArmyMain plugin;
     private final MobSaveManager mobSaveManager;
@@ -29,7 +29,7 @@ public class TeamweltEventManager {
         this.eventHandlingDisabled = false;
     }
 
-    public TeamweltEventManager(MobArmyMain plugin, MobSaveManager mobSaveManager) {
+    public EventManager(MobArmyMain plugin, MobSaveManager mobSaveManager) {
         this.plugin = plugin;
         this.mobSaveManager = mobSaveManager;
     }
@@ -339,7 +339,7 @@ public class TeamweltEventManager {
             p.setBedSpawnLocation(null, true);
             p.setGameMode(GameMode.SURVIVAL);
 
-            TeleportManager.teleport(p, "world_mobarmylobby");
+            TeleportManager.teleport(p, "world_mobarmy_lobby");
 
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
                 if (!p.isOnline()) return;

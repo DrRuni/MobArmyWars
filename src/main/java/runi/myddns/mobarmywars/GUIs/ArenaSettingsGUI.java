@@ -29,7 +29,7 @@ public class ArenaSettingsGUI implements Listener {
     }
 
     public void open(Player player) {
-        Inventory inv = Bukkit.createInventory(null, 36, TITLE);
+        Inventory inv = Bukkit.createInventory(null, 45, TITLE);
 
         inv.setItem(10, createItem(
                 Material.IRON_SWORD,
@@ -62,7 +62,7 @@ public class ArenaSettingsGUI implements Listener {
                 "Gibt allen Arena-Spielern den Arena-Kompass"
         ));
 
-        inv.setItem(31, createBackButton("Event-Einstellungen"));
+        inv.setItem(40, createBackButton("Event-Einstellungen"));
 
         player.openInventory(inv);
     }
@@ -140,13 +140,7 @@ public class ArenaSettingsGUI implements Listener {
                     return;
                 }
 
-                List<Player> arenaPlayers = Bukkit.getOnlinePlayers().stream()
-                        .map(p -> (Player) p)
-                        .filter(p -> List.of("world_mobarmylobby", "world_rot", "world_blau")
-                                .contains(p.getWorld().getName().toLowerCase()))
-                        .toList();
-
-                boolean hasTeamPlayer = arenaPlayers.stream().anyMatch(p -> {
+                boolean hasTeamPlayer = Bukkit.getOnlinePlayers().stream().anyMatch(p -> {
                     String team = plugin.getTeamManager().getPlayerTeam(p);
                     return team != null && (team.equalsIgnoreCase("rot") || team.equalsIgnoreCase("blau"));
                 });

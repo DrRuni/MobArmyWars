@@ -25,7 +25,7 @@ public class PlayerGUI implements Listener {
     }
 
     public void open(Player viewer) {
-        Inventory inv = Bukkit.createInventory(null, 36, GUI_TITLE);
+        Inventory inv = Bukkit.createInventory(null, 45, GUI_TITLE);
 
         int[] startSlots = {10, 19};
         int maxPerRow = 7;
@@ -50,7 +50,7 @@ public class PlayerGUI implements Listener {
             index++;
         }
 
-        inv.setItem(31, createBackButton());
+        inv.setItem(40, createBackButton());
 
         viewer.openInventory(inv);
     }

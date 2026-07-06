@@ -206,19 +206,25 @@ public class UnifiedWaveGUI implements Listener {
         lore.add(ChatColor.WHITE + "Verfügbar: " + available);
         lore.add("");
 
-        if (available <= 0) {
+        if (available <= 0 && inWave <= 0) {
             lore.add(ChatColor.RED + "❌ Nicht verfügbar");
         } else {
-            lore.add(ChatColor.GREEN + "Linksklick" + ChatColor.GRAY + " zur Wave hinzufügen");
-            lore.add(ChatColor.GREEN + "Rechtsklick" + ChatColor.GRAY + " wieder entfernen");
+            lore.add(ChatColor.GREEN + "Linksklick" + ChatColor.GRAY + " +1");
+            lore.add(ChatColor.GREEN + "Rechtsklick" + ChatColor.GRAY + " -1");
+            lore.add(ChatColor.DARK_GRAY + "Shift = 10er Schritt");
         }
 
         ItemStack item = new ItemStack(icon);
+
+        if (inWave > 0) {
+            item.setAmount(Math.min(inWave, 64));
+        }
+
         ItemMeta meta = item.getItemMeta();
 
         if (meta != null) {
 
-            if (available <= 0) {
+            if (available <= 0 && inWave <= 0) {
                 meta.setDisplayName(ChatColor.DARK_GRAY + cleanName);
             } else {
                 meta.setDisplayName(displayName);
@@ -342,26 +348,34 @@ public class UnifiedWaveGUI implements Listener {
             default -> {
                 if (currentMode == Mode.MOB_SELECTION && !mobType.isEmpty()) {
 
+                    int amount = event.getClick().isShiftClick() ? 10 : 1;
+
                     if (event.getClick().isLeftClick()) {
                         int available = mobSaveManager.getMobCount(team, mobType);
+
                         if (available <= 0) {
-                            p.sendMessage(ChatColor.RED + "❌ Kein " + rawName + " mehr verfügbar!");
                             return;
                         }
 
-                        waveManager.addMobToWave(team, currentWaveIndex, mobType);
-                        p.sendMessage(ChatColor.GREEN + "✔ " + rawName + " zur Wave " + (currentWaveIndex + 1) + " hinzugefügt!");
+                        int toAdd = Math.min(amount, available);
+
+                        for (int i = 0; i < toAdd; i++) {
+                            waveManager.addMobToWave(team, currentWaveIndex, mobType);
+                        }
+
                     } else if (event.getClick().isRightClick()) {
                         Map<String, Integer> currentWave = waveManager.getAllWaves(team).get(currentWaveIndex);
                         int currentAmount = currentWave.getOrDefault(mobType, 0);
 
                         if (currentAmount <= 0) {
-                            p.sendMessage(ChatColor.RED + "🚫 Dieser Mob ist in der aktuellen Wave nicht enthalten.");
                             return;
                         }
 
-                        waveManager.removeMobFromWave(team, currentWaveIndex, mobType);
-                        p.sendMessage(ChatColor.YELLOW + "❌ " + rawName + " aus der Wave entfernt.");
+                        int toRemove = Math.min(amount, currentAmount);
+
+                        for (int i = 0; i < toRemove; i++) {
+                            waveManager.removeMobFromWave(team, currentWaveIndex, mobType);
+                        }
                     }
 
                     Bukkit.getScheduler().runTaskLater(

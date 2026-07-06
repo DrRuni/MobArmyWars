@@ -60,7 +60,7 @@ public class TeamCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
-        if (!isInArenaWorld(player)) {
+        if (!isInLobby(player)) {
             deny(player, "⚠ Du kannst Teams nur in der MobArmy-Lobby wechseln!");
             return;
         }
@@ -126,8 +126,8 @@ public class TeamCommand implements CommandExecutor, TabCompleter {
         return Collections.emptyList();
     }
 
-    private boolean isInArenaWorld(Player player) {
-        return player.getWorld().getName().equalsIgnoreCase("world_mobarmylobby");
+    private boolean isInLobby(Player player) {
+        return player.getWorld().getName().equalsIgnoreCase("world_mobarmy_lobby");
     }
 
     private boolean isInTeamWorld(Player player) {
@@ -135,7 +135,8 @@ public class TeamCommand implements CommandExecutor, TabCompleter {
         return world.equals("world_rot")
                 || world.equals("world_blau")
                 || world.equals("world_rot_nether")
-                || world.equals("world_blau_nether");
+                || world.equals("world_blau_nether")
+                || world.equals("world_mobarmy_arena");
     }
 
     private void deny(Player player, String message) {

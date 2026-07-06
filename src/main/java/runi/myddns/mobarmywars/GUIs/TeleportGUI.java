@@ -9,6 +9,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import runi.myddns.mobarmywars.Managers.World.ResumeManager;
 import runi.myddns.mobarmywars.Utils.Sounds;
 import runi.myddns.mobarmywars.Managers.World.TeleportManager;
 import runi.myddns.mobarmywars.MobArmyMain;
@@ -26,50 +27,50 @@ public class TeleportGUI implements Listener {
     }
 
     public void open(Player player) {
-        Inventory inv = Bukkit.createInventory(null, 36, TITLE);
+        Inventory inv = Bukkit.createInventory(null, 45, TITLE);
 
-        inv.setItem(1, createItem(Material.ENDER_PEARL,
+        inv.setItem(10, createItem(Material.ENDER_PEARL,
                 "Ich → Lobby",
                 "",
                 "Teleportiert nur dich"));
 
-        inv.setItem(3, createItem(Material.ENDER_PEARL,
+        inv.setItem(12, createItem(Material.ENDER_PEARL,
                 "Ich → Teamwelt",
                 "",
                 "Teleportiert nur dich"));
 
-        inv.setItem(5, createItem(Material.ENDER_PEARL,
+        inv.setItem(14, createItem(Material.ENDER_PEARL,
                 "Ich → Waveauswahl",
                 "",
                 "Teleportiert nur dich"));
 
-        inv.setItem(7, createItem(Material.ENDER_PEARL,
+        inv.setItem(16, createItem(Material.ENDER_PEARL,
                 "Ich → Arena",
                 "",
                 "Teleportiert nur dich"));
 
-        inv.setItem(19, createItem(Material.END_CRYSTAL,
+        inv.setItem(28, createItem(Material.END_CRYSTAL,
                 "Alle → Lobby",
                 "",
                 "Teleportiert ALLE Spieler"));
 
-        inv.setItem(21, createItem(Material.END_CRYSTAL,
+        inv.setItem(30, createItem(Material.END_CRYSTAL,
                 "Alle → Teamwelt",
                 "",
                 "Teleportiert ALLE Spieler"));
 
-        inv.setItem(23, createItem(Material.END_CRYSTAL,
+        inv.setItem(32, createItem(Material.END_CRYSTAL,
                 "Alle → Waveauswahl",
                 "",
                 "Teleportiert ALLE Spieler"));
 
-        inv.setItem(25, createItem(Material.END_CRYSTAL,
+        inv.setItem(34, createItem(Material.END_CRYSTAL,
                 "Alle → Arena",
                 "",
                 "Teleportiert ALLE Spieler"));
 
 
-        inv.setItem(31, createBackButton("Event-Einstellungen"));
+        inv.setItem(40, createBackButton("Event-Einstellungen"));
 
         player.openInventory(inv);
     }
@@ -121,7 +122,7 @@ public class TeleportGUI implements Listener {
 
 
             case "Ich → Lobby" -> {
-                TeleportManager.teleport(player, "world_mobarmylobby");
+                TeleportManager.teleport(player, "world_mobarmy_lobby");
                 Sounds.playTeleport(player);
 
                 player.closeInventory();
@@ -132,10 +133,20 @@ public class TeleportGUI implements Listener {
             case "Alle → Lobby" -> {
                 Sounds.playClick(player);
 
+                boolean teleportedAnyone = false;
+
                 for (Player p : Bukkit.getOnlinePlayers()) {
-                    TeleportManager.teleport(p, "world_mobarmylobby");
+                    TeleportManager.teleport(p, "world_mobarmy_lobby");
                     Sounds.playTeleport(p);
+                    teleportedAnyone = true;
                 }
+
+                if (!teleportedAnyone) {
+                    player.sendMessage(ChatColor.RED + "❗ Kein Spieler gefunden!");
+                    return;
+                }
+
+                plugin.getEventResume().savePhase(ResumeManager.PHASE_LOBBY);
 
                 player.closeInventory();
 
@@ -197,6 +208,8 @@ public class TeleportGUI implements Listener {
 
                 player.closeInventory();
 
+                plugin.getEventResume().savePhase(ResumeManager.PHASE_TEAMWELT);
+
                 for (Player p : Bukkit.getOnlinePlayers()) {
                     p.sendMessage("");
                     p.sendMessage(ChatColor.GOLD + "📢 Der Teamleiter hat alle Team-Spieler teleportiert.");
@@ -242,6 +255,8 @@ public class TeleportGUI implements Listener {
                     TeleportManager.teleportToWaveSelection(p);
                     Sounds.playTeleport(p);
 
+                    plugin.getArenaCompassManager().giveMonsterCompass(p);
+
                     p.sendMessage(
                             ChatColor.GREEN + "🚀 " +
                                     ChatColor.GRAY + "Du wurdest zur Wavekonfiguration teleportiert!"
@@ -264,9 +279,7 @@ public class TeleportGUI implements Listener {
 
                 player.closeInventory();
 
-                for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                    plugin.getArenaCompassManager().giveMonsterCompass(onlinePlayer);
-                }
+                plugin.getEventResume().savePhase(ResumeManager.PHASE_WAVEAUSWAHL);
 
                 for (Player p : Bukkit.getOnlinePlayers()) {
                     p.sendMessage("");
@@ -308,7 +321,9 @@ public class TeleportGUI implements Listener {
 
                     TeleportManager.teleportToArena(p);
                     Sounds.playTeleport(p);
+
                     plugin.getEventResume().savePlayerSpawn(p, p.getLocation());
+                    plugin.getArenaCompassManager().giveMonsterCompass(p);
 
                     p.sendMessage(ChatColor.GREEN +
                             "🚀 Du wurdest zur Arena teleportiert!");
@@ -323,9 +338,7 @@ public class TeleportGUI implements Listener {
 
                 player.closeInventory();
 
-                for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                    plugin.getArenaCompassManager().giveMonsterCompass(onlinePlayer);
-                }
+                plugin.getEventResume().savePhase(ResumeManager.PHASE_ARENA);
 
                 for (Player p : Bukkit.getOnlinePlayers()) {
                     p.sendMessage("");

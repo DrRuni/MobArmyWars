@@ -12,6 +12,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.potion.PotionEffect;
@@ -33,37 +34,65 @@ public class PlayerActionGUI implements Listener {
     }
 
     public void open(Player viewer, Player target) {
-        Inventory inv = Bukkit.createInventory(null, 36, getTitle(target));
+        Inventory inv = Bukkit.createInventory(null, 45, getTitle(target));
 
         inv.setItem(10, createItem(
                 Material.GOLDEN_APPLE,
                 ChatColor.GREEN + "Heilen",
-                List.of(ChatColor.GRAY + "Heilt den Spieler vollständig",
-                        ChatColor.GRAY + "und entfernt alle Effekte")
+                List.of(
+                        ChatColor.GRAY + "Heilt den Spieler vollständig",
+                        ChatColor.GRAY + "und entfernt alle Effekte.",
+                        "",
+                        ChatColor.GREEN + "Linksklick" + ChatColor.GRAY + " Spieler heilen"
+                )
         ));
 
         inv.setItem(12, createItem(
                 Material.IRON_SWORD,
                 ChatColor.RED + "Töten",
-                List.of(ChatColor.GRAY + "Tötet den ausgewählten Spieler")
+                List.of(
+                        ChatColor.GRAY + "Tötet den ausgewählten Spieler.",
+                        "",
+                        ChatColor.GREEN + "Linksklick" + ChatColor.GRAY + " Spieler töten"
+                )
         ));
 
         inv.setItem(14, createItem(
                 Material.BLUE_BANNER,
                 ChatColor.BLUE + "Team Blau",
-                List.of(ChatColor.GRAY + "Verschiebt den Spieler ins blaue Team")
+                List.of(
+                        ChatColor.GRAY + "Verschiebt den Spieler",
+                        ChatColor.GRAY + "ins blaue Team.",
+                        "",
+                        ChatColor.GREEN + "Linksklick" + ChatColor.GRAY + " Team Blau zuweisen"
+                )
         ));
 
         inv.setItem(16, createItem(
                 Material.RED_BANNER,
                 ChatColor.RED + "Team Rot",
-                List.of(ChatColor.GRAY + "Verschiebt den Spieler ins rote Team")
+                List.of(
+                        ChatColor.GRAY + "Verschiebt den Spieler",
+                        ChatColor.GRAY + "ins rote Team.",
+                        "",
+                        ChatColor.GREEN + "Linksklick" + ChatColor.GRAY + " Team Rot zuweisen"
+                )
         ));
 
-        inv.setItem(31, createItem(
+        inv.setItem(22, createItem(
+                Material.CHEST,
+                ChatColor.GOLD + "Inventar ansehen",
+                List.of(
+                        ChatColor.GRAY + "Zeigt das Inventar",
+                        ChatColor.GRAY + "des Spielers.",
+                        "",
+                        ChatColor.GREEN + "Linksklick" + ChatColor.GRAY + " Inventar öffnen"
+                )
+        ));
+
+        inv.setItem(40, createItem(
                 Material.ARROW,
-                ChatColor.DARK_AQUA + "Zurück",
-                List.of(ChatColor.GRAY + "Zurück zur Spielerliste")
+                ChatColor.DARK_AQUA + "Zurück"
         ));
 
         viewer.openInventory(inv);
@@ -76,15 +105,85 @@ public class PlayerActionGUI implements Listener {
         if (meta == null) return item;
 
         meta.setDisplayName(name);
-        meta.setLore(lore);
+
+        if (lore != null) {
+            meta.setLore(lore);
+        }
+
+        meta.addItemFlags(
+                ItemFlag.HIDE_ATTRIBUTES,
+                ItemFlag.HIDE_ENCHANTS,
+                ItemFlag.HIDE_UNBREAKABLE
+        );
+
         item.setItemMeta(meta);
 
         return item;
     }
 
+    private ItemStack createItem(Material mat, String name) {
+        return createItem(mat, name, null);
+    }
+
+    private void openTargetInventory(Player viewer, Player target) {
+        Inventory inv = Bukkit.createInventory(
+                null,
+                54,
+                ChatColor.BLUE + "Inventar: " + ChatColor.YELLOW + target.getName()
+        );
+
+        ItemStack[] contents = target.getInventory().getContents();
+
+        for (int i = 0; i < contents.length && i < 41; i++) {
+            inv.setItem(i, contents[i]);
+        }
+
+        inv.setItem(49, createItem(
+                Material.ARROW,
+                ChatColor.DARK_AQUA + "Zurück"
+        ));
+
+        viewer.openInventory(inv);
+    }
+
     @EventHandler
     public void onClick(InventoryClickEvent event) {
         String title = ChatColor.stripColor(event.getView().getTitle());
+
+        if (title.startsWith("Inventar: ")) {
+            event.setCancelled(true);
+
+            if (!(event.getWhoClicked() instanceof Player viewer)) return;
+
+            ItemStack clicked = event.getCurrentItem();
+            if (clicked == null || !clicked.hasItemMeta()) return;
+
+            String itemName = ChatColor.stripColor(clicked.getItemMeta().getDisplayName());
+            String targetName = title.replace("Inventar: ", "").trim();
+
+            Player target = Bukkit.getPlayerExact(targetName);
+
+            if (itemName.equalsIgnoreCase("Zurück")) {
+                Sounds.playBack(viewer);
+
+                if (target != null && target.isOnline()) {
+                    Bukkit.getScheduler().runTaskLater(plugin,
+                            () -> open(viewer, target),
+                            1L
+                    );
+                } else {
+                    viewer.sendMessage(ChatColor.RED + "Der Spieler ist nicht mehr online!");
+                    Sounds.playDanger(viewer);
+
+                    Bukkit.getScheduler().runTaskLater(plugin,
+                            () -> plugin.getPlayerGUI().open(viewer),
+                            1L
+                    );
+                }
+            }
+
+            return;
+        }
 
         if (!title.startsWith("Spieler: ")) return;
 
@@ -154,6 +253,11 @@ public class PlayerActionGUI implements Listener {
                 viewer.sendMessage(ChatColor.RED + "✔ " + ChatColor.YELLOW + target.getName()
                         + ChatColor.GRAY + " wurde ins Team Rot verschoben.");
             }
+
+            case "inventar ansehen" -> {
+                Sounds.playClick(viewer);
+                openTargetInventory(viewer, target);
+            }
         }
     }
 
@@ -197,7 +301,7 @@ public class PlayerActionGUI implements Listener {
     public void onDrag(InventoryDragEvent event) {
         String title = ChatColor.stripColor(event.getView().getTitle());
 
-        if (title.startsWith("Spieler: ")) {
+        if (title.startsWith("Spieler: ") || title.startsWith("Inventar: ")) {
             event.setCancelled(true);
         }
     }

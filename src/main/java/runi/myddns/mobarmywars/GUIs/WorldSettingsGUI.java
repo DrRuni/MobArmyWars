@@ -33,7 +33,7 @@ public class WorldSettingsGUI implements Listener {
     }
 
     public void open(Player player) {
-        Inventory inv = Bukkit.createInventory(null, 36, TITLE);
+        Inventory inv = Bukkit.createInventory(null, 45, TITLE);
 
         boolean randomizerOn = blockRandomizerManager.isGlobalRandomizerEnabled();
         boolean keepInvOn = plugin.getWorldSettings().isKeepInventoryEnabled();
@@ -79,7 +79,7 @@ public class WorldSettingsGUI implements Listener {
                 "Erstellt einen neuen globalen Randomizer"
         ));
 
-        inv.setItem(31, createItem(
+        inv.setItem(40, createItem(
                 Material.ARROW,
                 ChatColor.DARK_AQUA + "Zurück"
         ));

@@ -1,10 +1,11 @@
 package runi.myddns.mobarmywars.Listeners;
 
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import runi.myddns.mobarmywars.MobArmyMain;
-import runi.myddns.mobarmywars.Managers.Event.ScoreboardSwitcher;
 
 public class ScoreboardSwitchListener implements Listener {
 
@@ -15,8 +16,23 @@ public class ScoreboardSwitchListener implements Listener {
     }
 
     @EventHandler
-    public void onMove(PlayerMoveEvent event) {
-        var player = event.getPlayer();
+    public void onJoin(PlayerJoinEvent event) {
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            switchScoreboard(event.getPlayer());
+        }, 1L);
+    }
+
+    @EventHandler
+    public void onWorldChange(PlayerChangedWorldEvent event) {
+        Player player = event.getPlayer();
+
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            if (!player.isOnline()) return;
+            switchScoreboard(player);
+        }, 1L);
+    }
+
+    private void switchScoreboard(Player player) {
         String worldName = player.getWorld().getName().toLowerCase();
 
         if (isArenaBoardWorld(worldName)) {
@@ -30,13 +46,12 @@ public class ScoreboardSwitchListener implements Listener {
     }
 
     private boolean isArenaBoardWorld(String worldName) {
-        return worldName.equals("world_mobarmylobby");
+        return worldName.equals("world_mobarmy_arena");
     }
 
     private boolean isTeamBoardWorld(String worldName) {
-        return worldName.equals("world_rot")
-                || worldName.equals("world_blau")
-                || worldName.equals("world_rot_nether")
-                || worldName.equals("world_blau_nether");
+        return worldName.equals("world_mobarmy_lobby")
+                || worldName.equals("world_rot")
+                || worldName.equals("world_blau");
     }
 }

@@ -27,12 +27,19 @@ public class TeamManager implements Listener {
     }
 
     public void assignTeam(Player player, String team) {
-
+        String oldTeam = getPlayerTeam(player);
 
         playerTeams.put(player.getName(), team);
         saveTeamToFile(player.getName(), team);
         plugin.getTeamScoreboardManager().addPlayerToTeam(player, team);
-        broadcastTeamChange(player, team);
+
+        if (oldTeam != null
+                && !oldTeam.equalsIgnoreCase("Kein Team")
+                && !oldTeam.equalsIgnoreCase(team)) {
+            playTeamLeaveSound(player, oldTeam);
+        }
+
+        playTeamJoinSound(player, team);
 
         ChatColor teamColor = team.equalsIgnoreCase("Blau") ? ChatColor.BLUE : ChatColor.RED;
         player.sendTitle(teamColor + "✅ OK", teamColor + "Du bist jetzt im Team " + team, 10, 70, 20);
@@ -100,12 +107,17 @@ public class TeamManager implements Listener {
     }
 
     public void removePlayerFromTeam(Player player) {
+        String oldTeam = getPlayerTeam(player);
+
         plugin.bundleManager.removeTeamBundle(player);
 
         playerTeams.remove(player.getName());
         saveTeamToFile(player.getName(), "Kein Team");
         plugin.getTeamScoreboardManager().removePlayer(player);
-        broadcastTeamChange(player, "Kein Team");
+
+        if (oldTeam != null && !oldTeam.equalsIgnoreCase("Kein Team")) {
+            playTeamLeaveSound(player, oldTeam);
+        }
     }
 
     private void saveTeamToFile(String playerName, String team) {
@@ -134,30 +146,39 @@ public class TeamManager implements Listener {
         try { teamsConfig.save(teamsFile); } catch (IOException ignored) {}
     }
 
-    public boolean isArenaWorld(Player player) {
-        String name = player.getWorld().getName().toLowerCase();
-        return name.equals("world_mobarmylobby")
-                || name.equals("world_rot")
-                || name.equals("world_blau");
+    private void playTeamJoinSound(Player changedPlayer, String team) {
+        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+            String onlineTeam = getPlayerTeam(onlinePlayer);
+
+            if (onlinePlayer.equals(changedPlayer)
+                    || team.equalsIgnoreCase(onlineTeam)) {
+                onlinePlayer.playSound(
+                        onlinePlayer.getLocation(),
+                        Sound.ENTITY_EXPERIENCE_ORB_PICKUP,
+                        1f,
+                        1.4f
+                );
+            }
+        }
+    }
+
+    private void playTeamLeaveSound(Player changedPlayer, String oldTeam) {
+        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+            String onlineTeam = getPlayerTeam(onlinePlayer);
+
+            if (onlinePlayer.equals(changedPlayer)
+                    || oldTeam.equalsIgnoreCase(onlineTeam)) {
+                onlinePlayer.playSound(
+                        onlinePlayer.getLocation(),
+                        Sound.BLOCK_NOTE_BLOCK_DIDGERIDOO,
+                        1.0f,
+                        0.7f
+                );
+            }
+        }
     }
 
     public Set<String> getAllTeamPlayers() {
         return new HashSet<>(playerTeams.keySet());
-    }
-
-    private void broadcastTeamChange(Player player, String team) {
-        ChatColor color = team.equalsIgnoreCase("Blau") ? ChatColor.BLUE :
-                team.equalsIgnoreCase("Rot")  ? ChatColor.RED  :
-                        ChatColor.GRAY;
-
-        Bukkit.getOnlinePlayers().forEach(p -> {
-            if (isArenaWorld(p)) {
-                p.playSound(
-                        p.getLocation(),
-                        Sound.ENTITY_EXPERIENCE_ORB_PICKUP,
-                        1f, 1.4f
-                );
-            }
-        });
     }
 }

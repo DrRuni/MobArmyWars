@@ -33,7 +33,7 @@ public class MobArmyMain extends JavaPlugin {
     private MobSaveManager mobSaveManager;
     public WaveStorage waveStorage;
     public ArenaEventManager arenaManager;
-    public TeamweltEventManager eventManager;
+    public EventManager eventManager;
     public ArenaScoreboardManager scoreboardManager;
     public MobSaveListener mobSaveListener;
     public BundleManager bundleManager;
@@ -86,6 +86,7 @@ public class MobArmyMain extends JavaPlugin {
         extractServerIconIfMissing();
         saveDefaultConfig();
         createArenaCoordFile();
+        createSpawnsFile();
 
         worldSettings = new WorldSettings(this);
         worldManager = new WorldManager(this);
@@ -131,6 +132,7 @@ public class MobArmyMain extends JavaPlugin {
 
         arenaBuildProtectionManager = new ArenaBuildProtectionManager(this);
         arenaBuildProtectionManager.loadFromConfig();
+        arenaBuildProtectionManager.loadSpawnProtectionAreas();
 
         mobSaveManager = new MobSaveManager(this, teamManager);
 
@@ -150,7 +152,7 @@ public class MobArmyMain extends JavaPlugin {
         bundleManager = new BundleManager(this);
         bundleManager.setTeamManager(teamManager);
 
-        eventManager = new TeamweltEventManager(this, mobSaveManager);
+        eventManager = new EventManager(this, mobSaveManager);
         playerLocationManager = new PlayerLocationManager(getEventResume().getConfig());
 
         portalManager = new PortalManager(this);
@@ -206,15 +208,14 @@ public class MobArmyMain extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(playerActionGUI, this);
         getServer().getPluginManager().registerEvents(teamSettingsGUI, this);
         getServer().getPluginManager().registerEvents(teamEquipmentGUI, this);
+        Bukkit.getPluginManager().registerEvents(new ScoreboardSwitchListener(this), this);
 
         waveStorage.loadWaves();
 
         Bukkit.getScheduler().runTaskLater(this, () -> {
             try {
-                var m = arenaBuildProtectionManager.getClass()
-                        .getDeclaredMethod("loadFromConfig");
-                m.setAccessible(true);
-                m.invoke(arenaBuildProtectionManager);
+                arenaBuildProtectionManager.loadFromConfig();
+                arenaBuildProtectionManager.loadSpawnProtectionAreas();
             } catch (Exception ex) {
                 Bukkit.getLogger().severe("[MobArmyWars] Fehler beim Nachladen der BuildProtection!");
                 ex.printStackTrace();
@@ -298,8 +299,22 @@ public class MobArmyMain extends JavaPlugin {
         File f = new File(getDataFolder(), "arena-koordinaten.yml");
         if (!f.exists()) {
             saveResource("arena-koordinaten.yml", false);
+
+            Bukkit.getConsoleSender().sendMessage("");
             Bukkit.getConsoleSender().sendMessage(ConsoleColor.LIME + "   Datei - " +
-                    ConsoleColor.GOLD + "'arena-koordinaten.yml' erstellt." + ConsoleColor.RESET);
+                    ConsoleColor.GOLD + "'arena-koordinaten.yml'" + ConsoleColor.LIME + " erstellt." + ConsoleColor.RESET);
+        }
+    }
+
+    private void createSpawnsFile() {
+        File f = new File(getDataFolder(), "spawns.yml");
+
+        if (!f.exists()) {
+            saveResource("spawns.yml", false);
+
+            Bukkit.getConsoleSender().sendMessage(ConsoleColor.LIME + "   Datei - " +
+                    ConsoleColor.GOLD + "'spawns.yml'" + ConsoleColor.LIME + " erstellt." + ConsoleColor.RESET);
+            Bukkit.getConsoleSender().sendMessage("");
         }
     }
 
@@ -313,7 +328,7 @@ public class MobArmyMain extends JavaPlugin {
     public WaveManager getWaveManager() { return waveManager; }
     public WaveStorage getWaveStorage() { return waveStorage; }
     public ArenaEventManager getArenaManager() { return arenaManager; }
-    public TeamweltEventManager getEventManager() { return eventManager; }
+    public EventManager getEventManager() { return eventManager; }
     public ArenaScoreboardManager getScoreboardManager() { return scoreboardManager; }
     public MobSaveListener getMobSaveListener() { return mobSaveListener; }
     public BundleManager getBundleManager() { return bundleManager; }

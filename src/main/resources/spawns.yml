@@ -1,0 +1,28 @@
+# Lobby Spawn
+lobbyspawn:
+  world: world_mobarmy_lobby
+  min:
+    x: 3.0
+    y: 69.0
+    z: -2.5
+  max:
+    x: 6.0
+    y: 69.0
+    z: 0.5
+  yaw: -90.0
+  pitch: 0.0
+
+# Waveauswahl Spawn
+
+wave-auswahl:
+  name: "Wave Auswahl"
+  description: "MobWellen Konfiguration"
+  world: "world_mobarmy_lobby"
+  rot:
+    corner1: [100, 78, -100]
+    corner2: [106, 74, -94]
+    teamspawn: [104, 75, -98, 0, 27]
+  blau:
+    corner1: [71, 78, -100]
+    corner2: [77, 74, -94]
+    teamspawn: [75, 75, -98, 0, 27]
