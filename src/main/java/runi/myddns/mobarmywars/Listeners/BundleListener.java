@@ -17,8 +17,8 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import runi.myddns.mobarmywars.GUIs.BundleGUI;
-import runi.myddns.mobarmywars.Managers.BundleManager;
-import runi.myddns.mobarmywars.Managers.TeamManager;
+import runi.myddns.mobarmywars.Managers.Event.BundleManager;
+import runi.myddns.mobarmywars.Managers.Event.TeamManager;
 import runi.myddns.mobarmywars.MobArmyMain;
 
 import java.util.HashSet;

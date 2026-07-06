@@ -8,10 +8,11 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import runi.myddns.mobarmywars.Managers.MobSaveManager;
-import runi.myddns.mobarmywars.Arena.WaveManager;
+import runi.myddns.mobarmywars.Managers.Event.MobSaveManager;
+import runi.myddns.mobarmywars.Managers.Event.WaveManager;
 import runi.myddns.mobarmywars.MobArmyMain;
 
 import java.util.*;
@@ -74,7 +75,7 @@ public class UnifiedWaveGUI implements Listener {
     }
 
     private void openWaveSelection() {
-        Inventory gui = Bukkit.createInventory(null, 18, ChatColor.DARK_AQUA + "MobArmy » Wave-Menü");
+        Inventory gui = Bukkit.createInventory(null, 18, ChatColor.BLUE + "MobArmy » Wave-Menü");
 
         gui.setItem(2, createWaveItem(0));
         gui.setItem(4, createWaveItem(1));
@@ -86,9 +87,11 @@ public class UnifiedWaveGUI implements Listener {
 
         player.openInventory(gui);
     }
+
     private ItemStack createWaveItem(int waveIndex) {
         ItemStack item = new ItemStack(Material.DIAMOND_SWORD);
         ItemMeta meta = item.getItemMeta();
+        if (meta == null) return item;
 
         String title = "Wave " + (waveIndex + 1) + " konfigurieren";
         meta.setDisplayName(ChatColor.YELLOW + title);
@@ -116,6 +119,7 @@ public class UnifiedWaveGUI implements Listener {
         }
 
         meta.setLore(lore);
+        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
         item.setItemMeta(meta);
         return item;
     }

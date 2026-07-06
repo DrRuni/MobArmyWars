@@ -37,7 +37,7 @@ public final class Sounds {
 
     public static void playTeleport(Player player, Location loc) {
         if (player == null || loc == null) return;
-        player.playSound(loc, Sound.ENTITY_ENDERMAN_TELEPORT, 1f, 1f);
+        player.playSound(loc, Sound.BLOCK_BEACON_POWER_SELECT, 0.8f, 1.2f);
     }
 
     private static void play(Player player, Sound sound, float vol, float pitch) {
