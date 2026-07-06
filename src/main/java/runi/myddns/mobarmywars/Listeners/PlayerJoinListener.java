@@ -40,15 +40,15 @@ public class PlayerJoinListener implements Listener {
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
                 if (!player.isOnline()) return;
 
-                plugin.getTimerManager().addPlayerToBossBar(player);
+//                plugin.getTimerManager().addPlayerToBossBar(player);
 
-                String team = plugin.getTeamManager().getPlayerTeam(player);
+//                String team = plugin.getTeamManager().getPlayerTeam(player);
 
-                if (team.equalsIgnoreCase("Rot") || team.equalsIgnoreCase("Blau")) {
-                    plugin.getTeamScoreboardManager().addPlayerToTeam(player, team);
-                } else {
-                    plugin.getTeamScoreboardManager().updateBoard();
-                }
+//                if (team.equalsIgnoreCase("Rot") || team.equalsIgnoreCase("Blau")) {
+//                    plugin.getTeamScoreboardManager().addPlayerToTeam(player, team);
+//                } else {
+//                    plugin.getTeamScoreboardManager().updateBoard();
+//                }
 
                 plugin.getTeamScoreboardManager().setBoard(player);
                 plugin.getScoreboardSwitcher().switchToTeam(player);

@@ -15,7 +15,7 @@ public class WorldManager {
 
     private final MobArmyMain plugin;
 
-    private static final String TEMPLATE_ZIP = "world_mobarmy.zip";
+    private static final String TEMPLATE_ZIP = "world_mobarmy V1.5.zip";
 
     private static final String WORLD_LOBBY = "world_mobarmy_lobby";
     private static final String WORLD_ARENA = "world_mobarmy_arena";

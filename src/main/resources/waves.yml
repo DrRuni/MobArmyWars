@@ -1,0 +1,11 @@
+# Speicherort für Wavekonfiguration
+file-version: 1
+waves:
+  Blau:
+    wave0: []
+    wave1: []
+    wave2: []
+  Rot:
+    wave0: []
+    wave1: []
+    wave2: []

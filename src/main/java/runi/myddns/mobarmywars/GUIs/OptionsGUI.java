@@ -91,7 +91,7 @@ public class OptionsGUI implements Listener {
         switch (name) {
             case "Start MobArmyWars" -> {
                 plugin.getEventManager().enableEventHandling();
-                plugin.getEventManager().startCountdown();
+                plugin.getEventManager().startEvent();
                 Sounds.playClick(player);
             }
 

@@ -1,57 +1,87 @@
-## 🛡️ MobArmyWars v1.1 – PvE Battle Plugin
+# 🛡️ MobArmyWars – PvE Battle Plugin
 
-MobArmyWars is a competitive PvE Minecraft plugin where two teams build their own mob armies and fight against each other in a strategic arena battle.
+**MobArmyWars** is a server-side PvE battle plugin for **Paper servers**, inspired by the popular **MobArmyBattle** concept by BastiGHG.
 
-During the preparation phase, teams gather resources, mobs, and drops, plan their strategy, and create three attack waves. These waves are then sent into the arena to fight the opposing team.
+Two teams compete against each other: **Red** and **Blue**.  
+During the preparation phase, teams collect equipment, resources, drops and mobs. Collected mobs can then be configured into up to **three attack waves**.
 
-Inspired by the popular *MobArmyBattle* event by BastiGHG.
+After the preparation phase, the mob waves are sent into an automatic arena battle.  
+The team that defeats the opposing mob army first wins.
 
 ---
 
 ## ⭐ Features
-- Two teams: Red & Blue  
-- Separate team worlds with identical setup  
-- Preparation phase (resources, mobs, drops)  
-- 3 attack waves per team  
-- Arena battle system  
-- Shared team inventory (team pouch)  
-- Optional block randomizer  
-- GUI-based settings  
-- Reset & resume system  
-- Automatic world regeneration  
-- Scoreboard system  
+
+- Two teams: **Red** and **Blue**
+- Separate lobby, team, Nether and arena worlds
+- Preparation phase for collecting resources, drops and mobs
+- 3 configurable attack waves per team
+- Automatic arena battle system
+- Shared team backpacks
+- Optional block randomizer
+- GUI-based settings and wave configuration
+- Reset, resume and world regeneration systems
+- Configurable world settings, including difficulty
+- Team equipment selection
+- Team scoreboard with offline players
+- Optional arena monster compass
+- German in-game messages and GUIs
 
 ---
 
 ## ⚙️ Compatibility
-- Paper API 1.21.5  
-- Tested on 1.21.5 – 1.21.11  
-- Requires Java 21  
-- Paper only  
-- Language: German (GUI & messages)  
+
+- Requires **Paper 26.1.2**
+- Requires **Java 25**
+- Paper only
+- Not compatible with pure Spigot/Bukkit
+- In-game language: **German**
 
 ---
 
 ## ⌨️ Commands
-/optionen
+
+### Player commands
+
+```text
 /team join rot
 /team join blau
 /team leave
 /mobstatus
 /arenasummary
+```
+
+### Admin / OP commands
+
+```text
+/optionen
+/mobarmy resume
 /resume mobarmy
+/setphase <lobby|teamwelt|waveauswahl|arena>
+/reset <arena|lobby|teamworld|playerdata>
+```
 
 ---
 
 ## 📥 Installation
-1. Put the `.jar` into your `/plugins` folder  
-2. Start or restart the server  
-3. Worlds and configs are generated automatically  
+
+1. Put the `.jar` file into your server's `/plugins` folder.
+2. Start or restart the server.
+3. Worlds and configuration files are generated automatically.
 
 ---
 
 ## 💬 Notes
+
 This is my first larger plugin project.  
-Feedback and suggestions are always welcome.
+Feedback, bug reports and suggestions are always welcome.
 
 ---
+
+## 📄 License
+
+All rights reserved.
+
+This plugin may be downloaded and used on private or public Minecraft servers.
+
+You may not modify, decompile, redistribute, reupload, resell or publish modified versions of this plugin without explicit permission from the author.

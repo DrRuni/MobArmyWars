@@ -29,7 +29,7 @@ public class PluginFileManager {
                 ConsoleColor.COPPER + "        Prüfe Plugin-Dateien..." + ConsoleColor.RESET);
         Bukkit.getConsoleSender().sendMessage("");
 
-        checkBinaryResourceFile("world_mobarmy.zip");
+        checkBinaryResourceFile("world_mobarmy V1.5.zip");
 
         Bukkit.getConsoleSender().sendMessage("");
 
@@ -41,6 +41,7 @@ public class PluginFileManager {
         checkYamlFile("spawns.yml");
         createEmptyFileIfMissing("teams.yml");
         checkYamlFile("team-equipment.yml");
+        checkYamlFile("waves.yml");
         checkYamlFile("worldsettings.yml");
 
         extractServerIconIfMissing();

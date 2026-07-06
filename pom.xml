@@ -6,7 +6,7 @@
 
     <groupId>runi.myddns</groupId>
     <artifactId>MobArmyWars</artifactId>
-    <version>1.4</version>
+    <version>1.5</version>
     <packaging>jar</packaging>
     <name>MobArmyWars</name>
     <scm>
@@ -38,7 +38,6 @@
                     <doCheck>false</doCheck>
                     <doUpdate>false</doUpdate>
                     <revisionOnScmFailure>true</revisionOnScmFailure>
-                    <buildNumberPropertiesFile>${project.basedir}/buildNumber.properties</buildNumberPropertiesFile>
                     <format>{0,number,000}</format>
                     <items>
                         <item>buildNumber</item>
@@ -70,20 +69,15 @@
                         </goals>
                         <configuration>
                             <target>
-                                <!-- Pfade anpassen -->
-                                <property name="plugin.dir" value="C:\Users\ronny\Desktop\Server 26.1.2\plugins" />
-                                <property name="backup.dir" value="Z:\Dokumente\Games\Minecraft\Backup\JAR" />
-                                <mkdir dir="F:\Minecraft-Java\Programmieren\Backup\JAR" />
-
                                 <!-- 🧩 Neue Version in Backup speichern (mit fortlaufender Nummer) -->
                                 <copy file="${project.build.directory}/${project.build.finalName}.jar"
-                                      tofile="Z:\Dokumente\Games\Minecraft\Backup\JAR\MobArmyWars-v1.4.${buildNumber}.jar"
+                                      tofile="Z:\Dokumente\Games\Minecraft\Backup\JAR\MobArmyWars-v1.5.${buildNumber}.jar"
                                       overwrite="true"
                                       failonerror="false" />
 
                                 <!-- 🧩 Im Plugin-Ordner immer gleiche Datei überschreiben -->
                                 <copy file="${project.build.directory}/${project.build.finalName}.jar"
-                                      tofile="C:\Users\ronny\Desktop\Server 26.1.2\plugins\MobArmyWars-v1.4.jar"
+                                      tofile="C:\Users\ronny\Desktop\Server 26.1.2\plugins\MobArmyWars-v1.5.jar"
                                       overwrite="true"
                                       failonerror="false" />
                             </target>
@@ -127,7 +121,7 @@
         <dependency>
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
-            <version>26.1.2.build.64-stable</version>
+            <version>26.1.2.build.72-stable</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

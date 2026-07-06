@@ -15,12 +15,12 @@ public class ScoreboardSwitchListener implements Listener {
         this.plugin = plugin;
     }
 
-    @EventHandler
-    public void onJoin(PlayerJoinEvent event) {
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-            switchScoreboard(event.getPlayer());
-        }, 1L);
-    }
+//    @EventHandler
+//    public void onJoin(PlayerJoinEvent event) {
+//        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+//            switchScoreboard(event.getPlayer());
+//        }, 1L);
+//    }
 
     @EventHandler
     public void onWorldChange(PlayerChangedWorldEvent event) {

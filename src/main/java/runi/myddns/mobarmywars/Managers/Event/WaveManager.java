@@ -10,7 +10,7 @@ public class WaveManager {
     private final MobSaveManager mobSaveManager;
     private ArenaScoreboardManager scoreboardManager;
 
-    private final Map<String, List<Map<String, Integer>>> teamWaves = new HashMap<>();
+    private final Map<String, List<List<WaveEntry>>> teamWaves = new HashMap<>();
 
     public WaveManager(MobArmyMain plugin, MobSaveManager mobSaveManager) {
         this.plugin = plugin;
@@ -23,38 +23,40 @@ public class WaveManager {
 
     public void initTeam(String teamName) {
         if (!teamWaves.containsKey(teamName)) {
-            List<Map<String, Integer>> waves = new ArrayList<>();
+            List<List<WaveEntry>> waves = new ArrayList<>();
+
             for (int i = 0; i < 3; i++) {
-                waves.add(new HashMap<>());
+                waves.add(new ArrayList<>());
             }
+
             teamWaves.put(teamName, waves);
         }
     }
 
-    public Map<String, Integer> getWave(String teamName, int waveIndex) {
+    public List<WaveEntry> getWave(String teamName, int waveIndex) {
         initTeam(teamName);
         return teamWaves.get(teamName).get(waveIndex);
     }
 
-    public List<Map<String, Integer>> getAllWaves(String teamName) {
+    public List<List<WaveEntry>> getAllWaves(String teamName) {
         initTeam(teamName);
         return teamWaves.get(teamName);
     }
 
     public void clearWaves(String teamName) {
         initTeam(teamName);
-        for (Map<String, Integer> wave : teamWaves.get(teamName)) {
+
+        for (List<WaveEntry> wave : teamWaves.get(teamName)) {
             wave.clear();
         }
     }
 
     public void resetWaves(String teamName) {
-        scoreboardManager.resetKills();
-        initTeam(teamName);
-
-        for (Map<String, Integer> wave : teamWaves.get(teamName)) {
-            wave.clear();
+        if (scoreboardManager != null) {
+            scoreboardManager.resetKills();
         }
+
+        clearWaves(teamName);
     }
 
     public Set<String> getAllTeams() {
@@ -63,22 +65,38 @@ public class WaveManager {
 
     public void addMobToWave(String team, int waveIndex, String mobType) {
         Objects.requireNonNull(mobSaveManager, "MobSaveManager fehlt im WaveManager");
-        List<Map<String, Integer>> waves = getAllWaves(team);
-        Map<String, Integer> wave = waves.get(waveIndex);
 
-        wave.merge(mobType, 1, Integer::sum);
+        List<WaveEntry> wave = getWave(team, waveIndex);
+
+        if (!wave.isEmpty()) {
+            WaveEntry last = wave.get(wave.size() - 1);
+
+            if (last.getMobType().equals(mobType)) {
+                last.addAmount(1);
+            } else {
+                wave.add(new WaveEntry(mobType, 1));
+            }
+        } else {
+            wave.add(new WaveEntry(mobType, 1));
+        }
+
         mobSaveManager.consumeMob(team, mobType, 1);
     }
 
     public boolean removeMobFromWave(String team, int waveIndex, String mobType) {
-        List<Map<String, Integer>> waves = getAllWaves(team);
-        Map<String, Integer> wave = waves.get(waveIndex);
+        List<WaveEntry> wave = getWave(team, waveIndex);
 
-        int current = wave.getOrDefault(mobType, 0);
-        if (current > 0) {
-            wave.put(mobType, current - 1);
-            if (wave.get(mobType) == 0) {
-                wave.remove(mobType);
+        for (int i = wave.size() - 1; i >= 0; i--) {
+            WaveEntry entry = wave.get(i);
+
+            if (!entry.getMobType().equals(mobType)) {
+                continue;
+            }
+
+            entry.removeAmount(1);
+
+            if (entry.getAmount() <= 0) {
+                wave.remove(i);
             }
 
             mobSaveManager.restoreMob(team, mobType, 1);
@@ -86,5 +104,62 @@ public class WaveManager {
         }
 
         return false;
+    }
+
+    public int getMobAmountInWave(String team, int waveIndex, String mobType) {
+        List<WaveEntry> wave = getWave(team, waveIndex);
+
+        int total = 0;
+
+        for (WaveEntry entry : wave) {
+            if (entry.getMobType().equals(mobType)) {
+                total += entry.getAmount();
+            }
+        }
+
+        return total;
+    }
+
+    public Map<String, Integer> getWaveAsCountMap(String team, int waveIndex) {
+        List<WaveEntry> wave = getWave(team, waveIndex);
+        Map<String, Integer> result = new LinkedHashMap<>();
+
+        for (WaveEntry entry : wave) {
+            result.merge(entry.getMobType(), entry.getAmount(), Integer::sum);
+        }
+
+        return result;
+    }
+
+    public void setWave(String team, int waveIndex, List<WaveEntry> entries) {
+        initTeam(team);
+        teamWaves.get(team).set(waveIndex, entries);
+    }
+
+    public static class WaveEntry {
+
+        private final String mobType;
+        private int amount;
+
+        public WaveEntry(String mobType, int amount) {
+            this.mobType = mobType;
+            this.amount = amount;
+        }
+
+        public String getMobType() {
+            return mobType;
+        }
+
+        public int getAmount() {
+            return amount;
+        }
+
+        public void addAmount(int value) {
+            this.amount += value;
+        }
+
+        public void removeAmount(int value) {
+            this.amount -= value;
+        }
     }
 }

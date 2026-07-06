@@ -17,13 +17,13 @@ public class EventManager {
     private final MobArmyMain plugin;
     private final MobSaveManager mobSaveManager;
     private boolean monitoringTimerEnd = false;
-    private boolean eventStarted = false;
+//    private boolean eventStarted = false;
     private boolean eventHandlingDisabled = false;
     private BukkitRunnable monitoringTask = null;
 
-    public void disableEventHandling() {
-        this.eventHandlingDisabled = true;
-    }
+//    public void disableEventHandling() {
+//        this.eventHandlingDisabled = true;
+//    }
 
     public void enableEventHandling() {
         this.eventHandlingDisabled = false;
@@ -34,10 +34,10 @@ public class EventManager {
         this.mobSaveManager = mobSaveManager;
     }
 
-    public void startCountdown() {
+    public void startEvent() {
 
         if (eventHandlingDisabled) {
-            Bukkit.getLogger().info("⏹️ EventHandling deaktiviert – CountdownStart unterbunden.");
+            Bukkit.getLogger().info("⏹️ EventHandling deaktiviert – EventStart unterbunden.");
             return;
         }
 
@@ -55,6 +55,7 @@ public class EventManager {
 
         for (Player player : Bukkit.getOnlinePlayers()) {
             String team = plugin.getTeamManager().getPlayerTeam(player);
+
             if (team == null || team.equalsIgnoreCase("Kein Team")) {
                 allPlayersHaveTeam = false;
                 player.sendMessage(ChatColor.YELLOW + "⚠ Du hast noch kein Team! Bitte wähle eines aus.");
@@ -67,23 +68,87 @@ public class EventManager {
             return;
         }
 
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            String team = plugin.getTeamManager().getPlayerTeam(player);
+
+            if (team == null || team.equalsIgnoreCase("Kein Team")) continue;
+
+            player.closeInventory();
+
+            player.playSound(
+                    player.getLocation(),
+                    Sound.ENTITY_PLAYER_LEVELUP,
+                    1.0F,
+                    1.0F
+            );
+
+            player.sendTitle(
+                    ChatColor.GREEN + "Event beginnt",
+                    ChatColor.YELLOW + "Du wirst gleich teleportiert",
+                    10, 60, 10
+            );
+        }
+
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+
+                teleportPlayersToTeamWorlds();
+
+                new BukkitRunnable() {
+                    @Override
+                    public void run() {
+                        if (!areTeamPlayersInTeamWorlds()) {
+                            return;
+                        }
+
+                        cancel();
+
+                        StartCountdownEvent(() -> {
+                            plugin.getTimerManager().setForward(false);
+                            plugin.getTimerManager().startTimer();
+
+                            for (Player player : Bukkit.getOnlinePlayers()) {
+                                String team = plugin.getTeamManager().getPlayerTeam(player);
+                                if (team == null || team.equalsIgnoreCase("Kein Team")) continue;
+                            }
+                        });
+                    }
+                }.runTaskTimer(plugin, 5L, 5L);
+            }
+        }.runTaskLater(plugin, 60L);
+    }
+
+    private void StartCountdownEvent(Runnable onFinished) {
+
         new BukkitRunnable() {
             int countdown = 5;
 
             @Override
             public void run() {
 
-                if (countdown == 5) {
-                    for (Player player : Bukkit.getOnlinePlayers()) {
-                        player.closeInventory();
-                    }
-                }
-
                 if (countdown > 0) {
 
-                    Bukkit.broadcastMessage(ChatColor.GOLD + "Event startet in: " + ChatColor.RED + countdown);
+                    ChatColor color;
+
+                    if (countdown == 5 || countdown == 4) {
+                        color = ChatColor.RED;
+                    } else if (countdown == 3) {
+                        color = ChatColor.GOLD;
+                    } else {
+                        color = ChatColor.YELLOW;
+                    }
 
                     for (Player player : Bukkit.getOnlinePlayers()) {
+                        String team = plugin.getTeamManager().getPlayerTeam(player);
+                        if (team == null || team.equalsIgnoreCase("Kein Team")) continue;
+
+                        player.sendTitle(
+                                color + String.valueOf(countdown),
+                                "",
+                                0, 25, 0
+                        );
+
                         player.playSound(
                                 player.getLocation(),
                                 Sound.BLOCK_NOTE_BLOCK_PLING,
@@ -96,10 +161,16 @@ public class EventManager {
 
                 } else {
 
-                    Bukkit.broadcastMessage("");
-                    Bukkit.broadcastMessage(ChatColor.GREEN + "Go!");
-
                     for (Player player : Bukkit.getOnlinePlayers()) {
+                        String team = plugin.getTeamManager().getPlayerTeam(player);
+                        if (team == null || team.equalsIgnoreCase("Kein Team")) continue;
+
+                        player.sendTitle(
+                                ChatColor.GREEN + "Go!",
+                                "",
+                                0, 30, 10
+                        );
+
                         player.playSound(
                                 player.getLocation(),
                                 Sound.ENTITY_PLAYER_LEVELUP,
@@ -110,30 +181,15 @@ public class EventManager {
 
                     cancel();
 
-                    new BukkitRunnable() {
-                        @Override
-                        public void run() {
-                            startEvent();
-                            plugin.getEventResume().setEventStarted(true);
-                            plugin.getTimerManager().setForward(false);
-                            plugin.getTimerManager().startTimer();
-
-                            for (Player player : Bukkit.getOnlinePlayers()) {
-                                player.sendTitle(
-                                        ChatColor.RED + "Timer wurde gestartet",
-                                        ChatColor.YELLOW + "Event beginnt!",
-                                        10, 60, 10
-                                );
-                            }
-                        }
-                    }.runTaskLater(plugin, 16L);
+                    if (onFinished != null) {
+                        Bukkit.getScheduler().runTaskLater(plugin, onFinished, 15L);
+                    }
                 }
             }
-
         }.runTaskTimer(plugin, 0L, 20L);
     }
 
-    private void startEvent() {
+    private void teleportPlayersToTeamWorlds() {
 
         plugin.getEventResume().setEventStarted(true);
 
@@ -142,7 +198,7 @@ public class EventManager {
         for (Player player : Bukkit.getOnlinePlayers()) {
             String team = plugin.getTeamManager().getPlayerTeam(player);
 
-            if (team == null) {
+            if (team == null || team.equalsIgnoreCase("Kein Team")) {
                 player.sendMessage(ChatColor.RED + "❌ Du hast kein Team! Bitte wähle zuerst eines.");
                 continue;
             }
@@ -177,8 +233,13 @@ public class EventManager {
 
             plugin.getBundleManager().giveTeamBundle(player);
 
-            plugin.getEventResume().savePhase(ResumeManager.PHASE_TEAMWELT);
+            plugin.getEventResume().savePlayerSpawn(
+                    player,
+                    player.getLocation()
+            );
         }
+
+        plugin.getEventResume().savePhase(ResumeManager.PHASE_TEAMWELT);
     }
 
     private Location getSafeSpawn(World world) {
@@ -192,6 +253,25 @@ public class EventManager {
         }
 
         return loc;
+    }
+
+    private boolean areTeamPlayersInTeamWorlds() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            String team = plugin.getTeamManager().getPlayerTeam(player);
+            if (team == null || team.equalsIgnoreCase("Kein Team")) continue;
+
+            String worldName = player.getWorld().getName().toLowerCase();
+
+            if (team.equalsIgnoreCase("rot") && !worldName.equals("world_rot")) {
+                return false;
+            }
+
+            if (team.equalsIgnoreCase("blau") && !worldName.equals("world_blau")) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private void resetPlayerState(Player player) {
@@ -280,9 +360,7 @@ public class EventManager {
 
                     p.sendMessage("");
                     p.sendMessage(ChatColor.AQUA +
-                            "  ⚔ Bereite dich nun auf die Waves für deinen Gegner vor.");
-                    p.sendMessage(ChatColor.AQUA +
-                            "                 Lass ihm eine CHANCE ;-) ");
+                            "  ⚔ Bereite nun die Waves für deinen Gegner vor.");
                     p.sendMessage("");
                 }
 
@@ -297,7 +375,7 @@ public class EventManager {
                             titleColor + "Vorbereitung",
                             ChatColor.DARK_AQUA +
                                     "Erstelle die Waves und bereite dich auf den Kampf vor.",
-                            20, 200, 20
+                            20, 100, 20
                     );
                     player.setGameMode(GameMode.SURVIVAL);
                     player.setHealth(player.getMaxHealth());

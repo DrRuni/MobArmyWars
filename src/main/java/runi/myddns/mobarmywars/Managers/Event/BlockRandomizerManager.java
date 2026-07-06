@@ -18,10 +18,11 @@ import java.util.*;
 public class BlockRandomizerManager implements Listener {
 
     private final MobArmyMain plugin;
-    private final Map<String, Boolean> playerRandomizerStatus = new HashMap<>();
+//    private final Map<String, Boolean> playerRandomizerStatus = new HashMap<>();
     private final Map<String, Map<Material, Material>> playerBlockDropMap = new HashMap<>();
     private final List<Material> droppableMaterials = new ArrayList<>();
     private final List<Material> blockedSpawnEggs = new ArrayList<>();
+    private final Set<String> blockedMaterialPatterns = new HashSet<>();
     private final Random random = new Random();
     private final File dataFile;
     private FileConfiguration dataConfig;
@@ -34,23 +35,24 @@ public class BlockRandomizerManager implements Listener {
         this.globalRandomizerEnabled = plugin.getWorldSettings().isRandomizerEnabled();
         this.dataFile = new File(plugin.getDataFolder(), "RandomBlock.yml");
         this.dataConfig = YamlConfiguration.loadConfiguration(dataFile);
-        this.worldSettingsFile = new File(plugin.getDataFolder(), "weltensettings.yml");
+        this.worldSettingsFile = new File(plugin.getDataFolder(), "Worldsettings.yml");
         this.worldSettingsConfig = YamlConfiguration.loadConfiguration(worldSettingsFile);
 
         loadBlockedSpawnEggs();
+        loadBlockedMaterials();
         loadBlockDrops();
         initializeDroppableMaterials();
     }
 
-    public void disableRandomizer(Player player) {
-        playerRandomizerStatus.put(player.getName(), false);
+//    public void disableRandomizer(Player player) {
+//        playerRandomizerStatus.put(player.getName(), false);
+//
+//        saveBlockDrops();
+//    }
 
-        saveBlockDrops();
-    }
-
-    public boolean isRandomizerEnabled(Player player) {
-        return playerRandomizerStatus.getOrDefault(player.getName(), false);
-    }
+//    public boolean isRandomizerEnabled(Player player) {
+//        return playerRandomizerStatus.getOrDefault(player.getName(), false);
+//    }
 
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {
@@ -63,36 +65,105 @@ public class BlockRandomizerManager implements Listener {
 
         String worldName = world.getName().toLowerCase();
 
-        if (!worldName.equals("world_rot") && !worldName.equals("world_blau")) {
+        if (!worldName.equals("world_rot")
+                && !worldName.equals("world_blau")
+                && !worldName.equals("world_rot_nether")
+                && !worldName.equals("world_blau_nether")) {
             return;
         }
 
-        Material dropMaterial = getRandomBlockDrop(player, event.getBlock().getType());
+        Material dropMaterial = getRandomizedMaterial(player, event.getBlock().getType());
         event.setDropItems(false);
         if (dropMaterial != null) {
             event.getBlock().getWorld().dropItemNaturally(event.getBlock().getLocation(), new ItemStack(dropMaterial));
         }
     }
 
-    private Material getRandomBlockDrop(Player player, Material blockType) {
+    public Material getRandomizedMaterial(Player player, Material originalMaterial) {
         String name = player.getName();
 
         playerBlockDropMap.putIfAbsent(name, new HashMap<>());
         Map<Material, Material> map = playerBlockDropMap.get(name);
 
-        if (!map.containsKey(blockType)) {
+        if (!map.containsKey(originalMaterial)) {
 
-            Material randomDrop;
-            do {
-                randomDrop = droppableMaterials.get(random.nextInt(droppableMaterials.size()));
-            } while (randomDrop.name().endsWith("_SPAWN_EGG") && isSpawnEggBlocked(randomDrop));
+            List<Material> allowedMaterials = getAllowedDroppableMaterials();
 
-            map.put(blockType, randomDrop);
+            if (allowedMaterials.isEmpty()) {
+                plugin.getLogger().warning("Keine erlaubten Randomizer-Drops verfügbar!");
+                return null;
+            }
+
+            Material randomDrop = allowedMaterials.get(random.nextInt(allowedMaterials.size()));
+            map.put(originalMaterial, randomDrop);
 
             saveBlockDrops();
         }
 
-        return map.get(blockType);
+        return map.get(originalMaterial);
+    }
+
+    private List<Material> getAllowedDroppableMaterials() {
+        return droppableMaterials.stream()
+                .filter(material -> !isMaterialBlocked(material))
+                .toList();
+    }
+
+    public boolean isMaterialBlocked(Material material) {
+        return isBlockedByPattern(material.name())
+                || material.name().endsWith("_SPAWN_EGG") && isSpawnEggBlocked(material);
+    }
+
+    private boolean isBlockedByPattern(String materialName) {
+        for (String pattern : blockedMaterialPatterns) {
+            if (matchesPattern(materialName, pattern)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean matchesPattern(String materialName, String pattern) {
+        String normalizedPattern = pattern.toUpperCase(Locale.ROOT).trim();
+
+        if (normalizedPattern.equals("*")) {
+            return true;
+        }
+
+        if (normalizedPattern.startsWith("*") && normalizedPattern.endsWith("*")) {
+            String contains = normalizedPattern.substring(1, normalizedPattern.length() - 1);
+            return materialName.contains(contains);
+        }
+
+        if (normalizedPattern.endsWith("*")) {
+            String startsWith = normalizedPattern.substring(0, normalizedPattern.length() - 1);
+            return materialName.startsWith(startsWith);
+        }
+
+        if (normalizedPattern.startsWith("*")) {
+            String endsWith = normalizedPattern.substring(1);
+            return materialName.endsWith(endsWith);
+        }
+
+        return materialName.equals(normalizedPattern);
+    }
+
+    public Material getOriginalMaterial(Player player, Material randomizedMaterial) {
+        String name = player.getName();
+
+        Map<Material, Material> map = playerBlockDropMap.get(name);
+
+        if (map == null) {
+            return randomizedMaterial;
+        }
+
+        for (Map.Entry<Material, Material> entry : map.entrySet()) {
+            if (entry.getValue() == randomizedMaterial) {
+                return entry.getKey();
+            }
+        }
+
+        return randomizedMaterial;
     }
 
     private void initializeDroppableMaterials() {
@@ -225,6 +296,53 @@ public class BlockRandomizerManager implements Listener {
             plugin.getLogger().warning(
                     "Fehler beim Zurücksetzen der RandomBlock.yml: " + e.getMessage()
             );
+        }
+    }
+
+    public boolean isBlockPatternBlocked(String pattern) {
+        return blockedMaterialPatterns.contains(pattern.toUpperCase(Locale.ROOT));
+    }
+
+    public void toggleBlockedBlockPattern(String pattern) {
+        String normalizedPattern = pattern.toUpperCase(Locale.ROOT).trim();
+
+        if (blockedMaterialPatterns.contains(normalizedPattern)) {
+            blockedMaterialPatterns.remove(normalizedPattern);
+        } else {
+            blockedMaterialPatterns.add(normalizedPattern);
+        }
+
+        saveBlockedMaterialPatterns();
+        resetRandomizer();
+    }
+
+    private void saveBlockedMaterialPatterns() {
+        worldSettingsConfig.set(
+                "randomizer.blocked_blocks",
+                new ArrayList<>(blockedMaterialPatterns)
+        );
+
+        try {
+            worldSettingsConfig.save(worldSettingsFile);
+        } catch (IOException e) {
+            plugin.getLogger().warning(
+                    "Fehler beim Speichern der weltensettings.yml: " + e.getMessage()
+            );
+        }
+    }
+
+    public void loadBlockedMaterials() {
+        worldSettingsConfig = YamlConfiguration.loadConfiguration(worldSettingsFile);
+
+        List<String> patterns =
+                worldSettingsConfig.getStringList("randomizer.blocked_blocks");
+
+        blockedMaterialPatterns.clear();
+
+        for (String pattern : patterns) {
+            if (pattern != null && !pattern.trim().isEmpty()) {
+                blockedMaterialPatterns.add(pattern.toUpperCase(Locale.ROOT).trim());
+            }
         }
     }
 

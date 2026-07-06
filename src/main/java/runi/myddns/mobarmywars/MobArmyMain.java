@@ -1,6 +1,9 @@
 package runi.myddns.mobarmywars;
 
 import org.bukkit.Bukkit;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.PluginCommand;
+import org.bukkit.command.TabCompleter;
 import org.bukkit.plugin.java.JavaPlugin;
 import runi.myddns.mobarmywars.Managers.Event.*;
 import runi.myddns.mobarmywars.Utils.PluginFileManager;
@@ -16,8 +19,6 @@ public class MobArmyMain extends JavaPlugin {
     public static MobArmyMain getInstance() { return instance; }
 
     private boolean alreadyInitialized = false;
-    public boolean isInitialized() { return alreadyInitialized; }
-    public void setInitialized(boolean value) { alreadyInitialized = value; }
 
     // Manager
     private WorldManager worldManager;
@@ -45,7 +46,7 @@ public class MobArmyMain extends JavaPlugin {
     public TeleportGUI mobArmySettingsGUI;
     public TeamSelectionGUI teamSelectionGUI;
     public BundleGUI bundleGUI;
-    public SpawnEggGUI spawnEggGUI;
+    public RandomizerExclusionGUI spawnEggGUI;
     private ArenaSettingsGUI arenaSettingsGUI;
     private WorldSettingsGUI worldSettingsGUI;
     private PlayerGUI playerGUI;
@@ -58,7 +59,6 @@ public class MobArmyMain extends JavaPlugin {
     private TeamEquipmentGUI teamEquipmentGUI;
 
     private boolean arenaRunning = false;
-    public boolean isArenaRunning() { return arenaRunning; }
     public void setArenaRunning(boolean running) { arenaRunning = running; }
 
     @Override
@@ -68,7 +68,7 @@ public class MobArmyMain extends JavaPlugin {
         Bukkit.getConsoleSender().sendMessage(
                 ConsoleColor.COPPER + "  ═══════════════  MobArmyWars  ═══════════════" + ConsoleColor.RESET);
         Bukkit.getConsoleSender().sendMessage(
-                ConsoleColor.COPPER + "                      V1.3" + ConsoleColor.RESET);
+                ConsoleColor.COPPER + "                      V1.5" + ConsoleColor.RESET);
         Bukkit.getConsoleSender().sendMessage(
                 ConsoleColor.COPPER + "                  L O A D I N G" + ConsoleColor.RESET);
         Bukkit.getConsoleSender().sendMessage("");
@@ -121,7 +121,7 @@ public class MobArmyMain extends JavaPlugin {
 
         arenaConfig = new ArenaConfig(this);
         arenaManager = new ArenaEventManager(this);
-        arenaManager.setRandomizer(blockRandomizerManager);
+//        arenaManager.setRandomizer(blockRandomizerManager);
 
         teamManager = new TeamManager(this);
 
@@ -157,6 +157,7 @@ public class MobArmyMain extends JavaPlugin {
         scoreboardSwitcher = new ScoreboardSwitcher(this, teamScoreboardManager, scoreboardManager);
         arenaCompassManager = new ArenaCompassManager(this);
         teamEquipmentManager = new TeamEquipmentManager(this);
+        ChestRandomizerManager chestRandomizerManager = new ChestRandomizerManager(this, blockRandomizerManager);
 
         // ============================================================
         // GUIs
@@ -167,7 +168,7 @@ public class MobArmyMain extends JavaPlugin {
         mobArmySettingsGUI = new TeleportGUI(this);
         teamSelectionGUI = new TeamSelectionGUI(this, teamManager);
         bundleGUI = new BundleGUI(this, teamManager);
-        spawnEggGUI = new SpawnEggGUI(blockRandomizerManager, this, timerManager);
+        spawnEggGUI = new RandomizerExclusionGUI(blockRandomizerManager, this, timerManager);
         arenaSettingsGUI = new ArenaSettingsGUI(this);
         worldSettingsGUI = new WorldSettingsGUI(this, blockRandomizerManager);
         playerGUI = new PlayerGUI(this);
@@ -201,9 +202,10 @@ public class MobArmyMain extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(arenaCompassManager, this);
         Bukkit.getPluginManager().registerEvents(playerGUI, this);
         Bukkit.getPluginManager().registerEvents(playerActionGUI, this);
-        getServer().getPluginManager().registerEvents(teamSettingsGUI, this);
-        getServer().getPluginManager().registerEvents(teamEquipmentGUI, this);
+        Bukkit.getPluginManager().registerEvents(teamSettingsGUI, this);
+        Bukkit.getPluginManager().registerEvents(teamEquipmentGUI, this);
         Bukkit.getPluginManager().registerEvents(new ScoreboardSwitchListener(this), this);
+        Bukkit.getPluginManager().registerEvents(chestRandomizerManager, this);
 
         waveStorage.loadWaves();
 
@@ -221,46 +223,49 @@ public class MobArmyMain extends JavaPlugin {
         // Commands
         // ============================================================
         var resumeCmd = new ResumeCommand(this);
-        getCommand("resume").setExecutor(resumeCmd);
-        getCommand("resume").setTabCompleter(resumeCmd);
-
-        getCommand("mobarmy").setExecutor(resumeCmd);
-        getCommand("mobarmy").setTabCompleter(resumeCmd);
+        registerCommand("resume", resumeCmd, resumeCmd);
+        registerCommand("mobarmy", resumeCmd, resumeCmd);
 
         OptionenCommand optionenCommand = new OptionenCommand(this);
-        getCommand("optionen").setExecutor(optionenCommand);
-        getCommand("optionen").setTabCompleter(optionenCommand);
+        registerCommand("optionen", optionenCommand, optionenCommand);
 
         var teamCmd = new TeamCommand(this);
-        getCommand("team").setExecutor(teamCmd);
-        getCommand("team").setTabCompleter(teamCmd);
+        registerCommand("team", teamCmd, teamCmd);
 
         MobStatusCommand mobStatusCommand = new MobStatusCommand(mobSaveManager, teamManager);
-        getCommand("mobstatus").setExecutor(mobStatusCommand);
-        getCommand("mobstatus").setTabCompleter(mobStatusCommand);
+        registerCommand("mobstatus", mobStatusCommand, mobStatusCommand);
 
-        getCommand("arenasummary").setExecutor(new ArenaSummaryCommand(this));
+        registerCommand("arenasummary", new ArenaSummaryCommand(this), null);
 
         SetPhaseCommand setPhaseCommand = new SetPhaseCommand(this);
-        getCommand("setphase").setExecutor(setPhaseCommand);
-        getCommand("setphase").setTabCompleter(setPhaseCommand);
+        registerCommand("setphase", setPhaseCommand, setPhaseCommand);
 
         ResetCommand resetCommand = new ResetCommand(this);
-        getCommand("reset").setExecutor(resetCommand);
-        getCommand("reset").setTabCompleter(resetCommand);
+        registerCommand("reset", resetCommand, resetCommand);
 
         Bukkit.getConsoleSender().sendMessage("");
         Bukkit.getConsoleSender().sendMessage(
                 ConsoleColor.DARK_GOLDEN_LIME + "  ═══════════════  MobArmyWars  ═══════════════" + ConsoleColor.RESET);
         Bukkit.getConsoleSender().sendMessage(
-                ConsoleColor.DARK_GOLDEN_LIME + "                      V1.3" + ConsoleColor.RESET);
+                ConsoleColor.DARK_GOLDEN_LIME + "                      V1.5" + ConsoleColor.RESET);
         Bukkit.getConsoleSender().sendMessage(
                 ConsoleColor.DARK_GOLDEN_LIME + "                    R E A D Y" + ConsoleColor.RESET);
         Bukkit.getConsoleSender().sendMessage("");
     }
 
-    public void setEventResume(ResumeManager eventResume) {
-        this.eventResume = eventResume;
+    private void registerCommand(String name, CommandExecutor executor, TabCompleter tabCompleter) {
+        PluginCommand command = getCommand(name);
+
+        if (command == null) {
+            getLogger().warning("Command '" + name + "' fehlt in der plugin.yml!");
+            return;
+        }
+
+        command.setExecutor(executor);
+
+        if (tabCompleter != null) {
+            command.setTabCompleter(tabCompleter);
+        }
     }
 
     public TeamManager getTeamManager() { return teamManager; }
@@ -270,8 +275,6 @@ public class MobArmyMain extends JavaPlugin {
     public WaveStorage getWaveStorage() { return waveStorage; }
     public ArenaEventManager getArenaManager() { return arenaManager; }
     public EventManager getEventManager() { return eventManager; }
-    public ArenaScoreboardManager getScoreboardManager() { return scoreboardManager; }
-    public MobSaveListener getMobSaveListener() { return mobSaveListener; }
     public BundleManager getBundleManager() { return bundleManager; }
     public ArenaBuildProtectionManager getArenaBuildProtectionManager() { return arenaBuildProtectionManager; }
     public OptionsGUI getOptionenGUI() { return optionenGUI; }
@@ -280,7 +283,7 @@ public class MobArmyMain extends JavaPlugin {
     public TeleportGUI getMobArmySettingsGUI() { return mobArmySettingsGUI; }
     public TeamSelectionGUI getTeamSelectionGUI() { return teamSelectionGUI; }
     public BundleGUI getBundleGUI() { return bundleGUI; }
-    public SpawnEggGUI getSpawnEggGUI() { return spawnEggGUI; }
+    public RandomizerExclusionGUI getSpawnEggGUI() { return spawnEggGUI; }
     public ResumeManager getEventResume() { return eventResume; }
     public WorldManager getWorldManager() {
         return worldManager;
@@ -294,7 +297,6 @@ public class MobArmyMain extends JavaPlugin {
     public WorldSettings getWorldSettings() {
         return worldSettings;
     }
-    public PlayerLocationManager getPlayerLocationManager() { return playerLocationManager; }
     public PortalManager getPortalManager() {
         return portalManager;
     }

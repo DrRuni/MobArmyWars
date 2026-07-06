@@ -103,7 +103,7 @@ public class ButtonManager implements Listener {
                 @Override
                 public void run() {
                     plugin.getEventManager().enableEventHandling();
-                    plugin.getEventManager().startCountdown();
+                    plugin.getEventManager().startEvent();
                     Sounds.playClick(player);
                 }
             }.runTaskLater(plugin, 1L);
@@ -114,6 +114,15 @@ public class ButtonManager implements Listener {
 
     private boolean handleReadyButton(Player player, Location clicked, String expectedTeam,
                                       String worldName, int x, int y, int z, ChatColor color) {
+
+        if (plugin.getEventResume().loadPhase() != ResumeManager.PHASE_WAVEAUSWAHL) {
+            player.sendMessage("");
+            player.sendMessage(ChatColor.RED + "⚠ Das Event passt nicht zur aktuellen Phase.");
+            player.sendMessage(ChatColor.GOLD + "nutze /set phase waveauswahl");
+            player.sendMessage("");
+            return false;
+        }
+
 
         String playerTeam = plugin.getTeamManager().getPlayerTeam(player);
         if (playerTeam == null) return false;
@@ -127,6 +136,8 @@ public class ButtonManager implements Listener {
                 && clicked.getBlockY() == y
                 && clicked.getBlockZ() == z) {
 
+            plugin.getArenaManager().markPlayerReady(player);
+
             for (Player p : Bukkit.getOnlinePlayers()) {
 
                 String w = p.getWorld().getName().toLowerCase();
@@ -136,7 +147,7 @@ public class ButtonManager implements Listener {
 
                 p.sendTitle(
                         color + "✔ Team " + expectedTeam + " bereit!",
-                        ChatColor.GRAY + player.getName() + " hat gedrückt",
+                        ChatColor.GRAY + player.getName() + " hat Ready gedrückt",
                         10, 40, 10
                 );
 
@@ -148,9 +159,9 @@ public class ButtonManager implements Listener {
                 );
             }
 
-            plugin.getArenaManager().markPlayerReady(player);
             return true;
         }
+
         return false;
     }
 

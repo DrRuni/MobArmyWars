@@ -1,68 +1,94 @@
 # Changelog
 
-## v1.4
+## v1.5
 
 ### Neu
+- Kistenrandomizer
+- Spawnreihenfolgen = klick reihenfolge
+
+### Verbessert
+- Startcountdown und Logic geändert
+
+### Behoben
+- Leichen im Code entfernt
+- Mobspawning in Lobby u Arena entfernt
+!!! Test block randomizer
+- Arena und Lobby umgestaltet
+- !!! zip wenn v... höher dann neue zip  nutzen u alte löschen
+
+
+## v1.4
+
+### Hinzugefügt
+
+- Arena-Welt-Reset hinzugefügt
+- Team-Scoreboard unterstützt nun Offline-Spieler
+- Neue Reset-Befehle hinzugefügt:
+  - `/reset arena`
+  - `/reset lobby`
+  - `/reset teamworld`
+  - `/reset playerdata`
+
+### Geändert
 
 - Dateimanager neu strukturiert
-- Arena-Welt-Reset hinzugefügt
-- Team-Scoreboard mit Offline-Spielern hinzugefügt
-- Reset-Befehle hinzugefügt:
-    - `/reset arena`
-    - `/reset lobby`
-    - `/reset teamworld`
-    - `/reset playerdata`
-- Textausgaben im Spiel und in der Konsole überarbeitet
+- Textausgaben im Spiel überarbeitet
+- Konsolenausgaben überarbeitet
+- Interne Projektstruktur verbessert
 
 ---
-
 
 ## v1.3
 
 ### Neu
-World-Arena von der Lobby getrennt
-Vorbereitung für spätere zusätzliche Arenen hinzugefügt
-Team-Equipment-GUI für Event-Ausrüstung hinzugefügt
+- World-Arena von der Lobby getrennt
+- Vorbereitung für spätere zusätzliche Arenen hinzugefügt
+- Team-Equipment-GUI für Event-Ausrüstung hinzugefügt
 
 ### Verbessert
-System auf getrennte Lobby- und Arena-Welten umgestellt
-Teleport-Logik für Lobby und Arena überarbeitet
-Resume-Funktion an die getrennten Welten angepasst
-Respawn-Ablauf verbessert
-Sound-Handling überarbeitet
+- System auf getrennte Lobby- und Arena-Welten umgestellt
+- Teleport-Logik für Lobby und Arena überarbeitet
+- Resume-Funktion an die getrennten Welten angepasst
+- Respawn-Ablauf verbessert
+- Sound-Handling überarbeitet
 
 ### Behoben
-Mehrere Bugs im Zusammenhang mit Sounds behoben
-Fehler bei Teleports zwischen Lobby und Arena behoben
-Probleme mit Resume behoben
-Fehler beim Respawn behoben
-Weitere kleinere Bugs beseitigt
+- Mehrere Bugs im Zusammenhang mit Sounds behoben
+- Fehler bei Teleports zwischen Lobby und Arena behoben
+- Probleme mit Resume behoben
+- Fehler beim Respawn behoben
+- Weitere kleinere Bugs beseitigt
 
 ### Wichtig
-Die Arena-Welt ist ab Version 1.3 von der Lobby-Welt getrennt
-Diese Änderung dient als Grundlage für spätere neue Arenen
+- Die Arena-Welt ist ab Version 1.3 von der Lobby-Welt getrennt
+- Diese Änderung dient als Grundlage für spätere neue Arenen
 
 --- 
 
 ## v1.2
 
 ### Neu
-Welteneinstellungen hinzugefügt
-Arena-Kompass-Option erweitert
+- Welteneinstellungen hinzugefügt
+- Arena-Kompass-Option erweitert
 
 ### Verbessert
-Arena-Reset verbessert
-GUIs verbessert
-Funktionen übersichtlicher neu angeordnet
-Code angepasst und für Paper/Minecraft 1.21.6 aktualisiert
+- Arena-Reset verbessert
+- GUIs verbessert
+- Funktionen übersichtlicher neu angeordnet
+- Code angepasst und für Paper/Minecraft 26.1 aktualisiert
 
 ### Behoben
-Mehrere Bugs behoben
-Kleinere Fehler im Ablauf und bei den Einstellungen beseitigt
+- Mehrere Bugs behoben
+- Kleinere Fehler im Ablauf und bei den Einstellungen beseitigt
 
 ### Wichtig
-Ab Version 1.2 wird Paper/Minecraft 1.21.6 benötigt
-Java 21 wird weiterhin vorausgesetzt
+- Ab Version 1.2 wird Paper/Minecraft 26.1.2 benötigt
+  und Java 25 wird vorausgesetzt
+
+### Kompatibilität
+- Benötigt **Paper 26.1.2**
+- Benötigt **Java 25**
+- Nicht kompatibel mit reinem Spigot/Bukkit
 
 ---
 
@@ -83,3 +109,9 @@ Java 21 wird weiterhin vorausgesetzt
 ### Behoben
 - Fehler bei der Erzeugung von Netherportalen behoben
 - Verschiedene kleinere Bugs behoben
+
+### Kompatibilität
+- Benötigt **Paper 1.21.5**
+- Benötigt **Java 21**
+- getestet bis 1.21.11
+- Nicht kompatibel mit reinem Spigot/Bukkit

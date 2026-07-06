@@ -18,13 +18,13 @@ import runi.myddns.mobarmywars.Utils.Sounds;
 import java.util.Arrays;
 import java.util.List;
 
-public class SpawnEggGUI implements Listener {
+public class RandomizerExclusionGUI implements Listener {
 
     private final BlockRandomizerManager blockRandomizerManager;
     private final MobArmyMain plugin;
     private final TimerManager timerManager;
 
-    public SpawnEggGUI(BlockRandomizerManager blockRandomizerManager, MobArmyMain plugin, TimerManager timerManager) {
+    public RandomizerExclusionGUI(BlockRandomizerManager blockRandomizerManager, MobArmyMain plugin, TimerManager timerManager) {
         this.blockRandomizerManager = blockRandomizerManager;
         this.plugin = plugin;
         this.timerManager = timerManager;
@@ -56,6 +56,8 @@ public class SpawnEggGUI implements Listener {
             Material.WITCH_SPAWN_EGG
     );
 
+    private static final String COPPER_PATTERN = "*COPPER*";
+
     private List<Material> getNormalSpawnEggs() {
         return allSpawnEggs.stream()
                 .filter(egg -> !bossSpawnEggs.contains(egg))
@@ -84,8 +86,15 @@ public class SpawnEggGUI implements Listener {
         Inventory gui = Bukkit.createInventory(
                 null,
                 54,
-                ChatColor.BLUE + "Spawneier Einstellungen"
+                ChatColor.BLUE + "Randomizer-Ausnahmen"
         );
+
+        gui.setItem(4, createPatternItem(
+                Material.COPPER_BLOCK,
+                ChatColor.GOLD + "Kupferblöcke",
+                COPPER_PATTERN,
+                "Alle Materialien mit COPPER im Namen ausschließen"
+        ));
 
         int[] bossSlots = {11, 12, 14, 15};
         int i = 0;
@@ -125,10 +134,36 @@ public class SpawnEggGUI implements Listener {
         player.openInventory(gui);
     }
 
+    private ItemStack createPatternItem(Material icon, String name, String pattern, String description) {
+        ItemStack item = new ItemStack(icon);
+        ItemMeta meta = item.getItemMeta();
+
+        if (meta != null) {
+            boolean blocked = blockRandomizerManager.isBlockPatternBlocked(pattern);
+
+            meta.setDisplayName(name);
+            meta.setLore(List.of(
+                    "",
+                    ChatColor.GRAY + description,
+                    ChatColor.GRAY + "Pattern: " + ChatColor.YELLOW + pattern,
+                    "",
+                    blocked
+                            ? ChatColor.RED + "Deaktiviert ❌"
+                            : ChatColor.GREEN + "Aktiviert ✅",
+                    "",
+                    ChatColor.DARK_GRAY + "Klicken zum Umschalten"
+            ));
+
+            item.setItemMeta(meta);
+        }
+
+        return item;
+    }
+
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
         if (!ChatColor.stripColor(event.getView().getTitle())
-                .equals("Spawneier Einstellungen")) return;
+                .equals("Randomizer-Ausnahmen")) return;
 
         event.setCancelled(true);
 
@@ -140,6 +175,13 @@ public class SpawnEggGUI implements Listener {
         if (clickedItem.getType() == Material.ARROW) {
             Sounds.playClick(player);
             plugin.getWorldSettingsGUI().open(player);
+            return;
+        }
+
+        if (clickedItem.getType() == Material.COPPER_BLOCK) {
+            blockRandomizerManager.toggleBlockedBlockPattern(COPPER_PATTERN);
+            Sounds.playClick(player);
+            openGUI(player);
             return;
         }
 

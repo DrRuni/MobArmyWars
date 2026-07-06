@@ -129,14 +129,11 @@ public class ArenaSettingsGUI implements Listener {
             case "WAVES neu starten" -> {
                 Sounds.playClick(player);
 
-                int currentPhase = plugin.getEventResume().loadPhase();
-
-                if (currentPhase != ResumeManager.PHASE_ARENA) {
-                    player.sendMessage(
-                            ChatColor.DARK_RED + "✖ " +
-                                    ChatColor.GRAY + "Waves können so nicht ausgelöst werden, " +
-                                    "weil du muss erst in die Arena-Phase!"
-                    );
+                if (plugin.getEventResume().loadPhase() != ResumeManager.PHASE_ARENA) {
+                    player.sendMessage("");
+                    player.sendMessage(ChatColor.RED + "⚠ Das Event passt nicht zur aktuellen Phase.");
+                    player.sendMessage(ChatColor.GOLD + "Nutze /set phase arena");
+                    player.sendMessage("");
                     return;
                 }
 
@@ -159,8 +156,7 @@ public class ArenaSettingsGUI implements Listener {
                 player.closeInventory();
 
                 plugin.getTimerManager().stopTimer();
-                plugin.getArenaManager().teleportTeamsToArena();
-                plugin.getArenaManager().teleportAndStart();
+                plugin.getArenaManager().startArenaEvent();
                 plugin.getTimerManager().updateBossBar(null);
                 plugin.getTimerManager().setForward(true);
                 plugin.getTimerManager().startTimer();

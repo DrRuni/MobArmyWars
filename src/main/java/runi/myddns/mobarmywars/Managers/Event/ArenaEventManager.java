@@ -1,6 +1,5 @@
 package runi.myddns.mobarmywars.Managers.Event;
 
-import com.destroystokyo.paper.event.entity.EntityRemoveFromWorldEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.HoverEvent;
@@ -10,7 +9,6 @@ import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.entity.*;
-import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -25,7 +23,7 @@ import java.util.List;
 public class ArenaEventManager implements Listener {
 
     private final MobArmyMain plugin;
-    private BlockRandomizerManager randomizer;
+//    private BlockRandomizerManager randomizer;
 
     private final Map<String, Integer> currentWave = new HashMap<>();
     private final Map<String, List<LivingEntity>> activeMobs = new HashMap<>();
@@ -42,8 +40,8 @@ public class ArenaEventManager implements Listener {
     private String winningTeam = null;
     private long winningTime = -1;
     private int aggroTaskId = -1;
-    public int getCurrentWaveForTeam(String team) {return currentWave.getOrDefault(team, 0) + 1;}
-    public int getMaxWaves() {return MAX_WAVES;}
+//    public int getCurrentWaveForTeam(String team) {return currentWave.getOrDefault(team, 0) + 1;}
+//    public int getMaxWaves() {return MAX_WAVES;}
 
     private static final Set<EntityType> FLYING_MOBS = Set.of(
             EntityType.GHAST,
@@ -98,37 +96,87 @@ public class ArenaEventManager implements Listener {
         plugin.getEventResume().savePhase(ResumeManager.PHASE_ARENA);
     }
 
-    public void teleportAndStart() {
+    public void startArenaEvent() {
 
-        if (randomizer != null) {
-            for (Player p : Bukkit.getOnlinePlayers()) {
-                randomizer.disableRandomizer(p);
-            }
-        }
+        plugin.getTimerManager().stopTimer();
+
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            teleportTeamsToArena();
+        }, 100L);
+
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            startArenaCountdown(() -> {
+                plugin.getTimerManager().setForward(true);
+                plugin.getTimerManager().startTimer();
+
+                startWaveBattle();
+            });
+        }, 140L);
+    }
+
+    private void startArenaCountdown(Runnable onFinished) {
 
         new BukkitRunnable() {
             int countdown = 5;
 
             @Override
             public void run() {
+
                 if (countdown > 0) {
-                    String msg = ChatColor.GOLD + "🏁 MobArmyWars startet in " + ChatColor.RED + countdown;
+
+                    ChatColor color;
+
+                    if (countdown == 5 || countdown == 4) {
+                        color = ChatColor.RED;
+                    } else if (countdown == 3) {
+                        color = ChatColor.GOLD;
+                    } else {
+                        color = ChatColor.YELLOW;
+                    }
 
                     for (Player player : Bukkit.getOnlinePlayers()) {
-                        player.sendMessage(msg);
-                        player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HAT, 1.0f, 1.0f);
+                        if (!plugin.getTeamManager().isInTeam(player)) continue;
+
+                        player.sendTitle(
+                                color + String.valueOf(countdown),
+                                "",
+                                0, 25, 0
+                        );
+
+                        player.playSound(
+                                player.getLocation(),
+                                Sound.BLOCK_NOTE_BLOCK_PLING,
+                                1.0F,
+                                1.0F
+                        );
                     }
 
                     countdown--;
+
                 } else {
-                    cancel();
 
                     for (Player player : Bukkit.getOnlinePlayers()) {
-                        player.sendMessage(ChatColor.GREEN + "⚔ Das MobArmyWars beginnt!");
-                        player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+                        if (!plugin.getTeamManager().isInTeam(player)) continue;
+
+                        player.sendTitle(
+                                ChatColor.GREEN + "Go!",
+                                "",
+                                0, 30, 10
+                        );
+
+                        player.playSound(
+                                player.getLocation(),
+                                Sound.ENTITY_PLAYER_LEVELUP,
+                                1.0F,
+                                1.0F
+                        );
                     }
 
-                    startWaveBattle();
+                    cancel();
+
+                    if (onFinished != null) {
+                        Bukkit.getScheduler().runTaskLater(plugin, onFinished, 15L);
+                    }
                 }
             }
         }.runTaskTimer(plugin, 0L, 20L);
@@ -208,7 +256,7 @@ public class ArenaEventManager implements Listener {
 
         WaveManager waveManager = plugin.getWaveManager();
 
-        Map<String, Integer> wave = waveManager.getWave(waveOwner, waveIndex);
+        List<WaveManager.WaveEntry> wave = waveManager.getWave(waveOwner, waveIndex);
         int finalWave = waveIndex + 1;
 
         if (wave == null || wave.isEmpty()) {
@@ -221,7 +269,9 @@ public class ArenaEventManager implements Listener {
         List<LivingEntity> spawned = new ArrayList<>();
         activeMobs.put(teamFighting, spawned);
 
-        final int totalMobs = wave.values().stream().mapToInt(Integer::intValue).sum();
+        final int totalMobs = wave.stream()
+                .mapToInt(WaveManager.WaveEntry::getAmount)
+                .sum();
 
         BarColor color = teamFighting.equalsIgnoreCase("Rot") ? BarColor.RED : BarColor.BLUE;
         BossBar bar = Bukkit.createBossBar(
@@ -256,15 +306,14 @@ public class ArenaEventManager implements Listener {
     }
 
     private void spawnWaveMobs(String teamFighting, String waveOwner, Location[] spawnPoints,
-                               Map<String, Integer> wave, List<LivingEntity> spawned,
+                               List<WaveManager.WaveEntry> wave, List<LivingEntity> spawned,
                                int totalMobs, BossBar bar) {
-        List<Map.Entry<String, Integer>> mobEntries = new ArrayList<>(wave.entrySet());
         int delay = 0;
         Random random = new Random();
 
-        for (Map.Entry<String, Integer> entry : mobEntries) {
-            String mobType = entry.getKey();
-            int count = entry.getValue();
+        for (WaveManager.WaveEntry entry : wave) {
+            String mobType = entry.getMobType();
+            int count = entry.getAmount();
             boolean isBaby = mobType.startsWith("BABY_");
             EntityType type = EntityType.valueOf(mobType.replace("BABY_", "").replace("ADULT_", ""));
 
@@ -378,7 +427,7 @@ public class ArenaEventManager implements Listener {
             int nextWave = current + 1;
             int finishedWave = current + 1;
 
-            if (nextWave < 3) {
+            if (nextWave < MAX_WAVES) {
 
                 currentWave.put(teamFighting, nextWave);
 
@@ -602,14 +651,20 @@ public class ArenaEventManager implements Listener {
 
                     p.sendTitle(
                             ChatColor.GREEN + "✅ Alle Teams bereit!",
-                            ChatColor.YELLOW + "Das MobArmyWars beginnt gleich...",
+                            ChatColor.YELLOW + "Die Arenaphase beginnt gleich...",
                             30, 60, 30
                     );
-                    p.playSound(p.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1.2f);
+
+                    p.playSound(
+                            p.getLocation(),
+                            Sound.UI_TOAST_CHALLENGE_COMPLETE,
+                            1f,
+                            1.2f
+                    );
                 }
             }
-            Bukkit.getScheduler().runTaskLater(plugin, this::teleportTeamsToArena, 100L);
-            Bukkit.getScheduler().runTaskLater(plugin, this::teleportAndStart, 140L);
+
+            startArenaEvent();
         }
 
     }
@@ -742,8 +797,8 @@ public class ArenaEventManager implements Listener {
 //        if (arenaMob == null || arenaMob != (byte) 1) return;
 //    }
 
-    public void setRandomizer(BlockRandomizerManager randomizer) { this.randomizer = randomizer;
-    }
+//    public void setRandomizer(BlockRandomizerManager randomizer) { this.randomizer = randomizer;
+//    }
 
     private void forceAggro(LivingEntity mob, Player target) {
 
@@ -817,11 +872,11 @@ public class ArenaEventManager implements Listener {
         return String.format("%02d:%02d", min, sec);
     }
 
-    public boolean isArenaRunning() {
-        return arenaRunning;
-    }
-
-    public String getWinningTeam() {
-        return winningTeam;
-    }
+//    public boolean isArenaRunning() {
+//        return arenaRunning;
+//    }
+//
+//    public String getWinningTeam() {
+//        return winningTeam;
+//    }
 }

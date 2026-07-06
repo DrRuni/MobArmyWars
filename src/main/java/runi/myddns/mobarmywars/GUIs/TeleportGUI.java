@@ -52,22 +52,26 @@ public class TeleportGUI implements Listener {
         inv.setItem(28, createItem(Material.END_CRYSTAL,
                 "Alle → Lobby",
                 "",
-                "Teleportiert ALLE Spieler"));
+                "Teleportiert ALLE Spieler &",
+                ChatColor.DARK_RED + "Phase Lobby wird gesetzt!"));
 
         inv.setItem(30, createItem(Material.END_CRYSTAL,
                 "Alle → Teamwelt",
                 "",
-                "Teleportiert ALLE Spieler"));
+                "Teleportiert ALLE Spieler &",
+                ChatColor.DARK_RED + "Phase Teamwelt wird gesetzt!"));
 
         inv.setItem(32, createItem(Material.END_CRYSTAL,
                 "Alle → Waveauswahl",
                 "",
-                "Teleportiert ALLE Spieler"));
+                "Teleportiert ALLE Spieler &",
+                ChatColor.DARK_RED + "Phase Waveauswahl wird gesetzt!"));
 
         inv.setItem(34, createItem(Material.END_CRYSTAL,
                 "Alle → Arena",
                 "",
-                "Teleportiert ALLE Spieler"));
+                "Teleportiert ALLE Spieler &",
+                ChatColor.DARK_RED + "Phase Arena wird gesetzt!"));
 
 
         inv.setItem(40, createBackButton("Event-Einstellungen"));

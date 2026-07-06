@@ -40,6 +40,7 @@ public class WorldSettingsGUI implements Listener {
         boolean mobSpawningOn = plugin.getWorldSettings().isMobSpawningEnabled();
         boolean daylightCycleOn = plugin.getWorldSettings().isDaylightCycleEnabled();
         boolean nightVisionOn = plugin.getWorldSettings().isNightVisionEnabled();
+        boolean chestRandomizerOn = plugin.getWorldSettings().isChestRandomizerEnabled();
         String difficulty = plugin.getWorldSettings().getDifficulty();
         long currentTime = plugin.getWorldSettings().getCurrentWorldTime();
 
@@ -60,6 +61,7 @@ public class WorldSettingsGUI implements Listener {
         ));
 
         inv.setItem(14, createToggleItem("Mob-Spawning", mobSpawningOn));
+        inv.setItem(15, createToggleItem("Kisten-Randomizer", chestRandomizerOn));
         inv.setItem(16, createToggleItem("Daylight-Cycle", daylightCycleOn));
         inv.setItem(18, createToggleItem("Night-Vision", nightVisionOn));
         inv.setItem(20, createDifficultyItem(difficulty));
@@ -69,7 +71,7 @@ public class WorldSettingsGUI implements Listener {
                 Material.SPAWNER,
                 ChatColor.GOLD + "Randomizer-Ausnahmen",
                 "",
-                "Spawneier vom Zufall ausschließen"
+                "Blöcke und Spawneiner vom Zufall ausschließen"
         ));
 
         inv.setItem(26, createItem(
@@ -116,9 +118,12 @@ public class WorldSettingsGUI implements Listener {
             icon = state ? Material.DAYLIGHT_DETECTOR : Material.CLOCK;
         } else if (name.equalsIgnoreCase("Night-Vision")) {
             icon = state ? Material.LIGHT : Material.GRAY_CANDLE;
+        } else if (name.equalsIgnoreCase("Kisten-Randomizer")) {
+            icon = state ? Material.CHEST : Material.BARRIER;
         } else {
             icon = state ? Material.LIME_WOOL : Material.RED_WOOL;
         }
+
 
         ItemStack item = new ItemStack(icon);
         ItemMeta meta = item.getItemMeta();
@@ -265,6 +270,22 @@ public class WorldSettingsGUI implements Listener {
                             newState
                                     ? ChatColor.GREEN + "✅ BlockRandomizer aktiviert!"
                                     : ChatColor.RED + "⛔ BlockRandomizer deaktiviert!"
+                    );
+                }
+            }
+
+            case "kisten-randomizer" -> {
+                Sounds.playClick(player);
+
+                plugin.getWorldSettings().toggleChestRandomizer();
+
+                boolean newState = plugin.getWorldSettings().isChestRandomizerEnabled();
+
+                for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+                    onlinePlayer.sendMessage(
+                            newState
+                                    ? ChatColor.GREEN + "✅ Kisten-Randomizer aktiviert!"
+                                    : ChatColor.RED + "⛔ Kisten-Randomizer deaktiviert!"
                     );
                 }
             }

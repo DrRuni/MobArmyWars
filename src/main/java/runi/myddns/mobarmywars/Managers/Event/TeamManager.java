@@ -96,11 +96,14 @@ public class TeamManager implements Listener {
             @Override
             public void run() {
                 boolean allHaveTeam = Bukkit.getOnlinePlayers().stream()
-                        .allMatch(p -> !getPlayerTeam(p).equalsIgnoreCase("Kein Team"));
+                        .allMatch(p -> {
+                            String team = getPlayerTeam(p);
+                            return team != null && !team.equalsIgnoreCase("Kein Team");
+                        });
 
                 if (allHaveTeam) {
                     cancel();
-                    MobArmyMain.getInstance().getEventManager().startCountdown();
+                    MobArmyMain.getInstance().getEventManager().startEvent();
                 }
             }
         }.runTaskTimer(MobArmyMain.getInstance(), 40L, 40L);

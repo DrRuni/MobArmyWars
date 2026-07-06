@@ -158,9 +158,9 @@ public class TeamScoreboardManager {
         if (!noTeamPlayers.isEmpty()) {
             sidebar.getScore(emptyLine(empty++)).setScore(score--);
 
-            sidebar.getScore(ChatColor.WHITE + "Kein Team:").setScore(score--);
+            sidebar.getScore(ChatColor.DARK_RED + "Kein Team:").setScore(score--);
             for (Player online : noTeamPlayers) {
-                sidebar.getScore(ChatColor.WHITE + "- " + online.getName()).setScore(score--);
+                sidebar.getScore(ChatColor.GRAY + "- " + online.getName()).setScore(score--);
             }
         }
 

@@ -38,6 +38,17 @@ public class WorldSettings {
             "world_mobarmy_arena"
     );
 
+    private static final String LOBBY_WORLD = "world_mobarmy_lobby";
+    private static final String ARENA_WORLD = "world_mobarmy_arena";
+
+    private boolean isLobbyOrArenaWorld(World world) {
+        if (world == null) return false;
+
+        String name = world.getName();
+        return name.equalsIgnoreCase(LOBBY_WORLD)
+                || name.equalsIgnoreCase(ARENA_WORLD);
+    }
+
     public WorldSettings(MobArmyMain plugin) {
         this.plugin = plugin;
         load();
@@ -143,6 +154,10 @@ public class WorldSettings {
         return arenaCompassEnabled;
     }
 
+    public boolean isChestRandomizerEnabled() {
+        return config.getBoolean("chest-randomizer-enabled", true);
+    }
+
     public String getDifficulty() {
         return difficulty;
     }
@@ -200,6 +215,12 @@ public class WorldSettings {
         save();
     }
 
+    public void toggleChestRandomizer() {
+        boolean current = isChestRandomizerEnabled();
+        config.set("chest-randomizer-enabled", !current);
+        save();
+    }
+
     public void setArenaCompassEnabled(boolean enabled) {
         arenaCompassEnabled = enabled;
         save();
@@ -252,11 +273,32 @@ public class WorldSettings {
         if (!WORLDS.contains(world.getName())) return;
 
         world.setGameRule(GameRules.KEEP_INVENTORY, keepInventory);
-        world.setGameRule(GameRules.SPAWN_MOBS, mobSpawningEnabled);
         world.setGameRule(GameRules.ADVANCE_TIME, daylightCycleEnabled);
-        world.setGameRule(GameRules.NATURAL_HEALTH_REGENERATION, !difficulty.equalsIgnoreCase("ultra-ultra-hardcore"));
-        world.setDifficulty(getBukkitDifficulty());
         applyTimeSafely(world);
+
+        if (world.getName().equalsIgnoreCase(ARENA_WORLD)) {
+            world.setGameRule(GameRules.SPAWN_MOBS, false);
+            world.setDifficulty(getBukkitDifficulty());
+            world.setGameRule(
+                    GameRules.NATURAL_HEALTH_REGENERATION,
+                    !difficulty.equalsIgnoreCase("ultra-ultra-hardcore")
+            );
+            return;
+        }
+
+        if (world.getName().equalsIgnoreCase(LOBBY_WORLD)) {
+            world.setGameRule(GameRules.SPAWN_MOBS, false);
+            world.setDifficulty(Difficulty.EASY);
+            world.setGameRule(GameRules.NATURAL_HEALTH_REGENERATION, true);
+            return;
+        }
+
+        world.setGameRule(GameRules.SPAWN_MOBS, mobSpawningEnabled);
+        world.setDifficulty(getBukkitDifficulty());
+        world.setGameRule(
+                GameRules.NATURAL_HEALTH_REGENERATION,
+                !difficulty.equalsIgnoreCase("ultra-ultra-hardcore")
+        );
     }
 
     public void applyKeepInventory() {
@@ -272,7 +314,11 @@ public class WorldSettings {
         for (String worldName : WORLDS) {
             World world = Bukkit.getWorld(worldName);
             if (world != null) {
-                world.setGameRule(GameRules.SPAWN_MOBS, mobSpawningEnabled);
+                if (isLobbyOrArenaWorld(world)) {
+                    world.setGameRule(GameRules.SPAWN_MOBS, false);
+                } else {
+                    world.setGameRule(GameRules.SPAWN_MOBS, mobSpawningEnabled);
+                }
             }
         }
     }
@@ -292,7 +338,11 @@ public class WorldSettings {
         for (String worldName : WORLDS) {
             World world = Bukkit.getWorld(worldName);
             if (world != null) {
-                world.setDifficulty(bukkitDifficulty);
+                if (world.getName().equalsIgnoreCase(LOBBY_WORLD)) {
+                    world.setDifficulty(Difficulty.EASY);
+                } else {
+                    world.setDifficulty(bukkitDifficulty);
+                }
             }
         }
     }
@@ -303,7 +353,11 @@ public class WorldSettings {
         for (String worldName : WORLDS) {
             World world = Bukkit.getWorld(worldName);
             if (world != null) {
-                world.setGameRule(GameRules.NATURAL_HEALTH_REGENERATION, naturalRegen);
+                if (world.getName().equalsIgnoreCase(LOBBY_WORLD)) {
+                    world.setGameRule(GameRules.NATURAL_HEALTH_REGENERATION, true);
+                } else {
+                    world.setGameRule(GameRules.NATURAL_HEALTH_REGENERATION, naturalRegen);
+                }
             }
         }
     }

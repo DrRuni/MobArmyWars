@@ -96,8 +96,7 @@ public class UnifiedWaveGUI implements Listener {
         String title = "Wave " + (waveIndex + 1) + " konfigurieren";
         meta.setDisplayName(ChatColor.YELLOW + title);
 
-        List<Map<String, Integer>> waves = waveManager.getAllWaves(team);
-        Map<String, Integer> wave = waveIndex < waves.size() ? waves.get(waveIndex) : new HashMap<>();
+        Map<String, Integer> wave = waveManager.getWaveAsCountMap(team, waveIndex);
 
         List<String> lore = getSortedMobs(wave).stream()
                 .filter(e -> e.getValue() > 0)
@@ -197,9 +196,7 @@ public class UnifiedWaveGUI implements Listener {
             icon = Material.SPAWNER;
         }
 
-        Map<String, Integer> currentWave =
-                waveManager.getAllWaves(team).get(currentWaveIndex);
-        int inWave = currentWave.getOrDefault(mobType, 0);
+        int inWave = waveManager.getMobAmountInWave(team, currentWaveIndex, mobType);
 
         List<String> lore = new ArrayList<>();
         lore.add(ChatColor.WHITE + "Eingesetzt: " + inWave);
@@ -271,8 +268,6 @@ public class UnifiedWaveGUI implements Listener {
         String mobType = meta.getPersistentDataContainer().get(MOB_TYPE_KEY, org.bukkit.persistence.PersistentDataType.STRING);
         if (mobType == null) mobType = "";
 
-        String rawName = capitalize(mobType.replace("BABY_", "").replace("ADULT_", "").toLowerCase());
-
         switch (nameStripped) {
             case "Wave 1 konfigurieren" -> new UnifiedWaveGUI(
                     waveManager,
@@ -320,14 +315,14 @@ public class UnifiedWaveGUI implements Listener {
             }
             case "Waves zurücksetzen" -> {
 
-                List<Map<String, Integer>> waves = waveManager.getAllWaves(team);
+                List<List<WaveManager.WaveEntry>> waves = waveManager.getAllWaves(team);
 
-                for (Map<String, Integer> wave : waves) {
-                    for (Map.Entry<String, Integer> entry : wave.entrySet()) {
+                for (List<WaveManager.WaveEntry> wave : waves) {
+                    for (WaveManager.WaveEntry entry : wave) {
                         mobSaveManager.restoreMob(
                                 team,
-                                entry.getKey(),
-                                entry.getValue()
+                                entry.getMobType(),
+                                entry.getAmount()
                         );
                     }
                 }
@@ -364,8 +359,7 @@ public class UnifiedWaveGUI implements Listener {
                         }
 
                     } else if (event.getClick().isRightClick()) {
-                        Map<String, Integer> currentWave = waveManager.getAllWaves(team).get(currentWaveIndex);
-                        int currentAmount = currentWave.getOrDefault(mobType, 0);
+                        int currentAmount = waveManager.getMobAmountInWave(team, currentWaveIndex, mobType);
 
                         if (currentAmount <= 0) {
                             return;
