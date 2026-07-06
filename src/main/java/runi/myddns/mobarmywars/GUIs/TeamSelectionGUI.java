@@ -10,7 +10,8 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import runi.myddns.mobarmywars.Managers.Event.TeamManager;
+import runi.myddns.mobarmywars.Utils.WorldMessageManager;
+import runi.myddns.mobarmywars.Managers.TeamManager;
 import runi.myddns.mobarmywars.MobArmyMain;
 
 public class TeamSelectionGUI implements Listener {
@@ -68,26 +69,16 @@ public class TeamSelectionGUI implements Listener {
 
         if ("Team Rot".equalsIgnoreCase(itemName)) {
             teamManager.assignTeam(player, "Rot");
-
-            for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                onlinePlayer.sendMessage(
-                        ChatColor.YELLOW + player.getName() + ChatColor.RED + " ist nun im Team Rot!"
-                );
-            }
-
+            WorldMessageManager.sendToArenaWorlds(
+                    ChatColor.YELLOW + player.getName() + ChatColor.RED + " ist nun im Team Rot!");
             player.closeInventory();
             return;
         }
 
         if ("Team Blau".equalsIgnoreCase(itemName)) {
             teamManager.assignTeam(player, "Blau");
-
-            for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                onlinePlayer.sendMessage(
-                        ChatColor.YELLOW + player.getName() + ChatColor.BLUE + " ist nun im Team Blau!"
-                );
-            }
-
+            WorldMessageManager.sendToArenaWorlds(
+                    ChatColor.YELLOW + player.getName() + ChatColor.BLUE + " ist nun im Team Blau!");
             player.closeInventory();
         }
     }

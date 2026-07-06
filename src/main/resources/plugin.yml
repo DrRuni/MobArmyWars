@@ -1,18 +1,13 @@
 name: MobArmyWars
-version: "1.2"
+version: '1.0'
 author: Runi
 main: runi.myddns.mobarmywars.MobArmyMain
-api-version: "1.21"
+api-version: '1.21'
 
 commands:
-  arenasummary:
-    description: Zeigt die Arena-Auswertung
-    usage: /arenasummary
-
-  mobarmy:
-    description: Hauptbefehl für MobArmyWars
-    usage: /mobarmy resume
-    aliases: [ma]
+  optionen:
+    description: Öffnet die MobArmy Optionen
+    usage: /optionen
     permission: mobarmy.admin
     permission-message: "§c❌ Keine Berechtigung!"
 
@@ -20,28 +15,23 @@ commands:
     description: Zeigt gespeicherte Mobs an
     usage: /mobstatus [rot|blau]
 
-  optionen:
-    description: Öffnet die MobArmy Optionen
-    usage: /optionen
-    permission: mobarmy.admin
-    permission-message: "§c❌ Keine Berechtigung!"
+  team:
+    description: Team-Befehle
+    usage: /team <join|leave> [rot|blau]
+
+  arenasummary:
+    description: Zeigt die Arena-Auswertung
+    usage: /arenasummary
 
   resume:
     description: Resume-Funktion für MobArmy
     usage: /resume mobarmy
     aliases: [continue]
-    permission: mobarmy.admin
-    permission-message: "§c❌ Keine Berechtigung!"
 
-  setphase:
-    description: Setzt die Event-Phase
-    usage: /setphase <lobby|teamwelt|waveauswahl|arena>
-    permission: mobarmy.admin
-    permission-message: "§c❌ Keine Berechtigung!"
-
-  team:
-    description: Team-Befehle
-    usage: /team <join|leave> [rot|blau]
+  mobarmy:
+    description: Hauptbefehl für MobArmyWars
+    usage: /mobarmy resume
+    aliases: [ma]
 
 permissions:
   mobarmy.admin:

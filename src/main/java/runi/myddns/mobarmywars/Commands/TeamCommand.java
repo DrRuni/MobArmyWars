@@ -132,10 +132,7 @@ public class TeamCommand implements CommandExecutor, TabCompleter {
 
     private boolean isInTeamWorld(Player player) {
         String world = player.getWorld().getName().toLowerCase();
-        return world.equals("world_rot")
-                || world.equals("world_blau")
-                || world.equals("world_rot_nether")
-                || world.equals("world_blau_nether");
+        return world.equals("world_rot") || world.equals("world_blau");
     }
 
     private void deny(Player player, String message) {

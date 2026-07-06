@@ -1,12 +1,4 @@
 # Globale Welteneinstellungen
 
+randomizer-enabled: false
 keep-inventory: true
-randomizer-enabled: true
-night-vision-enabled: true
-mob-spawning: true
-daylight-cycle: true
-difficulty: normal
-world-time: 6000
-
-# Arena Item
-arena-compass-enabled: false

@@ -8,7 +8,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
-import runi.myddns.mobarmywars.Managers.Event.TeamManager;
+import runi.myddns.mobarmywars.Managers.TeamManager;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;

@@ -1,6 +1,5 @@
 package runi.myddns.mobarmywars.Listeners;
 
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -93,20 +92,6 @@ public class PauseListener implements Listener {
         Player p = e.getPlayer();
         frozenPlayers.remove(p);
         freezeLocations.remove(p);
-
-        if (plugin.getEventResume().isEventStarted()) {
-            if (plugin.getTimerManager() != null) {
-                plugin.getTimerManager().pauseTimer();
-            }
-
-            plugin.getServer().broadcastMessage(
-                    ChatColor.RED + "Spieler "
-                            + ChatColor.YELLOW + p.getName()
-                            + ChatColor.RED + " ist aus dem Event ausgetreten. "
-                            + ChatColor.GOLD + "Das Spiel wurde angehalten. "
-                            + ChatColor.GRAY + "Weiter mit /resume"
-            );
-        }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)

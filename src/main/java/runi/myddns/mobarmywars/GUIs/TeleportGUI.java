@@ -10,7 +10,7 @@ import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import runi.myddns.mobarmywars.Utils.Sounds;
-import runi.myddns.mobarmywars.Managers.World.TeleportManager;
+import runi.myddns.mobarmywars.World.TeleportManager;
 import runi.myddns.mobarmywars.MobArmyMain;
 
 import java.util.ArrayList;
@@ -30,46 +30,38 @@ public class TeleportGUI implements Listener {
 
         inv.setItem(1, createItem(Material.ENDER_PEARL,
                 "Ich → Lobby",
-                "",
                 "Teleportiert nur dich"));
 
         inv.setItem(3, createItem(Material.ENDER_PEARL,
                 "Ich → Teamwelt",
-                "",
                 "Teleportiert nur dich"));
 
         inv.setItem(5, createItem(Material.ENDER_PEARL,
                 "Ich → Waveauswahl",
-                "",
                 "Teleportiert nur dich"));
 
         inv.setItem(7, createItem(Material.ENDER_PEARL,
                 "Ich → Arena",
-                "",
                 "Teleportiert nur dich"));
 
         inv.setItem(19, createItem(Material.END_CRYSTAL,
                 "Alle → Lobby",
-                "",
                 "Teleportiert ALLE Spieler"));
 
         inv.setItem(21, createItem(Material.END_CRYSTAL,
                 "Alle → Teamwelt",
-                "",
                 "Teleportiert ALLE Spieler"));
 
         inv.setItem(23, createItem(Material.END_CRYSTAL,
                 "Alle → Waveauswahl",
-                "",
                 "Teleportiert ALLE Spieler"));
 
         inv.setItem(25, createItem(Material.END_CRYSTAL,
                 "Alle → Arena",
-                "",
                 "Teleportiert ALLE Spieler"));
 
 
-        inv.setItem(31, createBackButton("Event-Einstellungen"));
+        inv.setItem(27, createBackButton("Event-Einstellungen"));
 
         player.openInventory(inv);
     }
@@ -112,31 +104,30 @@ public class TeleportGUI implements Listener {
 
         String name = ChatColor.stripColor(clicked.getItemMeta().getDisplayName());
 
+        Sounds.playClick(player);
+
         switch (name) {
 
-            case "Zurück" -> {
-                Sounds.playBack(player);
-                plugin.getEventSettingsGUI().open(player);
-            }
+            case "Zurück" -> plugin.getEventSettingsGUI().open(player);
 
 
             case "Ich → Lobby" -> {
                 TeleportManager.teleport(player, "world_mobarmylobby");
                 Sounds.playTeleport(player);
 
+                plugin.getEventResume().savePlayerSpawn(player, player.getLocation());
                 player.closeInventory();
 
                 player.sendMessage(ChatColor.GREEN + "✔ Du wurdest zur Lobby teleportiert!");
             }
 
             case "Alle → Lobby" -> {
-                Sounds.playClick(player);
-
                 for (Player p : Bukkit.getOnlinePlayers()) {
                     TeleportManager.teleport(p, "world_mobarmylobby");
                     Sounds.playTeleport(p);
                 }
 
+                plugin.getEventResume().savePlayerSpawn(player, player.getLocation());
                 player.closeInventory();
 
                 Bukkit.broadcastMessage(ChatColor.GREEN + "Alle Spieler wurden zur Lobby teleportiert!");
@@ -153,13 +144,13 @@ public class TeleportGUI implements Listener {
                 TeleportManager.teleport(player, worldName);
                 Sounds.playTeleport(player);
 
+                plugin.getEventResume().savePlayerSpawn(player, player.getLocation());
                 player.closeInventory();
 
                 player.sendMessage(ChatColor.GREEN + "🌍 Du wurdest in deine Teamwelt teleportiert!");
             }
 
             case "Alle → Teamwelt" -> {
-                Sounds.playClick(player);
 
                 boolean teleportedAnyone = false;
 
@@ -183,7 +174,6 @@ public class TeleportGUI implements Listener {
                     }
 
                     Sounds.playTeleport(p);
-
                     p.sendMessage(ChatColor.GREEN +
                             "🌍 Du wurdest in deine Teamwelt teleportiert!");
                     teleportedAnyone = true;
@@ -194,7 +184,6 @@ public class TeleportGUI implements Listener {
                             "❗ Kein Spieler mit gültigem Team gefunden!");
                     return;
                 }
-
                 player.closeInventory();
 
                 for (Player p : Bukkit.getOnlinePlayers()) {
@@ -220,17 +209,16 @@ public class TeleportGUI implements Listener {
 
                 plugin.getEventResume().savePlayerSpawn(player, player.getLocation());
                 player.closeInventory();
-                plugin.getArenaCompassManager().giveMonsterCompass(player);
 
                 player.sendMessage(ChatColor.GREEN + "🚀 Du wurdest zur Wavekonfiguration teleportiert!");
             }
 
             case "Alle → Waveauswahl" -> {
-                Sounds.playClick(player);
 
                 boolean teleportedAnyone = false;
 
                 for (Player p : Bukkit.getOnlinePlayers()) {
+
                     String team = plugin.getTeamManager().getPlayerTeam(p);
 
                     if (team == null || team.equalsIgnoreCase("Kein Team")) {
@@ -264,13 +252,9 @@ public class TeleportGUI implements Listener {
 
                 player.closeInventory();
 
-                for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                    plugin.getArenaCompassManager().giveMonsterCompass(onlinePlayer);
-                }
-
                 for (Player p : Bukkit.getOnlinePlayers()) {
                     p.sendMessage("");
-                    p.sendMessage(ChatColor.GRAY + "📢 Der Teamleiter hat alle Team-Spieler zur Waveauswahl teleportiert.");
+                    p.sendMessage( ChatColor.GRAY + "📢 Der Teamleiter hat alle Team-Spieler zur Waveauswahl teleportiert.");
                 }
             }
 
@@ -283,17 +267,12 @@ public class TeleportGUI implements Listener {
 
                 TeleportManager.teleportToArena(player);
                 Sounds.playTeleport(player);
-
-                plugin.getEventResume().savePlayerSpawn(player, player.getLocation());
-
                 player.sendMessage(ChatColor.GREEN + "🚀 Du wurdest zur Arena teleportiert!");
 
                 player.closeInventory();
-                plugin.getArenaCompassManager().giveMonsterCompass(player);
             }
 
             case "Alle → Arena" -> {
-                Sounds.playClick(player);
 
                 boolean teleportedAnyone = false;
 
@@ -308,7 +287,6 @@ public class TeleportGUI implements Listener {
 
                     TeleportManager.teleportToArena(p);
                     Sounds.playTeleport(p);
-                    plugin.getEventResume().savePlayerSpawn(p, p.getLocation());
 
                     p.sendMessage(ChatColor.GREEN +
                             "🚀 Du wurdest zur Arena teleportiert!");
@@ -322,10 +300,6 @@ public class TeleportGUI implements Listener {
                 }
 
                 player.closeInventory();
-
-                for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                    plugin.getArenaCompassManager().giveMonsterCompass(onlinePlayer);
-                }
 
                 for (Player p : Bukkit.getOnlinePlayers()) {
                     p.sendMessage("");
