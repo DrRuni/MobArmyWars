@@ -1,15 +1,3 @@
-# 🛡️ MobArmyWars – PvE Battle Plugin
-
-**MobArmyWars** is a server-side PvE battle plugin for **Paper servers**, inspired by the popular **MobArmyBattle** concept by BastiGHG.
-
-Two teams compete against each other: **Red** and **Blue**.  
-During the preparation phase, teams collect equipment, resources, drops and mobs. Collected mobs can then be configured into up to **three attack waves**.
-
-After the preparation phase, the mob waves are sent into an automatic arena battle.  
-The team that defeats the opposing mob army first wins.
-
----
-
 ## ⭐ Features
 
 - Two teams: **Red** and **Blue**
@@ -19,19 +7,21 @@ The team that defeats the opposing mob army first wins.
 - Automatic arena battle system
 - Shared team backpacks
 - Optional block randomizer
+- Chest randomizer
 - GUI-based settings and wave configuration
 - Reset, resume and world regeneration systems
 - Configurable world settings, including difficulty
 - Team equipment selection
 - Team scoreboard with offline players
 - Optional arena monster compass
+- Automatic template ZIP update system
 - German in-game messages and GUIs
 
 ---
 
 ## ⚙️ Compatibility
 
-- Requires **Paper 26.1.2**
+- Requires **Paper 26.2 alpha**
 - Requires **Java 25**
 - Paper only
 - Not compatible with pure Spigot/Bukkit

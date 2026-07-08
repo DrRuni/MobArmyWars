@@ -3,19 +3,23 @@
 ## v1.5
 
 ### Neu
-- Kistenrandomizer
-- Spawnreihenfolgen = klick reihenfolge
-- auf API 26.2 alpha
+
+- Kistenrandomizer hinzugefügt
+- Spawnreihenfolge entspricht nun der Klick-Reihenfolge
+- Auf Paper/API 26.2 alpha aktualisiert
+- Template-Datei-System eingeführt
 
 ### Verbessert
-- Startcountdown und Logic geändert
+
+- Startcountdown überarbeitet
+- Startlogik verbessert
 
 ### Behoben
-- Leichen im Code entfernt
-- Mobspawning in Lobby u Arena entfernt
-- Arena und Lobby umgestaltet
-- !!! zip, wenn v... höher dann neue zip nutzen u alte löschen
 
+- Mobspawning in Lobby und Arena entfernt
+- Arena und Lobby umgestaltet
+
+---
 
 ## v1.4
 
