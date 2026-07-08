@@ -104,15 +104,23 @@ public class EventManager {
 
                         cancel();
 
-                        StartCountdownEvent(() -> {
-                            plugin.getTimerManager().setForward(false);
-                            plugin.getTimerManager().startTimer();
+                        for (Player player : Bukkit.getOnlinePlayers()) {
+                            String team = plugin.getTeamManager().getPlayerTeam(player);
+                            if (team == null || team.equalsIgnoreCase("Kein Team")) continue;
 
-                            for (Player player : Bukkit.getOnlinePlayers()) {
-                                String team = plugin.getTeamManager().getPlayerTeam(player);
-                                if (team == null || team.equalsIgnoreCase("Kein Team")) continue;
-                            }
-                        });
+                            player.sendTitle(
+                                    ChatColor.YELLOW + "Bereit machen...",
+                                    ChatColor.GRAY + "Countdown startet gleich",
+                                    10, 40, 10
+                            );
+                        }
+
+                        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                            StartCountdownEvent(() -> {
+                                plugin.getTimerManager().setForward(false);
+                                plugin.getTimerManager().startTimer();
+                            });
+                        }, 80L); // 4 Sekunden warten
                     }
                 }.runTaskTimer(plugin, 5L, 5L);
             }

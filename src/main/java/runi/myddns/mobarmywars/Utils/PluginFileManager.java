@@ -29,7 +29,13 @@ public class PluginFileManager {
                 ConsoleColor.COPPER + "        Prüfe Plugin-Dateien..." + ConsoleColor.RESET);
         Bukkit.getConsoleSender().sendMessage("");
 
-        checkBinaryResourceFile("world_mobarmy V1.5.zip");
+        String newestTemplateZip = findNewestTemplateZipInJar();
+
+        if (newestTemplateZip != null) {
+            checkTemplateZipByVersion("world_mobarmy", newestTemplateZip);
+        } else {
+            plugin.getLogger().warning("Keine world_mobarmy V*.zip in der Plugin-JAR gefunden!");
+        }
 
         Bukkit.getConsoleSender().sendMessage("");
 
@@ -51,37 +57,144 @@ public class PluginFileManager {
         Bukkit.getConsoleSender().sendMessage("");
     }
 
-    private void checkBinaryResourceFile(String fileName) {
-        File targetFile = new File(plugin.getDataFolder(), fileName);
+    private String findNewestTemplateZipInJar() {
+        try {
+            File jarFile = new File(plugin.getClass()
+                    .getProtectionDomain()
+                    .getCodeSource()
+                    .getLocation()
+                    .toURI());
 
-        if (plugin.getResource(fileName) == null) {
-            plugin.getLogger().warning("Resource nicht gefunden: " + fileName);
+            try (java.util.jar.JarFile jar = new java.util.jar.JarFile(jarFile)) {
+                String newestFileName = null;
+                String newestVersion = null;
+
+                java.util.Enumeration<java.util.jar.JarEntry> entries = jar.entries();
+
+                while (entries.hasMoreElements()) {
+                    java.util.jar.JarEntry entry = entries.nextElement();
+                    String name = entry.getName();
+
+                    if (!name.startsWith("world_mobarmy V") || !name.endsWith(".zip")) {
+                        continue;
+                    }
+
+                    String version = extractVersionFromZipName(name, "world_mobarmy");
+                    if (version == null) continue;
+
+                    if (newestVersion == null || compareVersions(version, newestVersion) > 0) {
+                        newestVersion = version;
+                        newestFileName = name;
+                    }
+                }
+
+                return newestFileName;
+            }
+
+        } catch (Exception e) {
+            plugin.getLogger().warning("Konnte Template-ZIP in der Plugin-JAR nicht automatisch finden.");
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    private void checkTemplateZipByVersion(String baseName, String resourceFileName) {
+        File dataFolder = plugin.getDataFolder();
+
+        String resourceVersion = extractVersionFromZipName(resourceFileName, baseName);
+        if (resourceVersion == null) {
+            plugin.getLogger().warning("Konnte Version aus ZIP nicht lesen: " + resourceFileName);
             return;
         }
 
-        if (!targetFile.exists()) {
-            copyResource(fileName, targetFile);
-            printFileStatus(fileName, "", "erstellt.");
+        if (plugin.getResource(resourceFileName) == null) {
+            plugin.getLogger().warning("Resource nicht gefunden: " + resourceFileName);
             return;
         }
 
-        String currentHash = getFileHash(targetFile);
-        String resourceHash = getResourceHash(fileName);
+        File[] existingZips = dataFolder.listFiles((dir, name) ->
+                name.startsWith(baseName + " V") && name.endsWith(".zip")
+        );
 
-        if (currentHash == null || resourceHash == null) {
-            plugin.getLogger().warning("Hash-Vergleich für " + fileName + " fehlgeschlagen.");
+        File newestExistingFile = null;
+        String newestExistingVersion = null;
+
+        if (existingZips != null) {
+            for (File file : existingZips) {
+                String version = extractVersionFromZipName(file.getName(), baseName);
+                if (version == null) continue;
+
+                if (newestExistingVersion == null || compareVersions(version, newestExistingVersion) > 0) {
+                    newestExistingVersion = version;
+                    newestExistingFile = file;
+                }
+            }
+        }
+
+        File targetFile = new File(dataFolder, resourceFileName);
+
+        if (newestExistingFile == null) {
+            copyResource(resourceFileName, targetFile);
+            printFileStatus(resourceFileName, "", "erstellt.");
             return;
         }
 
-        if (!currentHash.equals(resourceHash)) {
-            backupFile(targetFile, fileName);
-            copyResource(fileName, targetFile);
+        if (compareVersions(resourceVersion, newestExistingVersion) > 0) {
+            backupFile(newestExistingFile, newestExistingFile.getName());
 
-            printFileStatus(fileName, "", "aktualisiert.");
+            copyResource(resourceFileName, targetFile);
+
+            if (!newestExistingFile.equals(targetFile) && newestExistingFile.exists()) {
+                if (!newestExistingFile.delete()) {
+                    plugin.getLogger().warning("⚠ Alte Template-ZIP konnte nicht gelöscht werden: " + newestExistingFile.getName());
+                }
+            }
+
+            printFileStatus(resourceFileName, "", "aktualisiert.");
             return;
         }
 
-        printFileStatus(fileName, "", "I.O.");
+        printFileStatus(newestExistingFile.getName(), "", "I.O.");
+    }
+
+    private int compareVersions(String v1, String v2) {
+        v1 = v1.replace("V", "").replace("v", "");
+        v2 = v2.replace("V", "").replace("v", "");
+
+        String[] parts1 = v1.split("\\.");
+        String[] parts2 = v2.split("\\.");
+
+        int length = Math.max(parts1.length, parts2.length);
+
+        for (int i = 0; i < length; i++) {
+            int num1 = i < parts1.length ? parseVersionPart(parts1[i]) : 0;
+            int num2 = i < parts2.length ? parseVersionPart(parts2[i]) : 0;
+
+            if (num1 != num2) {
+                return Integer.compare(num1, num2);
+            }
+        }
+
+        return 0;
+    }
+
+    private int parseVersionPart(String part) {
+        try {
+            return Integer.parseInt(part);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    private String extractVersionFromZipName(String fileName, String baseName) {
+        String prefix = baseName + " V";
+        String suffix = ".zip";
+
+        if (!fileName.startsWith(prefix) || !fileName.endsWith(suffix)) {
+            return null;
+        }
+
+        return fileName.substring(prefix.length(), fileName.length() - suffix.length());
     }
 
     private void checkYamlFile(String fileName) {
@@ -212,12 +325,20 @@ public class PluginFileManager {
                 backupFolder.mkdirs();
             }
 
-            String cleanName = fileName.replace(".yml", "");
             long timestamp = System.currentTimeMillis();
+
+            String baseName = fileName;
+            String extension = "";
+
+            int dotIndex = fileName.lastIndexOf(".");
+            if (dotIndex > 0) {
+                baseName = fileName.substring(0, dotIndex);
+                extension = fileName.substring(dotIndex);
+            }
 
             File backupFile = new File(
                     backupFolder,
-                    cleanName + "-backup-" + timestamp + ".yml"
+                    baseName + "-backup-" + timestamp + extension
             );
 
             Files.copy(

@@ -92,6 +92,9 @@ public class MobArmyMain extends JavaPlugin {
 
         teamManager.loadTeams();
         teamScoreboardManager.rebuildBoard();
+
+        timerManager.ensureBossBarExists();
+        timerManager.updatePauseState();
     }
 
     @Override

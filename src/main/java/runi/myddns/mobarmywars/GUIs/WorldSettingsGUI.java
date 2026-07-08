@@ -52,7 +52,25 @@ public class WorldSettingsGUI implements Listener {
                 "Globaler Block-Randomizer"
         ));
 
-        inv.setItem(12, createItem(
+        inv.setItem(12, createToggleItem("Kisten-Randomizer", chestRandomizerOn));
+
+        inv.setItem(14, createItem(
+                Material.SPAWNER,
+                ChatColor.GOLD + "Randomizer-Ausnahmen",
+                "",
+                "Blöcke und Spawneiner vom Zufall ausschließen"
+        ));
+
+        inv.setItem(16, createItem(
+                Material.TNT,
+                ChatColor.DARK_RED + "BlockRandomizer zurücksetzen",
+                "",
+                "Erstellt einen neuen globalen Randomizer"
+        ));
+
+        inv.setItem(20, createDifficultyItem(difficulty));
+        inv.setItem(22, createToggleItem("Mob-Spawning", mobSpawningOn));
+        inv.setItem(24, createItem(
                 keepInvOn ? Material.LIME_WOOL : Material.RED_WOOL,
                 (keepInvOn ? ChatColor.GREEN : ChatColor.RED)
                         + "Inventare behalten: " + (keepInvOn ? "AN" : "AUS"),
@@ -60,27 +78,9 @@ public class WorldSettingsGUI implements Listener {
                 "KeepInventory in allen Welten"
         ));
 
-        inv.setItem(14, createToggleItem("Mob-Spawning", mobSpawningOn));
-        inv.setItem(15, createToggleItem("Kisten-Randomizer", chestRandomizerOn));
-        inv.setItem(16, createToggleItem("Daylight-Cycle", daylightCycleOn));
-        inv.setItem(18, createToggleItem("Night-Vision", nightVisionOn));
-        inv.setItem(20, createDifficultyItem(difficulty));
-        inv.setItem(22, createTimeItem(currentTime));
-
-        inv.setItem(24, createItem(
-                Material.SPAWNER,
-                ChatColor.GOLD + "Randomizer-Ausnahmen",
-                "",
-                "Blöcke und Spawneiner vom Zufall ausschließen"
-        ));
-
-        inv.setItem(26, createItem(
-                Material.TNT,
-                ChatColor.DARK_RED + "BlockRandomizer zurücksetzen",
-                "",
-                "Erstellt einen neuen globalen Randomizer"
-        ));
-
+        inv.setItem(29, createToggleItem("Night-Vision", nightVisionOn));
+        inv.setItem(31, createTimeItem(currentTime));
+        inv.setItem(33, createToggleItem("Daylight-Cycle", daylightCycleOn));
         inv.setItem(40, createItem(
                 Material.ARROW,
                 ChatColor.DARK_AQUA + "Zurück"
@@ -115,7 +115,7 @@ public class WorldSettingsGUI implements Listener {
         if (name.equalsIgnoreCase("Mob-Spawning")) {
             icon = state ? Material.ZOMBIE_HEAD : Material.PLAYER_HEAD;
         } else if (name.equalsIgnoreCase("Daylight-Cycle")) {
-            icon = state ? Material.DAYLIGHT_DETECTOR : Material.CLOCK;
+            icon = state ? Material.CLOCK : Material.DAYLIGHT_DETECTOR;
         } else if (name.equalsIgnoreCase("Night-Vision")) {
             icon = state ? Material.LIGHT : Material.GRAY_CANDLE;
         } else if (name.equalsIgnoreCase("Kisten-Randomizer")) {

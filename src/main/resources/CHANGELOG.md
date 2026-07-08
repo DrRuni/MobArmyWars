@@ -5,6 +5,7 @@
 ### Neu
 - Kistenrandomizer
 - Spawnreihenfolgen = klick reihenfolge
+- auf API 26.2 alpha
 
 ### Verbessert
 - Startcountdown und Logic geändert
@@ -12,9 +13,8 @@
 ### Behoben
 - Leichen im Code entfernt
 - Mobspawning in Lobby u Arena entfernt
-!!! Test block randomizer
 - Arena und Lobby umgestaltet
-- !!! zip wenn v... höher dann neue zip  nutzen u alte löschen
+- !!! zip, wenn v... höher dann neue zip nutzen u alte löschen
 
 
 ## v1.4

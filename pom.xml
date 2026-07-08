@@ -1,31 +1,53 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>runi.myddns</groupId>
     <artifactId>MobArmyWars</artifactId>
     <version>1.5</version>
     <packaging>jar</packaging>
+
     <name>MobArmyWars</name>
+
     <scm>
         <connection>scm:git:file://${project.basedir}/.git</connection>
         <developerConnection>scm:git:file://${project.basedir}/.git</developerConnection>
         <url>file://${project.basedir}</url>
     </scm>
+
     <properties>
         <java.version>25</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <build.number>${buildNumber}</build.number>
     </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.codehaus.plexus</groupId>
+                <artifactId>plexus-utils</artifactId>
+                <version>4.0.3</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>3.20.0</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <build>
         <defaultGoal>clean package</defaultGoal>
+
         <plugins>
+            <!-- 🔢 Automatische Buildnummer -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>buildnumber-maven-plugin</artifactId>
                 <version>3.2.0</version>
+
                 <executions>
                     <execution>
                         <phase>validate</phase>
@@ -34,6 +56,7 @@
                         </goals>
                     </execution>
                 </executions>
+
                 <configuration>
                     <doCheck>false</doCheck>
                     <doUpdate>false</doUpdate>
@@ -60,6 +83,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
                 <version>3.1.0</version>
+
                 <executions>
                     <execution>
                         <id>backup-and-copy</id>
@@ -69,15 +93,15 @@
                         </goals>
                         <configuration>
                             <target>
-                                <!-- 🧩 Neue Version in Backup speichern (mit fortlaufender Nummer) -->
-                                <copy file="${project.build.directory}/${project.build.finalName}.jar"
-                                      tofile="Z:\Dokumente\Games\Minecraft\Backup\JAR\MobArmyWars-v1.5.${buildNumber}.jar"
-                                      overwrite="true"
-                                      failonerror="false" />
+                                <!-- 🧩 Neue Version in Backup speichern -->
+<!--                                <copy file="${project.build.directory}/${project.build.finalName}.jar"-->
+<!--                                      tofile="Z:\Dokumente\Games\Minecraft\Backup\JAR\MobArmyWars-v1.5.${buildNumber}.jar"-->
+<!--                                      overwrite="true"-->
+<!--                                      failonerror="false" />-->
 
-                                <!-- 🧩 Im Plugin-Ordner immer gleiche Datei überschreiben -->
+                                <!-- 🧩 Im Plugin-Ordner überschreiben -->
                                 <copy file="${project.build.directory}/${project.build.finalName}.jar"
-                                      tofile="C:\Users\ronny\Desktop\Server 26.1.2\plugins\MobArmyWars-v1.5.jar"
+                                      tofile="C:\Users\ronny\Desktop\Server 26.2\plugins\MobArmyWars-v1.5.jar"
                                       overwrite="true"
                                       failonerror="false" />
                             </target>
@@ -103,14 +127,17 @@
             <id>enginehub-repo</id>
             <url>https://maven.enginehub.org/repo/</url>
         </repository>
+
         <repository>
             <id>spigotmc-repo</id>
             <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
         </repository>
+
         <repository>
             <id>sonatype</id>
             <url>https://oss.sonatype.org/content/groups/public/</url>
         </repository>
+
         <repository>
             <id>papermc-repo</id>
             <url>https://repo.papermc.io/repository/maven-public/</url>
@@ -121,7 +148,7 @@
         <dependency>
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
-            <version>26.1.2.build.72-stable</version>
+            <version>26.2.build.53-alpha</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

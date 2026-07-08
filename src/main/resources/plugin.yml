@@ -2,7 +2,7 @@ name: MobArmyWars
 version: "1.5"
 author: Runi
 main: runi.myddns.mobarmywars.MobArmyMain
-api-version: '26.1'
+api-version: '26.2'
 description: MobArmyWars (inspired by BastiGHG)
 
 

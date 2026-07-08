@@ -15,8 +15,6 @@ public class WorldManager {
 
     private final MobArmyMain plugin;
 
-    private static final String TEMPLATE_ZIP = "world_mobarmy V1.5.zip";
-
     private static final String WORLD_LOBBY = "world_mobarmy_lobby";
     private static final String WORLD_ARENA = "world_mobarmy_arena";
 
@@ -440,9 +438,10 @@ public class WorldManager {
 
     private void extractTemplateWorldFromZip(String worldName) {
 
-        File zipFile = new File(plugin.getDataFolder(), TEMPLATE_ZIP);
-        if (!zipFile.exists()) {
-            plugin.getLogger().severe("❌ Template-ZIP nicht gefunden: " + TEMPLATE_ZIP);
+        File zipFile = findNewestTemplateZipInDataFolder();
+
+        if (zipFile == null || !zipFile.exists()) {
+            plugin.getLogger().severe("❌ Keine Template-ZIP gefunden: world_mobarmy V*.zip");
             return;
         }
 
@@ -495,7 +494,7 @@ public class WorldManager {
         }
 
         if (!found) {
-            plugin.getLogger().severe("❌ Welt " + worldName + " wurde in " + TEMPLATE_ZIP + " nicht gefunden!");
+            plugin.getLogger().severe("❌ Welt " + worldName + " wurde in " + zipFile.getName() + " nicht gefunden!");
         }
     }
 
@@ -599,6 +598,71 @@ public class WorldManager {
             );
 
             Bukkit.getConsoleSender().sendMessage("");
+        }
+    }
+
+    private File findNewestTemplateZipInDataFolder() {
+        File[] files = plugin.getDataFolder().listFiles((dir, name) ->
+                name.startsWith("world_mobarmy V") && name.endsWith(".zip")
+        );
+
+        if (files == null || files.length == 0) {
+            return null;
+        }
+
+        File newestFile = null;
+        String newestVersion = null;
+
+        for (File file : files) {
+            String version = extractVersionFromZipName(file.getName());
+            if (version == null) continue;
+
+            if (newestVersion == null || compareVersions(version, newestVersion) > 0) {
+                newestVersion = version;
+                newestFile = file;
+            }
+        }
+
+        return newestFile;
+    }
+
+    private String extractVersionFromZipName(String fileName) {
+        String prefix = "world_mobarmy V";
+        String suffix = ".zip";
+
+        if (!fileName.startsWith(prefix) || !fileName.endsWith(suffix)) {
+            return null;
+        }
+
+        return fileName.substring(prefix.length(), fileName.length() - suffix.length());
+    }
+
+    private int compareVersions(String v1, String v2) {
+        v1 = v1.replace("V", "").replace("v", "");
+        v2 = v2.replace("V", "").replace("v", "");
+
+        String[] parts1 = v1.split("\\.");
+        String[] parts2 = v2.split("\\.");
+
+        int length = Math.max(parts1.length, parts2.length);
+
+        for (int i = 0; i < length; i++) {
+            int num1 = i < parts1.length ? parseVersionPart(parts1[i]) : 0;
+            int num2 = i < parts2.length ? parseVersionPart(parts2[i]) : 0;
+
+            if (num1 != num2) {
+                return Integer.compare(num1, num2);
+            }
+        }
+
+        return 0;
+    }
+
+    private int parseVersionPart(String part) {
+        try {
+            return Integer.parseInt(part);
+        } catch (NumberFormatException e) {
+            return 0;
         }
     }
 }

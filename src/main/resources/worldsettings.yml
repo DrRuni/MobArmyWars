@@ -1,9 +1,9 @@
 # Welteneinstellungen
-file-version: 3
+file-version: 4
 
 keep-inventory: true
 randomizer-enabled: true
-night-vision-enabled: true
+night-vision-enabled: false
 mob-spawning: true
 daylight-cycle: true
 difficulty: normal

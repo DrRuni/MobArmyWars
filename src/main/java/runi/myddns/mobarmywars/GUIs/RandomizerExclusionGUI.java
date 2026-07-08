@@ -50,6 +50,8 @@ public class RandomizerExclusionGUI implements Listener {
             Material.PARROT_SPAWN_EGG,
             Material.PHANTOM_SPAWN_EGG,
             Material.GHAST_SPAWN_EGG,
+            Material.HAPPY_GHAST_SPAWN_EGG,
+            Material.BREEZE_SPAWN_EGG,
             Material.BLAZE_SPAWN_EGG,
             Material.EVOKER_SPAWN_EGG,
             Material.SHULKER_SPAWN_EGG,
