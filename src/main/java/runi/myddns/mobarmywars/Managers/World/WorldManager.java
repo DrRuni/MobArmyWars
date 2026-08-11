@@ -137,6 +137,7 @@ public class WorldManager {
 
                     loadWorld(WORLD_ARENA);
                     plugin.getWorldSettings().applyAllSettings();
+                    plugin.getArenaConfig().reload();
 
                     Bukkit.getScheduler().runTaskLater(plugin, () -> {
 
@@ -447,10 +448,10 @@ public class WorldManager {
 
         File worldContainer = Bukkit.getWorldContainer();
         File legacyTargetRoot = new File(worldContainer, worldName);
+        File targetRoot = getDimensionWorldFolder(worldName);
 
-        // Alte Reste vermeiden
         deleteDirectoryRecursively(legacyTargetRoot);
-        deleteDirectoryRecursively(new File(worldContainer, "world/dimensions/minecraft/" + worldName));
+        deleteDirectoryRecursively(targetRoot);
 
         boolean found = false;
 
@@ -474,7 +475,7 @@ public class WorldManager {
                     continue;
                 }
 
-                File target = new File(legacyTargetRoot, relativePath);
+                File target = new File(targetRoot, relativePath);
 
                 if (entry.isDirectory()) {
                     target.mkdirs();

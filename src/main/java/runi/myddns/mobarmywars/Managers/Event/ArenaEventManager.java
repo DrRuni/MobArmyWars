@@ -13,6 +13,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.Sound;
+import org.bukkit.entity.Mob;
 import runi.myddns.mobarmywars.Managers.World.ResumeManager;
 import runi.myddns.mobarmywars.Managers.World.TeleportManager;
 import runi.myddns.mobarmywars.MobArmyMain;
@@ -23,15 +24,13 @@ import java.util.List;
 public class ArenaEventManager implements Listener {
 
     private final MobArmyMain plugin;
-//    private BlockRandomizerManager randomizer;
-
     private final Map<String, Integer> currentWave = new HashMap<>();
     private final Map<String, List<LivingEntity>> activeMobs = new HashMap<>();
     private final Set<String> finishedTeams = new HashSet<>();
     private final Map<String, Long> finishTimes = new HashMap<>();
     private final Map<String, Boolean> waveRunning = new HashMap<>();
     private final Set<Chunk> forcedChunks = new HashSet<>();
-    private final Set<UUID> playersReady = new HashSet<>();
+    private final Set<String> teamsReady = new HashSet<>();
     private final Map<String, BossBar> teamBossBars = new HashMap<>();
     private final ArenaScoreboardManager scoreboardManager;
     private boolean arenaStarted = false;
@@ -40,9 +39,6 @@ public class ArenaEventManager implements Listener {
     private String winningTeam = null;
     private long winningTime = -1;
     private int aggroTaskId = -1;
-//    public int getCurrentWaveForTeam(String team) {return currentWave.getOrDefault(team, 0) + 1;}
-//    public int getMaxWaves() {return MAX_WAVES;}
-
     private static final Set<EntityType> FLYING_MOBS = Set.of(
             EntityType.GHAST,
             EntityType.PHANTOM,
@@ -198,17 +194,17 @@ public class ArenaEventManager implements Listener {
             return;
         }
 
-        World arenaWorld = Bukkit.getWorld("world_mobarmy_arena");
-        if (arenaWorld == null) {
-            Bukkit.getLogger().warning("❗ world_mobarmy_arena konnte nicht gefunden werden – Wave abgebrochen!");
+        ArenaConfig.ArenaData arena = plugin.getArenaConfig().getActiveArena();
+
+        if (arena == null) {
+            Bukkit.getLogger().warning("[ArenaManager] ❌ Keine aktive Arena geladen! Wave abgebrochen.");
             return;
         }
 
-        var abpm = plugin.getArenaBuildProtectionManager();
-        var arena = abpm.getArena("japanisches-dorf");
+        World arenaWorld = Bukkit.getWorld(arena.world());
 
-        if (arena == null) {
-            Bukkit.getLogger().warning("[MobArmyWars] ⚠ Arena 'japanisches-dorf' nicht gefunden!");
+        if (arenaWorld == null) {
+            Bukkit.getLogger().warning("[ArenaManager] ❌ Arena-Welt nicht geladen: " + arena.world());
             return;
         }
 
@@ -630,63 +626,92 @@ public class ArenaEventManager implements Listener {
     }
 
     public void markPlayerReady(Player player) {
-        if (plugin.getEventResume().loadPhase() != ResumeManager.PHASE_WAVEAUSWAHL) {
+
+        if (plugin.getEventResume().loadPhase()
+                != ResumeManager.PHASE_WAVEAUSWAHL) {
             return;
         }
 
-        if (arenaStarted) return;
-
-        playersReady.add(player.getUniqueId());
-
-        boolean allReady = Bukkit.getOnlinePlayers().stream()
-                .filter(p -> plugin.getTeamManager().isInTeam(p))
-                .allMatch(p -> playersReady.contains(p.getUniqueId()));
-
-        if (allReady) {
-            arenaStarted = true;
-
-            for (Player p : Bukkit.getOnlinePlayers()) {
-                String world = p.getWorld().getName().toLowerCase();
-                if (world.equals("world_mobarmy_lobby")) {
-
-                    p.sendTitle(
-                            ChatColor.GREEN + "✅ Alle Teams bereit!",
-                            ChatColor.YELLOW + "Die Arenaphase beginnt gleich...",
-                            30, 60, 30
-                    );
-
-                    p.playSound(
-                            p.getLocation(),
-                            Sound.UI_TOAST_CHALLENGE_COMPLETE,
-                            1f,
-                            1.2f
-                    );
-                }
-            }
-
-            startArenaEvent();
+        if (arenaStarted) {
+            return;
         }
 
-    }
+        String team = plugin.getTeamManager().getPlayerTeam(player);
 
-    private void clearMobsInRegion(World world, Location corner1, Location corner2) {
-        double minX = Math.min(corner1.getX(), corner2.getX());
-        double minY = Math.min(corner1.getY(), corner2.getY());
-        double minZ = Math.min(corner1.getZ(), corner2.getZ());
-        double maxX = Math.max(corner1.getX(), corner2.getX());
-        double maxY = Math.max(corner1.getY(), corner2.getY());
-        double maxZ = Math.max(corner1.getZ(), corner2.getZ());
+        if (team == null
+                || (!team.equalsIgnoreCase("rot")
+                && !team.equalsIgnoreCase("blau"))) {
+            return;
+        }
 
-        for (Entity entity : world.getEntities()) {
-            if (entity instanceof LivingEntity && !(entity instanceof Player)) {
-                Location loc = entity.getLocation();
-                if (loc.getX() >= minX && loc.getX() <= maxX &&
-                        loc.getY() >= minY && loc.getY() <= maxY &&
-                        loc.getZ() >= minZ && loc.getZ() <= maxZ) {
-                    entity.remove();
-                }
+        String normalizedTeam = team.toLowerCase(Locale.ROOT);
+
+        // Team wurde bereits als bereit gemeldet
+        if (!teamsReady.add(normalizedTeam)) {
+            player.sendMessage(
+                    ChatColor.YELLOW + "⚠ Dein Team ist bereits bereit."
+            );
+            return;
+        }
+
+        /*
+         * Es werden nur Teams berücksichtigt,
+         * von denen mindestens ein Spieler online ist.
+         */
+        Set<String> activeTeams = new HashSet<>();
+
+        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+
+            String onlineTeam =
+                    plugin.getTeamManager().getPlayerTeam(onlinePlayer);
+
+            if (onlineTeam == null) {
+                continue;
+            }
+
+            if (onlineTeam.equalsIgnoreCase("rot")
+                    || onlineTeam.equalsIgnoreCase("blau")) {
+
+                activeTeams.add(
+                        onlineTeam.toLowerCase(Locale.ROOT)
+                );
             }
         }
+
+        boolean allTeamsReady =
+                !activeTeams.isEmpty()
+                        && teamsReady.containsAll(activeTeams);
+
+        if (!allTeamsReady) {
+            return;
+        }
+
+        arenaStarted = true;
+
+        for (Player p : Bukkit.getOnlinePlayers()) {
+
+            String world = p.getWorld().getName().toLowerCase();
+
+            if (!world.equals("world_mobarmy_lobby")) {
+                continue;
+            }
+
+            p.sendTitle(
+                    ChatColor.GREEN + "✅ Alle Teams bereit!",
+                    ChatColor.YELLOW
+                            + "Die Arenaphase beginnt gleich...",
+                    30, 60, 30
+            );
+
+            p.playSound(
+                    p.getLocation(),
+                    Sound.UI_TOAST_CHALLENGE_COMPLETE,
+                    1f,
+                    1.2f
+            );
+        }
+
+        startArenaEvent();
     }
 
     public void resetArena() {
@@ -713,7 +738,7 @@ public class ArenaEventManager implements Listener {
 
         waveRunning.clear();
         currentWave.clear();
-        playersReady.clear();
+        teamsReady.clear();
         finishedTeams.clear();
         finishTimes.clear();
 
@@ -741,23 +766,46 @@ public class ArenaEventManager implements Listener {
             bar.removeAll();
         }
         teamBossBars.clear();
+
         scoreboardManager.clearAllBoards();
 
-        World world = Bukkit.getWorld("world_mobarmy_arena");
-        if (world != null) {
-            clearMobsInRegion(world,
-                    new Location(world, 238, 96, 381),
-                    new Location(world, 160, 57, 271)
-            );
-            clearMobsInRegion(world,
-                    new Location(world, 101, 96, 381),
-                    new Location(world, 23, 57, 271)
+        ArenaConfig.ArenaData arena = plugin.getArenaConfig().getActiveArena();
+
+        if (arena != null) {
+            World world = Bukkit.getWorld(arena.world());
+
+            if (world != null) {
+                // Alle Mobs der gesamten Arena-Welt entfernen
+                for (Mob mob : world.getEntitiesByClass(Mob.class)) {
+                    mob.remove();
+                }
+            }
+        }
+
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            TeleportManager.teleportToWaveSelection(player);
+
+            player.setGameMode(GameMode.SURVIVAL);
+            player.setInvulnerable(false);
+
+            plugin.getEventResume().savePlayerSpawn(
+                    player,
+                    player.getLocation()
             );
         }
+
+        plugin.getEventResume().savePhase(
+                ResumeManager.PHASE_WAVEAUSWAHL
+        );
     }
 
     private boolean isArenaWorld(World world) {
-        return world != null && world.getName().equalsIgnoreCase("world_mobarmy_arena");
+        if (world == null) return false;
+
+        ArenaConfig.ArenaData arena = plugin.getArenaConfig().getActiveArena();
+        if (arena == null) return false;
+
+        return world.getName().equalsIgnoreCase(arena.world());
     }
 
     public ArenaScoreboardManager getScoreboardManager() {
@@ -781,24 +829,6 @@ public class ArenaEventManager implements Listener {
         player.sendMessage("");
         player.sendMessage(ChatColor.GOLD + "===============================");
     }
-
-//    @EventHandler
-//    public void onEntityRemove(EntityRemoveFromWorldEvent event) {
-//        if (!arenaRunning) return;
-//
-//        Entity e = event.getEntity();
-//        if (!(e instanceof LivingEntity living)) return;
-//
-//        Byte arenaMob = living.getPersistentDataContainer().get(
-//                new NamespacedKey(plugin, "arenaMob"),
-//                PersistentDataType.BYTE
-//        );
-//
-//        if (arenaMob == null || arenaMob != (byte) 1) return;
-//    }
-
-//    public void setRandomizer(BlockRandomizerManager randomizer) { this.randomizer = randomizer;
-//    }
 
     private void forceAggro(LivingEntity mob, Player target) {
 
@@ -871,12 +901,4 @@ public class ArenaEventManager implements Listener {
         long sec = seconds % 60;
         return String.format("%02d:%02d", min, sec);
     }
-
-//    public boolean isArenaRunning() {
-//        return arenaRunning;
-//    }
-//
-//    public String getWinningTeam() {
-//        return winningTeam;
-//    }
 }

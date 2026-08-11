@@ -14,13 +14,16 @@
 #
 # players = Hier werden Spielerdaten gespeichert
 # z.B. letzter Standort, Spawnpunkt oder weitere Resume-Daten
-file-version: 1
+file-version: 2
 
 event:
   started: false
   paused: true
 
 phase: 0
+
+arena:
+  active: "japanisches-dorf"
 
 timer:
   time: 3600

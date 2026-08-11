@@ -49,41 +49,68 @@ public class WorldSettingsGUI implements Listener {
                 (randomizerOn ? ChatColor.GREEN : ChatColor.RED)
                         + "BlockRandomizer: " + (randomizerOn ? "AN" : "AUS"),
                 "",
-                "Globaler Block-Randomizer"
+                "Zufällige Blöcke beim Abbauen",
+                "global ein- oder ausschalten"
         ));
 
-        inv.setItem(12, createToggleItem("Kisten-Randomizer", chestRandomizerOn));
+        inv.setItem(12, createToggleItem(
+                "Kisten-Randomizer",
+                chestRandomizerOn
+        ));
 
         inv.setItem(14, createItem(
                 Material.SPAWNER,
-                ChatColor.GOLD + "Randomizer-Ausnahmen",
+                ChatColor.GOLD + "BlockRandomizer-Ausnahmen",
                 "",
-                "Blöcke und Spawneiner vom Zufall ausschließen"
+                "Blöcke, Gegenstände und Spawn-Eier",
+                "vom Zufall ausschließen"
         ));
 
         inv.setItem(16, createItem(
                 Material.TNT,
                 ChatColor.DARK_RED + "BlockRandomizer zurücksetzen",
                 "",
-                "Erstellt einen neuen globalen Randomizer"
+                "Erstellt eine neue zufällige",
+                "Zuordnung aller Blöcke"
         ));
 
         inv.setItem(20, createDifficultyItem(difficulty));
-        inv.setItem(22, createToggleItem("Mob-Spawning", mobSpawningOn));
+
+        inv.setItem(22, createToggleItem(
+                "Mob-Spawning",
+                mobSpawningOn
+        ));
+
         inv.setItem(24, createItem(
                 keepInvOn ? Material.LIME_WOOL : Material.RED_WOOL,
                 (keepInvOn ? ChatColor.GREEN : ChatColor.RED)
-                        + "Inventare behalten: " + (keepInvOn ? "AN" : "AUS"),
+                        + "Inventar behalten: " + (keepInvOn ? "AN" : "AUS"),
                 "",
-                "KeepInventory in allen Welten"
+                "Spieler behalten nach dem Tod",
+                "Inventar und Erfahrung"
         ));
 
-        inv.setItem(29, createToggleItem("Night-Vision", nightVisionOn));
+        inv.setItem(29, createToggleItem(
+                "Nachtsicht",
+                nightVisionOn,
+                "Gibt allen Spielern dauerhaft Nachtsicht",
+                "Nachtsicht ist deaktiviert"
+        ));
+
         inv.setItem(31, createTimeItem(currentTime));
-        inv.setItem(33, createToggleItem("Daylight-Cycle", daylightCycleOn));
+
+        inv.setItem(33, createToggleItem(
+                "Tageslichtzyklus",
+                daylightCycleOn,
+                "Tag und Nacht wechseln automatisch",
+                "Die aktuelle Tageszeit bleibt stehen"
+        ));
+
         inv.setItem(40, createItem(
                 Material.ARROW,
-                ChatColor.DARK_AQUA + "Zurück"
+                ChatColor.DARK_AQUA + "Zurück",
+                "",
+                "Zurück zum vorherigen Menü"
         ));
 
         player.openInventory(inv);
@@ -110,31 +137,59 @@ public class WorldSettingsGUI implements Listener {
     }
 
     private ItemStack createToggleItem(String name, boolean state) {
+        return createToggleItem(name, state, null, null);
+    }
+
+    private ItemStack createToggleItem(
+            String name,
+            boolean state,
+            String enabledDescription,
+            String disabledDescription
+    ) {
         Material icon;
 
         if (name.equalsIgnoreCase("Mob-Spawning")) {
             icon = state ? Material.ZOMBIE_HEAD : Material.PLAYER_HEAD;
-        } else if (name.equalsIgnoreCase("Daylight-Cycle")) {
+
+        } else if (name.equalsIgnoreCase("Tageslichtzyklus")) {
             icon = state ? Material.CLOCK : Material.DAYLIGHT_DETECTOR;
-        } else if (name.equalsIgnoreCase("Night-Vision")) {
+
+        } else if (name.equalsIgnoreCase("Nachtsicht")) {
             icon = state ? Material.LIGHT : Material.GRAY_CANDLE;
+
         } else if (name.equalsIgnoreCase("Kisten-Randomizer")) {
             icon = state ? Material.CHEST : Material.BARRIER;
+
         } else {
             icon = state ? Material.LIME_WOOL : Material.RED_WOOL;
         }
-
 
         ItemStack item = new ItemStack(icon);
         ItemMeta meta = item.getItemMeta();
         if (meta == null) return item;
 
-        meta.setDisplayName((state ? ChatColor.GREEN : ChatColor.RED) + name);
-        meta.setLore(List.of(
-                "",
-                ChatColor.GRAY + "Status: " + (state ? "§aAN" : "§cAUS")
-        ));
+        meta.setDisplayName(
+                (state ? ChatColor.GREEN : ChatColor.RED)
+                        + name
+                        + ": "
+                        + (state ? "AN" : "AUS")
+        );
+
+        List<String> lore = new ArrayList<>();
+        lore.add("");
+        lore.add(ChatColor.GRAY + "Status: "
+                + (state ? ChatColor.GREEN + "AN" : ChatColor.RED + "AUS"));
+
+        String description = state ? enabledDescription : disabledDescription;
+
+        if (description != null && !description.isBlank()) {
+            lore.add("");
+            lore.add(ChatColor.GRAY + description);
+        }
+
+        meta.setLore(lore);
         item.setItemMeta(meta);
+
         return item;
     }
 
@@ -274,7 +329,7 @@ public class WorldSettingsGUI implements Listener {
                 }
             }
 
-            case "kisten-randomizer" -> {
+            case "kisten-randomizer: an", "kisten-randomizer: aus" -> {
                 Sounds.playClick(player);
 
                 plugin.getWorldSettings().toggleChestRandomizer();
@@ -290,7 +345,7 @@ public class WorldSettingsGUI implements Listener {
                 }
             }
 
-            case "inventare behalten: an", "inventare behalten: aus" -> {
+            case "inventar behalten: an", "inventar behalten: aus" -> {
                 Sounds.playClick(player);
 
                 plugin.getWorldSettings().toggleKeepInventory();
@@ -304,7 +359,7 @@ public class WorldSettingsGUI implements Listener {
                 }
             }
 
-            case "mob-spawning" -> {
+            case "mob-spawning: an", "mob-spawning: aus" -> {
                 Sounds.playClick(player);
                 plugin.getWorldSettings().toggleMobSpawning();
 
@@ -318,21 +373,23 @@ public class WorldSettingsGUI implements Listener {
                 }
             }
 
-            case "daylight-cycle" -> {
+            case "tageslichtzyklus: an", "tageslichtzyklus: aus" -> {
                 Sounds.playClick(player);
+
                 plugin.getWorldSettings().toggleDaylightCycle();
 
                 boolean newState = plugin.getWorldSettings().isDaylightCycleEnabled();
+
                 for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
                     onlinePlayer.sendMessage(
                             newState
-                                    ? ChatColor.GREEN + "✅ Daylight-Cycle aktiviert!"
-                                    : ChatColor.RED + "⛔ Daylight-Cycle deaktiviert!"
+                                    ? ChatColor.GREEN + "✅ Tageslichtzyklus aktiviert!"
+                                    : ChatColor.RED + "⛔ Tageslichtzyklus deaktiviert!"
                     );
                 }
             }
 
-            case "randomizer-ausnahmen" -> {
+            case "blockrandomizer-ausnahmen" -> {
                 Sounds.playClick(player);
                 plugin.getSpawnEggGUI().openGUI(player);
                 reopen = false;
@@ -347,7 +404,7 @@ public class WorldSettingsGUI implements Listener {
                 }
             }
 
-            case "night-vision" -> {
+            case "nachtsicht: an", "nachtsicht: aus" -> {
                 Sounds.playClick(player);
 
                 plugin.getWorldSettings().toggleNightVision();
@@ -358,8 +415,8 @@ public class WorldSettingsGUI implements Listener {
                 for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
                     onlinePlayer.sendMessage(
                             newState
-                                    ? ChatColor.GREEN + "✅ Night-Vision aktiviert!"
-                                    : ChatColor.RED + "⛔ Night-Vision deaktiviert!"
+                                    ? ChatColor.GREEN + "✅ Nachtsicht aktiviert!"
+                                    : ChatColor.RED + "⛔ Nachtsicht deaktiviert!"
                     );
                 }
             }

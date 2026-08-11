@@ -2,7 +2,6 @@ package runi.myddns.mobarmywars.Managers.Event;
 
 import org.bukkit.*;
 import org.bukkit.Tag;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -24,90 +23,27 @@ public class ArenaBuildProtectionManager implements Listener {
 
     private final JavaPlugin plugin;
     private final Map<String, Set<BlockPos>> placedBlocks = new HashMap<>();
-    private final Map<String, ArenaData> arenas = new HashMap<>();
-
     private final List<ProtectedArea> opProtectedLobbyAreas = new ArrayList<>();
+
     private record ProtectedArea(String world, Location corner1, Location corner2) { }
     private record BlockPos(String world, int x, int y, int z) { }
 
     private BlockPos toPos(Location loc) {
-        return new BlockPos(loc.getWorld().getName(), loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
+        return new BlockPos(
+                loc.getWorld().getName().toLowerCase(),
+                loc.getBlockX(),
+                loc.getBlockY(),
+                loc.getBlockZ()
+        );
     }
 
     private boolean canBypassLobbyProtection(Player player) {
         return player.isOp();
     }
 
-    public record ArenaData(
-            String name,
-            String description,
-            String world,
-            Location rotCorner1,
-            Location rotCorner2,
-            Location blauCorner1,
-            Location blauCorner2,
-            Location rotSpawn,
-            Location blauSpawn,
-            List<Location> rotMobSpawns,
-            List<Location> blauMobSpawns
-    ) {}
-
     public ArenaBuildProtectionManager(JavaPlugin plugin) {
         this.plugin = plugin;
         Bukkit.getPluginManager().registerEvents(this, plugin);
-    }
-
-    public void loadFromConfig() {
-        File file = new File(plugin.getDataFolder(), "arena-koordinaten.yml");
-
-        if (!file.exists()) {
-            plugin.saveResource("arena-koordinaten.yml", false);
-            Bukkit.getLogger().info(ChatColor.GREEN + "[MobArmyWars] 📄 'arena-koordinaten.yml' neu erstellt (Standardwerte).");
-        }
-
-        FileConfiguration cfg = YamlConfiguration.loadConfiguration(file);
-        ConfigurationSection arenasSec = cfg.getConfigurationSection("arenas");
-
-        if (arenasSec == null) {
-            Bukkit.getLogger().severe(ChatColor.RED + "[MobArmyWars] ❌ Keine Arenen in 'arena-koordinaten.yml' gefunden!");
-            return;
-        }
-
-        arenas.clear();
-        for (String key : arenasSec.getKeys(false)) {
-            ConfigurationSection sec = arenasSec.getConfigurationSection(key);
-            if (sec == null) continue;
-
-            String name = sec.getString("name", key);
-            String description = sec.getString("description", "");
-            String worldName = sec.getString("world", "world_mobarmy_arena");
-            World world = Bukkit.getWorld(worldName);
-
-            if (world == null) {
-                Bukkit.getLogger().warning("[MobArmyWars] ⚠ Welt '" + worldName + "' nicht gefunden – Arena '" + name + "' übersprungen!");
-                continue;
-            }
-
-            try {
-                Location rotC1 = toLoc(world, sec.getIntegerList("rot.corner1"));
-                Location rotC2 = toLoc(world, sec.getIntegerList("rot.corner2"));
-                Location blauC1 = toLoc(world, sec.getIntegerList("blau.corner1"));
-                Location blauC2 = toLoc(world, sec.getIntegerList("blau.corner2"));
-
-                Location rotSpawn = toLocWithYaw(world, sec.getIntegerList("rot.teamspawn"));
-                Location blauSpawn = toLocWithYaw(world, sec.getIntegerList("blau.teamspawn"));
-
-                List<Location> rotMobs = toLocList(world, sec.getList("rot.mobSpawns"));
-                List<Location> blauMobs = toLocList(world, sec.getList("blau.mobSpawns"));
-
-                ArenaData arena = new ArenaData(name, description, worldName,
-                        rotC1, rotC2, blauC1, blauC2, rotSpawn, blauSpawn, rotMobs, blauMobs);
-
-                arenas.put(key.toLowerCase(), arena);
-            } catch (Exception ex) {
-                Bukkit.getLogger().severe(ChatColor.RED + "[MobArmyWars] ❌ Fehler beim Laden der Arena '" + key + "': " + ex.getMessage());
-            }
-        }
     }
 
     public void loadSpawnProtectionAreas() {
@@ -160,31 +96,6 @@ public class ArenaBuildProtectionManager implements Listener {
     private Location toLoc(World w, List<Integer> list) {
         if (list == null || list.size() < 3) return null;
         return new Location(w, list.get(0), list.get(1), list.get(2));
-    }
-
-    private Location toLocWithYaw(World w, List<Integer> list) {
-        if (list == null || list.size() < 3) return null;
-        float yaw = list.size() > 3 ? list.get(3) : 0;
-        float pitch = list.size() > 4 ? list.get(4) : 0;
-        return new Location(w, list.get(0), list.get(1), list.get(2), yaw, pitch);
-    }
-
-    private List<Location> toLocList(World w, List<?> rawList) {
-        List<Location> locs = new ArrayList<>();
-        if (rawList == null) return locs;
-
-        for (Object o : rawList) {
-            if (o instanceof List<?>) {
-                List<?> coords = (List<?>) o;
-                if (coords.size() >= 3) {
-                    locs.add(new Location(w,
-                            ((Number) coords.get(0)).doubleValue(),
-                            ((Number) coords.get(1)).doubleValue(),
-                            ((Number) coords.get(2)).doubleValue()));
-                }
-            }
-        }
-        return locs;
     }
 
     private boolean isAllowedNaturalBlock(Material type) {
@@ -268,17 +179,25 @@ public class ArenaBuildProtectionManager implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
     public void onBlockBreak(BlockBreakEvent e) {
-        if (plugin instanceof MobArmyMain ma) {
-            if (ma.getEventResume().isEventStarted()
-                    && ma.getEventResume().isEventPaused()) {
-                e.setCancelled(true);
-                return;
-            }
+        if (!(plugin instanceof MobArmyMain ma)) {
+            e.setCancelled(true);
+            return;
+        }
+
+        if (ma.getEventResume().isEventStarted()
+                && ma.getEventResume().isEventPaused()) {
+            e.setCancelled(true);
+            return;
         }
 
         Player p = e.getPlayer();
         Location loc = e.getBlock().getLocation();
         Material type = e.getBlock().getType();
+
+        if (loc.getWorld() == null) {
+            e.setCancelled(true);
+            return;
+        }
 
         String worldName = loc.getWorld().getName().toLowerCase();
 
@@ -295,18 +214,19 @@ public class ArenaBuildProtectionManager implements Listener {
             return;
         }
 
-        // Nur Arena-Welt hier weiter behandeln
-        if (!worldName.equals("world_mobarmy_arena")) {
-            return;
-        }
-
-        ArenaData arena = getArenaByLocation(loc);
-        String team = getTeam(p);
+        ArenaConfig.ArenaData arena = ma.getArenaConfig().getActiveArena();
 
         if (arena == null) {
             e.setCancelled(true);
             return;
         }
+
+        // Nur aktive Arena-Welt behandeln
+        if (!worldName.equalsIgnoreCase(arena.world())) {
+            return;
+        }
+
+        String team = getTeam(p);
 
         // Naturblöcke in Arena-Zonen dürfen entfernt werden, aber ohne Drops/XP
         if (isAllowedNaturalBlock(type)) {
@@ -346,16 +266,24 @@ public class ArenaBuildProtectionManager implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
     public void onBlockPlace(BlockPlaceEvent e) {
-        if (plugin instanceof MobArmyMain ma) {
-            if (ma.getEventResume().isEventStarted()
-                    && ma.getEventResume().isEventPaused()) {
-                e.setCancelled(true);
-                return;
-            }
+        if (!(plugin instanceof MobArmyMain ma)) {
+            e.setCancelled(true);
+            return;
+        }
+
+        if (ma.getEventResume().isEventStarted()
+                && ma.getEventResume().isEventPaused()) {
+            e.setCancelled(true);
+            return;
         }
 
         Player p = e.getPlayer();
         Location loc = e.getBlock().getLocation();
+
+        if (loc.getWorld() == null) {
+            e.setCancelled(true);
+            return;
+        }
 
         String worldName = loc.getWorld().getName().toLowerCase();
 
@@ -372,18 +300,19 @@ public class ArenaBuildProtectionManager implements Listener {
             return;
         }
 
-        // Nur Arena-Welt hier weiter behandeln
-        if (!worldName.equals("world_mobarmy_arena")) {
-            return;
-        }
-
-        ArenaData arena = getArenaByLocation(loc);
-        String team = getTeam(p);
+        ArenaConfig.ArenaData arena = ma.getArenaConfig().getActiveArena();
 
         if (arena == null) {
             e.setCancelled(true);
             return;
         }
+
+        // Nur aktive Arena-Welt behandeln
+        if (!worldName.equalsIgnoreCase(arena.world())) {
+            return;
+        }
+
+        String team = getTeam(p);
 
         if (team == null) {
             e.setCancelled(true);
@@ -434,11 +363,23 @@ public class ArenaBuildProtectionManager implements Listener {
         if (world == null) return false;
 
         String name = world.getName().toLowerCase();
-        return name.equals("world_mobarmy_lobby")
-                || name.equals("world_mobarmy_arena");
+
+        if (name.equals("world_mobarmy_lobby")) {
+            return true;
+        }
+
+        if (plugin instanceof MobArmyMain ma) {
+            ArenaConfig.ArenaData arena = ma.getArenaConfig().getActiveArena();
+
+            if (arena != null && name.equalsIgnoreCase(arena.world())) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
-    private boolean isInsideTeamArea(Location loc, String team, ArenaData arena) {
+    private boolean isInsideTeamArea(Location loc, String team, ArenaConfig.ArenaData arena) {
         if (!loc.getWorld().getName().equalsIgnoreCase(arena.world())) return false;
         Location c1, c2;
 
@@ -458,19 +399,7 @@ public class ArenaBuildProtectionManager implements Listener {
                 z >= Math.min(c1.getZ(), c2.getZ()) && z <= Math.max(c1.getZ(), c2.getZ());
     }
 
-    public ArenaData getArenaByLocation(Location loc) {
-        for (ArenaData arena : arenas.values()) {
-            if (!arena.world().equalsIgnoreCase(loc.getWorld().getName())) continue;
-
-            if (isInside(loc, arena.rotCorner1(), arena.rotCorner2()) ||
-                    isInside(loc, arena.blauCorner1(), arena.blauCorner2())) {
-                return arena;
-            }
-        }
-        return null;
-    }
-
-    private boolean isInsideAnyTeamArea(Location loc, ArenaData arena) {
+    private boolean isInsideAnyTeamArea(Location loc, ArenaConfig.ArenaData arena) {
         return isInside(loc, arena.rotCorner1(), arena.rotCorner2())
                 || isInside(loc, arena.blauCorner1(), arena.blauCorner2());
     }
@@ -493,10 +422,6 @@ public class ArenaBuildProtectionManager implements Listener {
             }
         }
         return null;
-    }
-
-    public ArenaData getArena(String key) {
-        return arenas.get(key.toLowerCase());
     }
 
     public void clearTeamData(String team) {

@@ -6,7 +6,7 @@
 
     <groupId>runi.myddns</groupId>
     <artifactId>MobArmyWars</artifactId>
-    <version>1.5</version>
+    <version>1.6</version>
     <packaging>jar</packaging>
 
     <name>MobArmyWars</name>
@@ -101,7 +101,7 @@
 
                                 <!-- 🧩 Im Plugin-Ordner überschreiben -->
                                 <copy file="${project.build.directory}/${project.build.finalName}.jar"
-                                      tofile="C:\Users\ronny\Desktop\Server 26.2\plugins\MobArmyWars-v1.5.jar"
+                                      tofile="C:\Users\ronny\Desktop\Server 26.2\plugins\MobArmyWars-v1.6.jar"
                                       overwrite="true"
                                       failonerror="false" />
                             </target>
@@ -148,7 +148,7 @@
         <dependency>
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
-            <version>26.2.build.53-alpha</version>
+            <version>26.2.build.93-stable</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

@@ -74,11 +74,13 @@ public class ArenaScoreboardManager {
     public void addKill(String team) {
         killCounts.put(team, killCounts.getOrDefault(team, 0) + 1);
         saveKills();
+        updateAllArenaPlayers();
     }
 
     public void setKillCount(String team, int count) {
         killCounts.put(team, count);
         saveKills();
+        updateAllArenaPlayers();
     }
 
     public void setBoard(Player player) {
@@ -126,6 +128,7 @@ public class ArenaScoreboardManager {
         killCounts.put("Rot", 0);
         killCounts.put("Blau", 0);
         saveKills();
+        updateAllArenaPlayers();
     }
 
     public Map<String, Integer> getKillCounts() {

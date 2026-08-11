@@ -2,6 +2,7 @@ package runi.myddns.mobarmywars.Listeners;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -9,6 +10,8 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityResurrectEvent;
+import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import runi.myddns.mobarmywars.Managers.World.ResumeManager;
 import runi.myddns.mobarmywars.MobArmyMain;
@@ -175,6 +178,46 @@ public class PlayerRespawnListener implements Listener {
         return;
     }
 
+    @EventHandler
+    public void onTotemPop(EntityResurrectEvent event) {
+
+        if (event.isCancelled()) {
+            return;
+        }
+
+        if (!(event.getEntity() instanceof Player player)) {
+            return;
+        }
+
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (!player.isOnline()) {
+                return;
+            }
+
+            plugin.getPlayerEffectManager().applyNightVision(player);
+
+        }, 1L);
+    }
+
+    @EventHandler
+    public void onMilkDrink(PlayerItemConsumeEvent event) {
+
+        if (event.getItem().getType() != Material.MILK_BUCKET) {
+            return;
+        }
+
+        Player player = event.getPlayer();
+
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (!player.isOnline()) {
+                return;
+            }
+
+            plugin.getPlayerEffectManager().applyNightVision(player);
+
+        }, 2L);
+    }
+
     private Location getLobbySpawnFromFile() {
         File file = new File(plugin.getDataFolder(), "spawns.yml");
 
@@ -279,70 +322,37 @@ public class PlayerRespawnListener implements Listener {
     }
 
     private Location getArenaTeamSpawnFromFile(Player player) {
-        File file = new File(plugin.getDataFolder(), "arena-koordinaten.yml");
-
-        if (!file.exists()) {
-            plugin.getLogger().warning("arena-koordinaten.yml wurde nicht gefunden!");
-            return null;
-        }
-
-        FileConfiguration config = YamlConfiguration.loadConfiguration(file);
-
-        ConfigurationSection arenasSection = config.getConfigurationSection("arenas");
-        if (arenasSection == null) {
-            plugin.getLogger().warning("arenas wurde in arena-koordinaten.yml nicht gefunden!");
-            return null;
-        }
 
         String team = plugin.getTeamManager().getPlayerTeam(player);
+
         if (team == null) {
-            plugin.getLogger().warning("Spieler " + player.getName() + " hat kein Team für Arena-Respawn.");
+            plugin.getLogger().warning(
+                    "Spieler " + player.getName()
+                            + " hat kein Team für Arena-Respawn."
+            );
             return null;
         }
 
-        team = team.toLowerCase();
+        if (!team.equalsIgnoreCase("rot")
+                && !team.equalsIgnoreCase("blau")) {
 
-        if (!team.equals("rot") && !team.equals("blau")) {
-            plugin.getLogger().warning("Ungültiges Team für Arena-Respawn: " + team);
+            plugin.getLogger().warning(
+                    "Ungültiges Team für Arena-Respawn: " + team
+            );
             return null;
         }
 
-        for (String arenaKey : arenasSection.getKeys(false)) {
-            ConfigurationSection arenaSection = arenasSection.getConfigurationSection(arenaKey);
-            if (arenaSection == null) continue;
+        Location spawn = plugin.getArenaConfig().getTeamSpawn(team);
 
-            String worldName = arenaSection.getString("world");
-            if (worldName == null) continue;
-
-            World world = Bukkit.getWorld(worldName);
-            if (world == null) {
-                plugin.getLogger().warning("Arena-Welt '" + worldName + "' wurde nicht gefunden!");
-                continue;
-            }
-
-            java.util.List<Double> spawn = arenaSection.getDoubleList(team + ".teamspawn");
-
-            if (spawn.size() < 3) {
-                continue;
-            }
-
-            double x = spawn.get(0);
-            double y = spawn.get(1);
-            double z = spawn.get(2);
-
-            float yaw = 0.0f;
-            float pitch = 0.0f;
-
-            if (spawn.size() >= 5) {
-                yaw = spawn.get(3).floatValue();
-                pitch = spawn.get(4).floatValue();
-            }
-
-            return new Location(world, x, y, z, yaw, pitch);
+        if (spawn == null) {
+            plugin.getLogger().warning(
+                    "Kein Teamspawn für Team " + team
+                            + " in der aktiven Arena gefunden!"
+            );
+            return null;
         }
 
-        plugin.getLogger().warning("Kein Arena-Teamspawn für Team " + team + " gefunden!");
-        return null;
+        return spawn.clone();
     }
 
     private void giveArenaCompassAfterRespawn(Player player) {

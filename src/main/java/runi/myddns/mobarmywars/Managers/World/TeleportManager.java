@@ -2,6 +2,7 @@ package runi.myddns.mobarmywars.Managers.World;
 
 import org.bukkit.*;
 import org.bukkit.entity.Player;
+import runi.myddns.mobarmywars.Managers.Event.ArenaConfig;
 import runi.myddns.mobarmywars.MobArmyMain;
 
 import java.util.concurrent.ThreadLocalRandom;
@@ -84,43 +85,44 @@ public class TeleportManager {
     public static void teleportToArena(Player player) {
 
         MobArmyMain plugin = MobArmyMain.getInstance();
+
         String team = plugin.getTeamManager().getPlayerTeam(player);
-        if (team == null) return;
+        if (team == null || team.equalsIgnoreCase("Kein Team")) {
+            player.sendMessage(ChatColor.RED + "❌ Du hast kein Team!");
+            return;
+        }
 
-        String arenaKey = "japanisches-dorf";
+        ArenaConfig.ArenaData arena = plugin.getArenaConfig().getActiveArena();
 
-        Location target = plugin
-                .getArenaConfig()
-                .getTeamSpawn(arenaKey, team);
+        if (arena == null) {
+            player.sendMessage(ChatColor.RED + "❌ Keine aktive Arena geladen!");
+            return;
+        }
 
-        if (target == null) {
+        Location configuredSpawn = plugin.getArenaConfig().getTeamSpawn(team);
+
+        if (configuredSpawn == null) {
             player.sendMessage(ChatColor.RED + "❌ Kein Arena-Spawn für Team " + team);
             return;
         }
 
-        player.teleport(target);
-    }
+        World currentWorld = Bukkit.getWorld(arena.world());
 
-
-    public static void teleportToOverworld(Player player) {
-
-        if (player == null) return;
-
-        World overworld = Bukkit.getWorld("world");
-
-        if (overworld == null) {
-            for (World w : Bukkit.getWorlds()) {
-                if (w.getEnvironment() == World.Environment.NORMAL) {
-                    overworld = w;
-                    break;
-                }
-            }
-        }
-        if (overworld == null) {
-            player.teleport(player.getWorld().getSpawnLocation());
+        if (currentWorld == null) {
+            player.sendMessage(ChatColor.RED + "❌ Arena-Welt ist nicht geladen!");
             return;
         }
-        player.teleport(overworld.getSpawnLocation());
+
+        Location target = new Location(
+                currentWorld,
+                configuredSpawn.getX(),
+                configuredSpawn.getY(),
+                configuredSpawn.getZ(),
+                configuredSpawn.getYaw(),
+                configuredSpawn.getPitch()
+        );
+
+        player.teleport(target);
     }
 
     private static void saveResumeLocation(Player player, String targetWorldName) {

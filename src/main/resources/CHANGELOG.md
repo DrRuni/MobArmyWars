@@ -1,5 +1,28 @@
 # Changelog
 
+## v1.6
+
+### Neu
+
+- Arenaauswahl in den Arenaeinstellungen hinzugefügt
+- Zweite Arena **„Ancient City“** hinzugefügt
+
+### Verbessert
+
+- Arena-Scoreboard überarbeitet und wieder funktionsfähig
+- Arena-Reset überarbeitet: Spieler werden nun zurück zur Wave-Auswahl teleportiert, um dort neu zu starten
+- Spawn-Konfiguration und Arena-Spawnpunkte überarbeitet
+- Weltenstruktur an Paper/Minecraft **26.x** angepasst
+- Ready-System intern von einzelnen Spielern auf Teams umgestellt
+
+### Geändert
+
+- Funktion zum Neustarten der Waves deaktiviert
+
+### Wichtig
+
+- Version **1.6** hat nun **Stable-Status**
+
 ## v1.5
 
 ### Neu

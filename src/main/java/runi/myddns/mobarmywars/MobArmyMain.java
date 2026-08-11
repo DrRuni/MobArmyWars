@@ -1,5 +1,7 @@
 package runi.myddns.mobarmywars;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.PluginCommand;
@@ -68,7 +70,7 @@ public class MobArmyMain extends JavaPlugin {
         Bukkit.getConsoleSender().sendMessage(
                 ConsoleColor.COPPER + "  ═══════════════  MobArmyWars  ═══════════════" + ConsoleColor.RESET);
         Bukkit.getConsoleSender().sendMessage(
-                ConsoleColor.COPPER + "                      V1.5" + ConsoleColor.RESET);
+                ConsoleColor.COPPER + "                      V1.6" + ConsoleColor.RESET);
         Bukkit.getConsoleSender().sendMessage(
                 ConsoleColor.COPPER + "                  L O A D I N G" + ConsoleColor.RESET);
         Bukkit.getConsoleSender().sendMessage("");
@@ -79,6 +81,21 @@ public class MobArmyMain extends JavaPlugin {
     @Override
     public void onEnable() {
         instance = this;
+
+        MiniMessage mm = MiniMessage.miniMessage();
+
+        Component motd = mm.deserialize(
+                "<bold><gradient:#FF3B3B:#8B0000>        Runi´s </gradient>" +
+                        "<gradient:#4DA6FF:#004C99>MobArmyWars</gradient> " +
+                        "<dark_gray>-</dark_gray> " +
+                        "<yellow>V1.6</yellow></bold>" +
+                        "\n" +
+                        "<red><obfuscated>                  X</obfuscated></red> " +
+                        "<bold><gradient:#FF3B3B:#4DA6FF>ROT  ⚔  BLAU</gradient> " +
+                        "<blue><obfuscated>X</obfuscated></blue></bold>"
+        );
+
+        getServer().motd(motd);
 
         PluginFileManager pluginFileManager = new PluginFileManager(this);
         pluginFileManager.checkFilesOnStartup();
@@ -124,12 +141,10 @@ public class MobArmyMain extends JavaPlugin {
 
         arenaConfig = new ArenaConfig(this);
         arenaManager = new ArenaEventManager(this);
-//        arenaManager.setRandomizer(blockRandomizerManager);
 
         teamManager = new TeamManager(this);
 
         arenaBuildProtectionManager = new ArenaBuildProtectionManager(this);
-        arenaBuildProtectionManager.loadFromConfig();
         arenaBuildProtectionManager.loadSpawnProtectionAreas();
 
         mobSaveManager = new MobSaveManager(this, teamManager);
@@ -214,7 +229,7 @@ public class MobArmyMain extends JavaPlugin {
 
         Bukkit.getScheduler().runTaskLater(this, () -> {
             try {
-                arenaBuildProtectionManager.loadFromConfig();
+                arenaConfig.reload();
                 arenaBuildProtectionManager.loadSpawnProtectionAreas();
             } catch (Exception ex) {
                 Bukkit.getLogger().severe("[MobArmyWars] Fehler beim Nachladen der BuildProtection!");
@@ -250,7 +265,7 @@ public class MobArmyMain extends JavaPlugin {
         Bukkit.getConsoleSender().sendMessage(
                 ConsoleColor.DARK_GOLDEN_LIME + "  ═══════════════  MobArmyWars  ═══════════════" + ConsoleColor.RESET);
         Bukkit.getConsoleSender().sendMessage(
-                ConsoleColor.DARK_GOLDEN_LIME + "                      V1.5" + ConsoleColor.RESET);
+                ConsoleColor.DARK_GOLDEN_LIME + "                      V1.6" + ConsoleColor.RESET);
         Bukkit.getConsoleSender().sendMessage(
                 ConsoleColor.DARK_GOLDEN_LIME + "                    R E A D Y" + ConsoleColor.RESET);
         Bukkit.getConsoleSender().sendMessage("");
