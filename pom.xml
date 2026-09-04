@@ -6,7 +6,7 @@
 
     <groupId>runi.myddns</groupId>
     <artifactId>MobArmyWars</artifactId>
-    <version>1.6</version>
+    <version>1.7</version>
     <packaging>jar</packaging>
 
     <name>MobArmyWars</name>
@@ -93,15 +93,8 @@
                         </goals>
                         <configuration>
                             <target>
-                                <!-- 🧩 Neue Version in Backup speichern -->
-<!--                                <copy file="${project.build.directory}/${project.build.finalName}.jar"-->
-<!--                                      tofile="Z:\Dokumente\Games\Minecraft\Backup\JAR\MobArmyWars-v1.5.${buildNumber}.jar"-->
-<!--                                      overwrite="true"-->
-<!--                                      failonerror="false" />-->
-
-                                <!-- 🧩 Im Plugin-Ordner überschreiben -->
                                 <copy file="${project.build.directory}/${project.build.finalName}.jar"
-                                      tofile="C:\Users\ronny\Desktop\Server 26.2\plugins\MobArmyWars-v1.6.jar"
+                                      tofile="C:\Users\ronny\Desktop\Server 26.2\plugins\MobArmyWars-v1.7.jar"
                                       overwrite="true"
                                       failonerror="false" />
                             </target>
@@ -148,7 +141,7 @@
         <dependency>
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
-            <version>26.2.build.93-stable</version>
+            <version>26.2.build.121-stable</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

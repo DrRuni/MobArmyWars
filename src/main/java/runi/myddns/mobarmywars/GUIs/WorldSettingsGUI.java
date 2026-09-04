@@ -1,7 +1,7 @@
 package runi.myddns.mobarmywars.GUIs;
 
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -25,468 +25,607 @@ public class WorldSettingsGUI implements Listener {
     private final MobArmyMain plugin;
     private final BlockRandomizerManager blockRandomizerManager;
 
-    private static final String TITLE = ChatColor.BLUE + "Welteinstellungen";
-
-    public WorldSettingsGUI(MobArmyMain plugin, BlockRandomizerManager blockRandomizerManager) {
+    public WorldSettingsGUI(
+            MobArmyMain plugin,
+            BlockRandomizerManager blockRandomizerManager
+    ) {
         this.plugin = plugin;
         this.blockRandomizerManager = blockRandomizerManager;
     }
 
     public void open(Player player) {
-        Inventory inv = Bukkit.createInventory(null, 45, TITLE);
 
-        boolean randomizerOn = blockRandomizerManager.isGlobalRandomizerEnabled();
-        boolean keepInvOn = plugin.getWorldSettings().isKeepInventoryEnabled();
-        boolean mobSpawningOn = plugin.getWorldSettings().isMobSpawningEnabled();
-        boolean daylightCycleOn = plugin.getWorldSettings().isDaylightCycleEnabled();
-        boolean nightVisionOn = plugin.getWorldSettings().isNightVisionEnabled();
-        boolean chestRandomizerOn = plugin.getWorldSettings().isChestRandomizerEnabled();
-        String difficulty = plugin.getWorldSettings().getDifficulty();
-        long currentTime = plugin.getWorldSettings().getCurrentWorldTime();
+        Inventory inv = Bukkit.createInventory(
+                null,
+                45,
+                lang("world-settings-gui.title")
+        );
 
-        inv.setItem(10, createItem(
+        boolean randomizerOn =
+                blockRandomizerManager.isGlobalRandomizerEnabled();
+
+        boolean keepInvOn =
+                plugin.getWorldSettings().isKeepInventoryEnabled();
+
+        boolean mobSpawningOn =
+                plugin.getWorldSettings().isMobSpawningEnabled();
+
+        boolean daylightCycleOn =
+                plugin.getWorldSettings().isDaylightCycleEnabled();
+
+        boolean nightVisionOn =
+                plugin.getWorldSettings().isNightVisionEnabled();
+
+        boolean chestRandomizerOn =
+                plugin.getWorldSettings().isChestRandomizerEnabled();
+
+        String difficulty =
+                plugin.getWorldSettings().getDifficulty();
+
+        long currentTime =
+                plugin.getWorldSettings().getCurrentWorldTime();
+
+        inv.setItem(10, createToggleItem(
                 randomizerOn ? Material.LIME_WOOL : Material.RED_WOOL,
-                (randomizerOn ? ChatColor.GREEN : ChatColor.RED)
-                        + "BlockRandomizer: " + (randomizerOn ? "AN" : "AUS"),
-                "",
-                "Zufällige Blöcke beim Abbauen",
-                "global ein- oder ausschalten"
+                "world-settings-gui.block-randomizer.name",
+                randomizerOn,
+                lang("world-settings-gui.block-randomizer.description-1"),
+                lang("world-settings-gui.block-randomizer.description-2")
         ));
 
         inv.setItem(12, createToggleItem(
-                "Kisten-Randomizer",
+                chestRandomizerOn ? Material.CHEST : Material.BARRIER,
+                "world-settings-gui.chest-randomizer.name",
                 chestRandomizerOn
         ));
 
         inv.setItem(14, createItem(
                 Material.SPAWNER,
-                ChatColor.GOLD + "BlockRandomizer-Ausnahmen",
-                "",
-                "Blöcke, Gegenstände und Spawn-Eier",
-                "vom Zufall ausschließen"
+                lang("world-settings-gui.block-randomizer.exclusions.name"),
+                Component.empty(),
+                lang("world-settings-gui.block-randomizer.exclusions.description-1"),
+                lang("world-settings-gui.block-randomizer.exclusions.description-2")
         ));
 
         inv.setItem(16, createItem(
                 Material.TNT,
-                ChatColor.DARK_RED + "BlockRandomizer zurücksetzen",
-                "",
-                "Erstellt eine neue zufällige",
-                "Zuordnung aller Blöcke"
+                lang("world-settings-gui.block-randomizer.reset.name"),
+                Component.empty(),
+                lang("world-settings-gui.block-randomizer.reset.description-1"),
+                lang("world-settings-gui.block-randomizer.reset.description-2")
         ));
 
-        inv.setItem(20, createDifficultyItem(difficulty));
+        inv.setItem(
+                20,
+                createDifficultyItem(difficulty)
+        );
 
         inv.setItem(22, createToggleItem(
-                "Mob-Spawning",
+                mobSpawningOn ? Material.ZOMBIE_HEAD : Material.PLAYER_HEAD,
+                "world-settings-gui.mob-spawning.name",
                 mobSpawningOn
         ));
 
-        inv.setItem(24, createItem(
+        inv.setItem(24, createToggleItem(
                 keepInvOn ? Material.LIME_WOOL : Material.RED_WOOL,
-                (keepInvOn ? ChatColor.GREEN : ChatColor.RED)
-                        + "Inventar behalten: " + (keepInvOn ? "AN" : "AUS"),
-                "",
-                "Spieler behalten nach dem Tod",
-                "Inventar und Erfahrung"
+                "world-settings-gui.keep-inventory.name",
+                keepInvOn,
+                lang("world-settings-gui.keep-inventory.description-1"),
+                lang("world-settings-gui.keep-inventory.description-2")
         ));
 
         inv.setItem(29, createToggleItem(
-                "Nachtsicht",
+                nightVisionOn ? Material.LIGHT : Material.GRAY_CANDLE,
+                "world-settings-gui.night-vision.name",
                 nightVisionOn,
-                "Gibt allen Spielern dauerhaft Nachtsicht",
-                "Nachtsicht ist deaktiviert"
+                nightVisionOn
+                        ? lang("world-settings-gui.night-vision.enabled-description")
+                        : lang("world-settings-gui.night-vision.disabled-description")
         ));
 
-        inv.setItem(31, createTimeItem(currentTime));
+        inv.setItem(
+                31,
+                createTimeItem(currentTime)
+        );
 
         inv.setItem(33, createToggleItem(
-                "Tageslichtzyklus",
+                daylightCycleOn ? Material.CLOCK : Material.DAYLIGHT_DETECTOR,
+                "world-settings-gui.daylight-cycle.name",
                 daylightCycleOn,
-                "Tag und Nacht wechseln automatisch",
-                "Die aktuelle Tageszeit bleibt stehen"
+                daylightCycleOn
+                        ? lang("world-settings-gui.daylight-cycle.enabled-description")
+                        : lang("world-settings-gui.daylight-cycle.disabled-description")
         ));
 
-        inv.setItem(40, createItem(
-                Material.ARROW,
-                ChatColor.DARK_AQUA + "Zurück",
-                "",
-                "Zurück zum vorherigen Menü"
-        ));
+        inv.setItem(
+                40,
+                createBackButton()
+        );
 
         player.openInventory(inv);
     }
 
-    private ItemStack createItem(Material mat, String name, String... loreLines) {
-        ItemStack item = new ItemStack(mat);
+    private ItemStack createItem(
+            Material material,
+            Component name,
+            Component... loreLines
+    ) {
+
+        ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
-        if (meta == null) return item;
 
-        meta.setDisplayName(name);
+        if (meta == null) {
+            return item;
+        }
 
-        List<String> lore = new ArrayList<>();
-        if (loreLines != null && loreLines.length > 0) {
-            for (String line : loreLines) {
-                lore.add(ChatColor.GRAY + line);
+        meta.displayName(name);
+
+        List<Component> lore = new ArrayList<>();
+
+        if (loreLines != null) {
+            for (Component line : loreLines) {
+                if (line != null) {
+                    lore.add(line);
+                }
             }
         }
 
-        meta.setLore(lore);
-        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_UNBREAKABLE);
-        item.setItemMeta(meta);
-        return item;
-    }
+        meta.lore(lore);
 
-    private ItemStack createToggleItem(String name, boolean state) {
-        return createToggleItem(name, state, null, null);
+        meta.addItemFlags(
+                ItemFlag.HIDE_ATTRIBUTES,
+                ItemFlag.HIDE_ENCHANTS,
+                ItemFlag.HIDE_UNBREAKABLE
+        );
+
+        item.setItemMeta(meta);
+
+        return item;
     }
 
     private ItemStack createToggleItem(
-            String name,
+            Material material,
+            String namePath,
             boolean state,
-            String enabledDescription,
-            String disabledDescription
+            Component... description
     ) {
-        Material icon;
 
-        if (name.equalsIgnoreCase("Mob-Spawning")) {
-            icon = state ? Material.ZOMBIE_HEAD : Material.PLAYER_HEAD;
+        Component name = Component.empty()
+                .append(state
+                        ? lang("world-settings-gui.status.on")
+                        : lang("world-settings-gui.status.off"))
+                .append(Component.text(" - "))
+                .append(lang(namePath));
 
-        } else if (name.equalsIgnoreCase("Tageslichtzyklus")) {
-            icon = state ? Material.CLOCK : Material.DAYLIGHT_DETECTOR;
+        List<Component> lore = new ArrayList<>();
 
-        } else if (name.equalsIgnoreCase("Nachtsicht")) {
-            icon = state ? Material.LIGHT : Material.GRAY_CANDLE;
-
-        } else if (name.equalsIgnoreCase("Kisten-Randomizer")) {
-            icon = state ? Material.CHEST : Material.BARRIER;
-
-        } else {
-            icon = state ? Material.LIME_WOOL : Material.RED_WOOL;
-        }
-
-        ItemStack item = new ItemStack(icon);
-        ItemMeta meta = item.getItemMeta();
-        if (meta == null) return item;
-
-        meta.setDisplayName(
-                (state ? ChatColor.GREEN : ChatColor.RED)
-                        + name
-                        + ": "
-                        + (state ? "AN" : "AUS")
+        lore.add(Component.empty());
+        lore.add(
+                langStatus(
+                        state
+                                ? langRaw("world-settings-gui.status.on")
+                                : langRaw("world-settings-gui.status.off")
+                )
         );
 
-        List<String> lore = new ArrayList<>();
-        lore.add("");
-        lore.add(ChatColor.GRAY + "Status: "
-                + (state ? ChatColor.GREEN + "AN" : ChatColor.RED + "AUS"));
+        if (description != null
+                && description.length > 0) {
 
-        String description = state ? enabledDescription : disabledDescription;
+            lore.add(Component.empty());
 
-        if (description != null && !description.isBlank()) {
-            lore.add("");
-            lore.add(ChatColor.GRAY + description);
-        }
-
-        meta.setLore(lore);
-        item.setItemMeta(meta);
-
-        return item;
-    }
-
-    private ItemStack createDifficultyItem(String difficulty) {
-        Material mat;
-        ChatColor color;
-        String displayName;
-
-        switch (difficulty.toLowerCase(Locale.ROOT)) {
-            case "peaceful" -> {
-                mat = Material.WHITE_WOOL;
-                color = ChatColor.WHITE;
-                displayName = "Friedlich";
-            }
-            case "easy" -> {
-                mat = Material.LIME_WOOL;
-                color = ChatColor.GREEN;
-                displayName = "Leicht";
-            }
-            case "normal" -> {
-                mat = Material.ORANGE_WOOL;
-                color = ChatColor.GOLD;
-                displayName = "Normal";
-            }
-            case "hard" -> {
-                mat = Material.RED_WOOL;
-                color = ChatColor.RED;
-                displayName = "Schwer";
-            }
-            case "ultra-ultra-hardcore" -> {
-                mat = Material.PURPLE_WOOL;
-                color = ChatColor.DARK_PURPLE;
-                displayName = "Ultra-Ultra-Hardcore";
-            }
-            default -> {
-                mat = Material.GRAY_WOOL;
-                color = ChatColor.GRAY;
-                displayName = "Unbekannt";
+            for (Component line : description) {
+                if (line != null) {
+                    lore.add(line);
+                }
             }
         }
 
-        ItemStack item = new ItemStack(mat);
-        ItemMeta meta = item.getItemMeta();
-        if (meta == null) return item;
-
-        meta.setDisplayName(color + "Schwierigkeit: " + displayName);
-        meta.setLore(List.of(
-                "",
-                ChatColor.GRAY + "Klicke zum Ändern"
-        ));
-        item.setItemMeta(meta);
-        return item;
+        return createItem(
+                material,
+                name,
+                lore.toArray(Component[]::new)
+        );
     }
 
-    private ItemStack createTimeItem(long currentTime) {
-        String phase;
-        ChatColor color;
-        Material mat;
+    private ItemStack createDifficultyItem(
+            String difficulty
+    ) {
+
+        Material material = switch (
+                difficulty.toLowerCase(Locale.ROOT)
+                ) {
+            case "peaceful" -> Material.WHITE_WOOL;
+            case "easy" -> Material.LIME_WOOL;
+            case "normal" -> Material.ORANGE_WOOL;
+            case "hard" -> Material.RED_WOOL;
+            case "ultra-ultra-hardcore" -> Material.PURPLE_WOOL;
+            default -> Material.GRAY_WOOL;
+        };
+
+        Component difficultyName =
+                getDifficultyName(difficulty);
+
+        return createItem(
+                material,
+                plugin.getLanguageManager().getComponent(
+                        "world-settings-gui.difficulty.name",
+                        "difficulty",
+                        difficultyName
+                ),
+                Component.empty(),
+                lang("world-settings-gui.difficulty.click")
+        );
+    }
+
+    private ItemStack createTimeItem(
+            long currentTime
+    ) {
+
+        String phaseKey;
+        Material material;
 
         if (currentTime < 6000) {
-            phase = "Früh";
-            color = ChatColor.GOLD;
-            mat = Material.ORANGE_WOOL;
+            phaseKey = "morning";
+            material = Material.ORANGE_WOOL;
+
         } else if (currentTime < 12000) {
-            phase = "Mittag";
-            color = ChatColor.YELLOW;
-            mat = Material.YELLOW_WOOL;
+            phaseKey = "noon";
+            material = Material.YELLOW_WOOL;
+
         } else if (currentTime < 18000) {
-            phase = "Abend";
-            color = ChatColor.RED;
-            mat = Material.RED_WOOL;
+            phaseKey = "evening";
+            material = Material.RED_WOOL;
+
         } else {
-            phase = "Nacht";
-            color = ChatColor.BLUE;
-            mat = Material.BLUE_WOOL;
+            phaseKey = "night";
+            material = Material.BLUE_WOOL;
         }
 
-        ItemStack item = new ItemStack(mat);
-        ItemMeta meta = item.getItemMeta();
-        if (meta == null) return item;
+        Component phase =
+                lang("world-settings-gui.time." + phaseKey);
 
-        meta.setDisplayName(color + "Tageszeit: §f" + phase);
-        meta.setLore(List.of(
-                "",
-                ChatColor.GRAY + "Klicke, um zur nächsten Tageszeit zu springen",
-                ChatColor.DARK_GRAY + "(" +
-                ChatColor.GOLD + "Früh " +
-                ChatColor.DARK_GRAY + "→ " +
-                ChatColor.YELLOW + "Mittag " +
-                ChatColor.DARK_GRAY + "→ " +
-                ChatColor.RED + "Abend " +
-                ChatColor.DARK_GRAY + "→ " +
-                ChatColor.BLUE + "Nacht " +
-                ChatColor.DARK_GRAY + "→ " +
-                ChatColor.GOLD + "Früh" +
-                ChatColor.DARK_GRAY +  ")"
-        ));
-        item.setItemMeta(meta);
-        return item;
+        return createItem(
+                material,
+                plugin.getLanguageManager().getComponent(
+                        "world-settings-gui.time.name",
+                        "phase",
+                        phase
+                ),
+                Component.empty(),
+                lang("world-settings-gui.time.click"),
+                lang("world-settings-gui.time.cycle")
+        );
+    }
+
+    private ItemStack createBackButton() {
+
+        return createItem(
+                Material.ARROW,
+                lang("world-settings-gui.back.name"),
+                Component.empty(),
+                lang("world-settings-gui.back.description")
+        );
     }
 
     @EventHandler
-    public void onClick(InventoryClickEvent e) {
-        if (!(e.getWhoClicked() instanceof Player player)) return;
-        if (!ChatColor.stripColor(e.getView().getTitle()).equalsIgnoreCase("Welteinstellungen")) return;
+    public void onClick(
+            InventoryClickEvent event
+    ) {
 
-        e.setCancelled(true);
+        if (!(event.getWhoClicked()
+                instanceof Player player)) {
+            return;
+        }
 
-        ItemStack clicked = e.getCurrentItem();
-        if (clicked == null || !clicked.hasItemMeta()) return;
-        if (clicked.getItemMeta() == null || !clicked.getItemMeta().hasDisplayName()) return;
+        if (!event.getView().title().equals(
+                lang("world-settings-gui.title")
+        )) {
+            return;
+        }
 
-        String itemName = ChatColor.stripColor(clicked.getItemMeta().getDisplayName()).toLowerCase(Locale.ROOT);
+        event.setCancelled(true);
+
+        int slot = event.getRawSlot();
+
+        if (slot < 0
+                || slot >= event.getView()
+                .getTopInventory()
+                .getSize()) {
+
+            return;
+        }
+
         boolean reopen = true;
 
-        switch (itemName) {
-            case "zurück" -> {
-                Sounds.playBack(player);
-                plugin.getEventSettingsGUI().open(player);
+        switch (slot) {
+
+            case 10 -> {
+
+                Sounds.playClick(player);
+
+                plugin.getWorldSettings()
+                        .toggleRandomizer();
+
+                boolean newState =
+                        plugin.getWorldSettings()
+                                .isRandomizerEnabled();
+
+                blockRandomizerManager
+                        .setGlobalRandomizerEnabled(newState);
+
+                broadcast(
+                        newState
+                                ? lang("world-settings-gui.block-randomizer.enabled")
+                                : lang("world-settings-gui.block-randomizer.disabled")
+                );
+            }
+
+            case 12 -> {
+
+                Sounds.playClick(player);
+
+                plugin.getWorldSettings()
+                        .toggleChestRandomizer();
+
+                boolean newState =
+                        plugin.getWorldSettings()
+                                .isChestRandomizerEnabled();
+
+                broadcast(
+                        newState
+                                ? lang("world-settings-gui.chest-randomizer.enabled")
+                                : lang("world-settings-gui.chest-randomizer.disabled")
+                );
+            }
+
+            case 14 -> {
+
+                Sounds.playClick(player);
+
+                plugin.getSpawnEggGUI()
+                        .openGUI(player);
+
                 reopen = false;
             }
 
-            case "blockrandomizer: an", "blockrandomizer: aus" -> {
-                Sounds.playClick(player);
+            case 16 -> {
 
-                plugin.getWorldSettings().toggleRandomizer();
-
-                boolean newState = plugin.getWorldSettings().isRandomizerEnabled();
-                blockRandomizerManager.setGlobalRandomizerEnabled(newState);
-
-                for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                    onlinePlayer.sendMessage(
-                            newState
-                                    ? ChatColor.GREEN + "✅ BlockRandomizer aktiviert!"
-                                    : ChatColor.RED + "⛔ BlockRandomizer deaktiviert!"
-                    );
-                }
-            }
-
-            case "kisten-randomizer: an", "kisten-randomizer: aus" -> {
-                Sounds.playClick(player);
-
-                plugin.getWorldSettings().toggleChestRandomizer();
-
-                boolean newState = plugin.getWorldSettings().isChestRandomizerEnabled();
-
-                for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                    onlinePlayer.sendMessage(
-                            newState
-                                    ? ChatColor.GREEN + "✅ Kisten-Randomizer aktiviert!"
-                                    : ChatColor.RED + "⛔ Kisten-Randomizer deaktiviert!"
-                    );
-                }
-            }
-
-            case "inventar behalten: an", "inventar behalten: aus" -> {
-                Sounds.playClick(player);
-
-                plugin.getWorldSettings().toggleKeepInventory();
-
-                for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                    onlinePlayer.sendMessage(
-                            plugin.getWorldSettings().isKeepInventoryEnabled()
-                                    ? ChatColor.GREEN + "✅ KeepInventory aktiviert!"
-                                    : ChatColor.RED + "⛔ KeepInventory deaktiviert!"
-                    );
-                }
-            }
-
-            case "mob-spawning: an", "mob-spawning: aus" -> {
-                Sounds.playClick(player);
-                plugin.getWorldSettings().toggleMobSpawning();
-
-                boolean newState = plugin.getWorldSettings().isMobSpawningEnabled();
-                for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                    onlinePlayer.sendMessage(
-                            newState
-                                    ? ChatColor.GREEN + "✅ Mob-Spawning aktiviert!"
-                                    : ChatColor.RED + "⛔ Mob-Spawning deaktiviert!"
-                    );
-                }
-            }
-
-            case "tageslichtzyklus: an", "tageslichtzyklus: aus" -> {
-                Sounds.playClick(player);
-
-                plugin.getWorldSettings().toggleDaylightCycle();
-
-                boolean newState = plugin.getWorldSettings().isDaylightCycleEnabled();
-
-                for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                    onlinePlayer.sendMessage(
-                            newState
-                                    ? ChatColor.GREEN + "✅ Tageslichtzyklus aktiviert!"
-                                    : ChatColor.RED + "⛔ Tageslichtzyklus deaktiviert!"
-                    );
-                }
-            }
-
-            case "blockrandomizer-ausnahmen" -> {
-                Sounds.playClick(player);
-                plugin.getSpawnEggGUI().openGUI(player);
-                reopen = false;
-            }
-
-            case "blockrandomizer zurücksetzen" -> {
                 Sounds.playReset(player);
-                blockRandomizerManager.resetRandomizer();
 
-                for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                    onlinePlayer.sendMessage(ChatColor.GREEN + "🔁 BlockRandomizer zurückgesetzt!");
-                }
+                blockRandomizerManager
+                        .resetRandomizer();
+
+                broadcast(
+                        lang("world-settings-gui.block-randomizer.reset.message")
+                );
             }
 
-            case "nachtsicht: an", "nachtsicht: aus" -> {
+            case 20 -> {
+
                 Sounds.playClick(player);
 
-                plugin.getWorldSettings().toggleNightVision();
-                plugin.getPlayerEffectManager().applyNightVisionToAll();
-
-                boolean newState = plugin.getWorldSettings().isNightVisionEnabled();
-
-                for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                    onlinePlayer.sendMessage(
-                            newState
-                                    ? ChatColor.GREEN + "✅ Nachtsicht aktiviert!"
-                                    : ChatColor.RED + "⛔ Nachtsicht deaktiviert!"
-                    );
-                }
+                handleDifficultyClick();
             }
 
-            default -> {
-                if (itemName.startsWith("schwierigkeit:")) {
-                    Sounds.playClick(player);
-                    handleDifficultyClick();
-                } else if (itemName.startsWith("tageszeit:")) {
-                    Sounds.playClick(player);
-                    handleTimeClick();
-                }
+            case 22 -> {
+
+                Sounds.playClick(player);
+
+                plugin.getWorldSettings()
+                        .toggleMobSpawning();
+
+                boolean newState =
+                        plugin.getWorldSettings()
+                                .isMobSpawningEnabled();
+
+                broadcast(
+                        newState
+                                ? lang("world-settings-gui.mob-spawning.enabled")
+                                : lang("world-settings-gui.mob-spawning.disabled")
+                );
+            }
+
+            case 24 -> {
+
+                Sounds.playClick(player);
+
+                plugin.getWorldSettings()
+                        .toggleKeepInventory();
+
+                boolean newState =
+                        plugin.getWorldSettings()
+                                .isKeepInventoryEnabled();
+
+                broadcast(
+                        newState
+                                ? lang("world-settings-gui.keep-inventory.enabled")
+                                : lang("world-settings-gui.keep-inventory.disabled")
+                );
+            }
+
+            case 29 -> {
+
+                Sounds.playClick(player);
+
+                plugin.getWorldSettings()
+                        .toggleNightVision();
+
+                plugin.getPlayerEffectManager()
+                        .applyNightVisionToAll();
+
+                boolean newState =
+                        plugin.getWorldSettings()
+                                .isNightVisionEnabled();
+
+                broadcast(
+                        newState
+                                ? lang("world-settings-gui.night-vision.enabled")
+                                : lang("world-settings-gui.night-vision.disabled")
+                );
+            }
+
+            case 31 -> {
+
+                Sounds.playClick(player);
+
+                handleTimeClick();
+            }
+
+            case 33 -> {
+
+                Sounds.playClick(player);
+
+                plugin.getWorldSettings()
+                        .toggleDaylightCycle();
+
+                boolean newState =
+                        plugin.getWorldSettings()
+                                .isDaylightCycleEnabled();
+
+                broadcast(
+                        newState
+                                ? lang("world-settings-gui.daylight-cycle.enabled")
+                                : lang("world-settings-gui.daylight-cycle.disabled")
+                );
+            }
+
+            case 40 -> {
+
+                Sounds.playBack(player);
+
+                plugin.getEventSettingsGUI()
+                        .open(player);
+
+                reopen = false;
             }
         }
 
         if (reopen) {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> open(player), 2L);
+
+            Bukkit.getScheduler().runTaskLater(
+                    plugin,
+                    () -> open(player),
+                    2L
+            );
         }
     }
 
     @EventHandler
-    public void onDrag(InventoryDragEvent e) {
-        if (ChatColor.stripColor(e.getView().getTitle()).equalsIgnoreCase("Welteinstellungen")) {
-            e.setCancelled(true);
+    public void onDrag(
+            InventoryDragEvent event
+    ) {
+
+        if (event.getView().title().equals(
+                lang("world-settings-gui.title")
+        )) {
+            event.setCancelled(true);
         }
     }
 
     private void handleDifficultyClick() {
-        String next = plugin.getWorldSettings().cycleDifficulty();
 
-        ChatColor diffColor = switch (next.toLowerCase(Locale.ROOT)) {
-            case "peaceful" -> ChatColor.WHITE;
-            case "easy" -> ChatColor.GREEN;
-            case "normal" -> ChatColor.GOLD;
-            case "hard" -> ChatColor.RED;
-            case "ultra-ultra-hardcore" -> ChatColor.DARK_PURPLE;
-            default -> ChatColor.GRAY;
-        };
+        String next =
+                plugin.getWorldSettings()
+                        .cycleDifficulty();
 
-        for (Player p : Bukkit.getOnlinePlayers()) {
-            p.sendMessage(ChatColor.AQUA + "⚔ "
-                    + ChatColor.BLUE + "Schwierigkeit geändert: "
-                    + diffColor + next.toUpperCase(Locale.ROOT));
-        }
+        Component difficulty =
+                getDifficultyName(next);
+
+        broadcast(
+                plugin.getLanguageManager().getComponent(
+                        "world-settings-gui.difficulty.changed",
+                        "difficulty",
+                        difficulty
+                )
+        );
     }
 
     private void handleTimeClick() {
-        long next = plugin.getWorldSettings().cycleTime();
 
-        String phaseName;
-        ChatColor phaseColor;
+        long next =
+                plugin.getWorldSettings()
+                        .cycleTime();
+
+        String phaseKey;
 
         if (next < 6000) {
-            phaseName = "Früh";
-            phaseColor = ChatColor.GOLD;
+            phaseKey = "morning";
+
         } else if (next < 12000) {
-            phaseName = "Mittag";
-            phaseColor = ChatColor.YELLOW;
+            phaseKey = "noon";
+
         } else if (next < 18000) {
-            phaseName = "Abend";
-            phaseColor = ChatColor.RED;
+            phaseKey = "evening";
+
         } else {
-            phaseName = "Nacht";
-            phaseColor = ChatColor.BLUE;
+            phaseKey = "night";
         }
 
-        for (Player p : Bukkit.getOnlinePlayers()) {
-            p.sendMessage(ChatColor.AQUA + "🕒 "
-                    + ChatColor.BLUE + "Tageszeit geändert: "
-                    + phaseColor + phaseName);
+        Component phase =
+                lang("world-settings-gui.time." + phaseKey);
+
+        broadcast(
+                plugin.getLanguageManager().getComponent(
+                        "world-settings-gui.time.changed",
+                        "phase",
+                        phase
+                )
+        );
+    }
+
+    private Component getDifficultyName(
+            String difficulty
+    ) {
+
+        String key = switch (
+                difficulty.toLowerCase(Locale.ROOT)
+                ) {
+            case "peaceful" -> "peaceful";
+            case "easy" -> "easy";
+            case "normal" -> "normal";
+            case "hard" -> "hard";
+            case "ultra-ultra-hardcore" ->
+                    "ultra-ultra-hardcore";
+            default -> "unknown";
+        };
+
+        return lang(
+                "world-settings-gui.difficulty." + key
+        );
+    }
+
+    private void broadcast(
+            Component message
+    ) {
+
+        for (Player player :
+                Bukkit.getOnlinePlayers()) {
+
+            player.sendMessage(message);
         }
+    }
+
+    private Component lang(String path) {
+
+        return plugin.getLanguageManager()
+                .getComponent(path);
+    }
+
+    private String langRaw(String path) {
+
+        return plugin.getLanguageManager()
+                .get(path);
+    }
+
+    private Component langStatus(
+            String status
+    ) {
+
+        return plugin.getLanguageManager()
+                .getComponent(
+                        "world-settings-gui.toggle.status",
+                        "status",
+                        status
+                );
     }
 }

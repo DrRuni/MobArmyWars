@@ -1,6 +1,10 @@
 package runi.myddns.mobarmywars.GUIs;
 
-import org.bukkit.*;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.title.Title;
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -9,10 +13,11 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import runi.myddns.mobarmywars.Utils.Sounds;
-import runi.myddns.mobarmywars.MobArmyMain;
 import runi.myddns.mobarmywars.Managers.World.WorldManager;
+import runi.myddns.mobarmywars.MobArmyMain;
+import runi.myddns.mobarmywars.Utils.Sounds;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,233 +25,349 @@ public class SetupGUI implements Listener {
 
     private final MobArmyMain plugin;
 
-    private static final String TITLE = ChatColor.BLUE + "Event- & Welten Einstellungen";
-
     public SetupGUI(MobArmyMain plugin) {
         this.plugin = plugin;
     }
 
     public void open(Player player) {
-        Inventory inv = Bukkit.createInventory(null, 45, TITLE);
+
+        Inventory inv = Bukkit.createInventory(
+                null,
+                45,
+                lang("setup-gui.title")
+        );
 
         inv.setItem(4, createItem(
                 Material.ENDER_PEARL,
-                ChatColor.GOLD + "Teleports",
-                "",
-                "Teleport-Menü öffnen"
+                lang("setup-gui.teleports.name"),
+                Component.empty(),
+                lang("setup-gui.teleports.description")
         ));
 
         inv.setItem(10, createItem(
                 Material.GRASS_BLOCK,
-                ChatColor.GOLD + "Welteinstellungen",
-                "",
-                "Öffne das Welt-Einstellungs-Menü"
+                lang("setup-gui.world-settings.name"),
+                Component.empty(),
+                lang("setup-gui.world-settings.description")
         ));
 
         inv.setItem(12, createItem(
                 Material.PLAYER_HEAD,
-                ChatColor.GOLD + "Spieler-Verwaltung",
-                "",
-                "Öffnet Spieler-Einstellungen"
+                lang("setup-gui.players.name"),
+                Component.empty(),
+                lang("setup-gui.players.description")
         ));
 
         inv.setItem(14, createItem(
                 Material.SHIELD,
-                ChatColor.GOLD + "Team Einstellungen",
-                "",
-                "Öffnet die Team-Einstellungen"
+                lang("setup-gui.teams.name"),
+                Component.empty(),
+                lang("setup-gui.teams.description")
         ));
 
         inv.setItem(16, createItem(
                 Material.IRON_SWORD,
-                ChatColor.GOLD + "Arena-Einstellungen",
-                "",
-                "Öffnet die Arena-Einstellungen"
+                lang("setup-gui.arena.name"),
+                Component.empty(),
+                lang("setup-gui.arena.description")
         ));
 
         inv.setItem(28, createItem(
                 Material.WITHER_SKELETON_SKULL,
-                ChatColor.DARK_RED + "Reset Spielfortschritt",
-                "",
-                ChatColor.RED + "Setzt Arena & Spielstatus zurück"
+                lang("setup-gui.reset-game.name"),
+                Component.empty(),
+                lang("setup-gui.reset-game.description")
         ));
 
         inv.setItem(30, createItem(
                 Material.STRUCTURE_BLOCK,
-                ChatColor.DARK_RED + "Reset Team-Welten",
-                "",
-                ChatColor.RED + "Welten Rot & Blau werden neu generiert"
+                lang("setup-gui.reset-teamworlds.name"),
+                Component.empty(),
+                lang("setup-gui.reset-teamworlds.description")
         ));
 
         inv.setItem(32, createItem(
                 Material.STRUCTURE_BLOCK,
-                ChatColor.DARK_RED + "Reset Lobby-Welt",
-                "",
-                ChatColor.RED + "Lobby wird komplett zurückgesetzt"
+                lang("setup-gui.reset-lobby.name"),
+                Component.empty(),
+                lang("setup-gui.reset-lobby.description")
         ));
 
         inv.setItem(34, createItem(
                 Material.STRUCTURE_BLOCK,
-                ChatColor.DARK_RED + "Reset Arena-Welt",
-                "",
-                ChatColor.RED + "Arena wird komplett zurückgesetzt"
+                lang("setup-gui.reset-arena.name"),
+                Component.empty(),
+                lang("setup-gui.reset-arena.description")
         ));
 
-        inv.setItem(40, createItem(
-                Material.ARROW,
-                ChatColor.DARK_AQUA + "Zurück"
-        ));
+        inv.setItem(
+                40,
+                createBackButton()
+        );
 
         player.openInventory(inv);
     }
 
-    private ItemStack createItem(Material mat, String name, String... loreLines) {
-        ItemStack item = new ItemStack(mat);
-        ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName(name);
+    private ItemStack createItem(
+            Material material,
+            Component name,
+            Component... loreLines
+    ) {
 
-        List<String> lore = new ArrayList<>();
-        if (loreLines != null && loreLines.length > 0) {
-            for (String line : loreLines) {
-                lore.add(ChatColor.GRAY + line);
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
+
+        if (meta == null) {
+            return item;
+        }
+
+        meta.displayName(name);
+
+        List<Component> lore = new ArrayList<>();
+
+        if (loreLines != null) {
+            for (Component line : loreLines) {
+                if (line != null) {
+                    lore.add(line);
+                }
             }
         }
-        meta.setLore(lore);
-        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_UNBREAKABLE);
+
+        meta.lore(lore);
+
+        meta.addItemFlags(
+                ItemFlag.HIDE_ATTRIBUTES,
+                ItemFlag.HIDE_ENCHANTS,
+                ItemFlag.HIDE_UNBREAKABLE
+        );
+
         item.setItemMeta(meta);
+
         return item;
     }
 
     @EventHandler
-    public void onClick(InventoryClickEvent e) {
-        if (!(e.getWhoClicked() instanceof Player player)) return;
-        if (!ChatColor.stripColor(e.getView().getTitle()).equalsIgnoreCase("Event- & Welten Einstellungen")) return;
+    public void onClick(InventoryClickEvent event) {
 
-        e.setCancelled(true);
-        ItemStack clicked = e.getCurrentItem();
-        if (clicked == null || !clicked.hasItemMeta()) return;
+        if (!(event.getWhoClicked() instanceof Player player)) {
+            return;
+        }
 
-        String itemName = ChatColor.stripColor(clicked.getItemMeta().getDisplayName());
+        if (!event.getView().title().equals(
+                lang("setup-gui.title")
+        )) {
+            return;
+        }
 
-        switch (itemName) {
-            case "Arena-Einstellungen" -> {
-                Sounds.playClick(player);
-                plugin.getArenaSettingsGUI().open(player);
-            }
+        event.setCancelled(true);
 
-            case "Welteinstellungen" -> {
-                Sounds.playClick(player);
-                plugin.getWorldSettingsGUI().open(player);
-            }
+        if (event.getClickedInventory() == null) {
+            return;
+        }
 
-            case "Spieler-Verwaltung" -> {
-                Sounds.playClick(player);
-                plugin.getPlayerGUI().open(player);
-            }
+        if (event.getRawSlot()
+                >= event.getView().getTopInventory().getSize()) {
+            return;
+        }
 
-            case "Team Einstellungen" -> {
-                Sounds.playClick(player);
-                plugin.getTeamSettingsGUI().open(player);
-            }
+        ItemStack clicked = event.getCurrentItem();
 
-            case "Teleports" -> {
+        if (clicked == null
+                || clicked.getType() == Material.AIR) {
+            return;
+        }
+
+        switch (event.getRawSlot()) {
+
+            case 4 -> {
                 Sounds.playClick(player);
                 plugin.getMobArmySettingsGUI().open(player);
             }
 
-            case "Reset Team-Welten" -> {
-                WorldManager wm = MobArmyMain.getInstance().getWorldManager();
-
-                if (!wm.tryStartWorldReset()) {
-                    player.sendMessage(ChatColor.RED + "⚠ Es läuft bereits ein Welt-Reset!");
-                    Sounds.playDanger(player);
-                    return;
-                }
-
-                Sounds.playReset(player);
-                player.closeInventory();
-
-                for (Player online : Bukkit.getOnlinePlayers()) {
-                    online.sendTitle(
-                            ChatColor.DARK_RED + "⚠ Reset aktiviert!",
-                            ChatColor.GOLD + player.getName() + " hat den Team-Welten-Reset gestartet",
-                            10, 100, 20
-                    );
-                    online.playSound(online.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.2f);
-                }
-
-                Bukkit.getScheduler().runTaskLater(
-                        MobArmyMain.getInstance(),
-                        () -> wm.resetTeamWorlds(),
-                        80L
-                );
+            case 10 -> {
+                Sounds.playClick(player);
+                plugin.getWorldSettingsGUI().open(player);
             }
 
-            case "Reset Lobby-Welt" -> {
-                WorldManager wm = MobArmyMain.getInstance().getWorldManager();
-
-                if (!wm.tryStartWorldReset()) {
-                    player.sendMessage(ChatColor.RED + "⚠ Es läuft bereits ein Welt-Reset!");
-                    Sounds.playDanger(player);
-                    return;
-                }
-
-                Sounds.playReset(player);
-                player.closeInventory();
-
-                for (Player online : Bukkit.getOnlinePlayers()) {
-                    online.sendTitle(
-                            ChatColor.DARK_RED + "⚠ Lobby-Reset!",
-                            ChatColor.GOLD + player.getName() + " hat den Lobby-Welt-Reset gestartet",
-                            10, 100, 20
-                    );
-                    online.playSound(online.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.2f);
-                }
-
-                Bukkit.getScheduler().runTaskLater(
-                        MobArmyMain.getInstance(),
-                        () -> wm.resetLobbyWorld(),
-                        80L
-                );
+            case 12 -> {
+                Sounds.playClick(player);
+                plugin.getPlayerGUI().open(player);
             }
 
-            case "Reset Arena-Welt" -> {
-                WorldManager wm = MobArmyMain.getInstance().getWorldManager();
-
-                if (!wm.tryStartWorldReset()) {
-                    player.sendMessage(ChatColor.RED + "⚠ Es läuft bereits ein Welt-Reset!");
-                    Sounds.playDanger(player);
-                    return;
-                }
-
-                Sounds.playReset(player);
-                player.closeInventory();
-
-                for (Player online : Bukkit.getOnlinePlayers()) {
-                    online.sendTitle(
-                            ChatColor.DARK_RED + "⚠ Arena-Reset!",
-                            ChatColor.GOLD + player.getName() + " hat den Arena-Welt-Reset gestartet",
-                            10, 100, 20
-                    );
-                    online.playSound(online.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.2f);
-                }
-
-                Bukkit.getScheduler().runTaskLater(
-                        MobArmyMain.getInstance(),
-                        () -> wm.resetArenaWorld(),
-                        80L
-                );
+            case 14 -> {
+                Sounds.playClick(player);
+                plugin.getTeamSettingsGUI().open(player);
             }
 
-            case "Reset Spielfortschritt" -> {
+            case 16 -> {
+                Sounds.playClick(player);
+                plugin.getArenaSettingsGUI().open(player);
+            }
+
+            case 28 -> {
                 player.closeInventory();
                 plugin.getEventManager().resetGame(player);
             }
 
-            case "Zurück" -> {
+            case 30 -> resetTeamWorlds(player);
+
+            case 32 -> resetLobbyWorld(player);
+
+            case 34 -> resetArenaWorld(player);
+
+            case 40 -> {
                 Sounds.playBack(player);
                 plugin.getOptionenGUI().open(player);
             }
         }
+    }
+
+    private void resetTeamWorlds(Player player) {
+
+        WorldManager wm = plugin.getWorldManager();
+
+        if (resetBlocked(player, wm)) {
+            return;
+        }
+
+        showResetTitle(
+                player,
+                "commands.reset.teamworld.title",
+                "commands.reset.teamworld.subtitle"
+        );
+
+        Bukkit.getScheduler().runTaskLater(
+                plugin,
+                wm::resetTeamWorlds,
+                80L
+        );
+    }
+
+    private void resetLobbyWorld(Player player) {
+
+        WorldManager wm = plugin.getWorldManager();
+
+        if (resetBlocked(player, wm)) {
+            return;
+        }
+
+        showResetTitle(
+                player,
+                "commands.reset.lobby.title",
+                "commands.reset.lobby.subtitle"
+        );
+
+        Bukkit.getScheduler().runTaskLater(
+                plugin,
+                wm::resetLobbyWorld,
+                80L
+        );
+    }
+
+    private void resetArenaWorld(Player player) {
+
+        WorldManager wm = plugin.getWorldManager();
+
+        if (resetBlocked(player, wm)) {
+            return;
+        }
+
+        showResetTitle(
+                player,
+                "commands.reset.arena.title",
+                "commands.reset.arena.subtitle"
+        );
+
+        Bukkit.getScheduler().runTaskLater(
+                plugin,
+                wm::resetArenaWorld,
+                80L
+        );
+    }
+
+    private boolean resetBlocked(
+            Player player,
+            WorldManager worldManager
+    ) {
+
+        if (worldManager.isWorldResetBlocked()) {
+
+            player.sendMessage(
+                    lang("commands.reset.already-running")
+            );
+
+            Sounds.playDanger(player);
+            return true;
+        }
+
+        Sounds.playReset(player);
+        player.closeInventory();
+
+        return false;
+    }
+
+    private void showResetTitle(
+            Player initiator,
+            String titlePath,
+            String subtitlePath
+    ) {
+
+        Component title =
+                lang(titlePath);
+
+        Component subtitle =
+                plugin.getLanguageManager().getComponent(
+                        subtitlePath,
+                        "player",
+                        initiator.getName()
+                );
+
+        Title resetTitle = Title.title(
+                title,
+                subtitle,
+                Title.Times.times(
+                        Duration.ofMillis(500),
+                        Duration.ofSeconds(5),
+                        Duration.ofSeconds(1)
+                )
+        );
+
+        for (Player online : Bukkit.getOnlinePlayers()) {
+
+            online.showTitle(resetTitle);
+
+            online.playSound(
+                    online.getLocation(),
+                    Sound.BLOCK_NOTE_BLOCK_PLING,
+                    1.0f,
+                    1.2f
+            );
+        }
+    }
+
+    private ItemStack createBackButton() {
+
+        ItemStack item = new ItemStack(Material.ARROW);
+        ItemMeta meta = item.getItemMeta();
+
+        if (meta == null) {
+            return item;
+        }
+
+        meta.displayName(
+                lang("setup-gui.back")
+        );
+
+        meta.lore(List.of());
+
+        item.setItemMeta(meta);
+
+        return item;
+    }
+
+    private Component lang(String path) {
+
+        return plugin.getLanguageManager()
+                .getComponent(path);
     }
 }

@@ -1,5 +1,29 @@
 # Changelog
 
+## v1.7
+
+### Neu
+
+- Sprachsystem für Deutsch und Englisch hinzugefügt
+- Sprachauswahl über `/language` hinzugefügt
+
+### Verbessert
+
+- Scoreboards überarbeitet und rote Score-Zahlen entfernt
+- Texte, Titel und GUIs überarbeitet
+- Code bereinigt und modernisiert
+
+### Behoben
+
+- Arena-Reset wurde bei laufendem Event teilweise nicht korrekt ausgeführt
+- Kleinere Fehler bei Platzhaltern und Anzeigen behoben
+
+### Kompatibilität
+
+- Benötigt **Paper 26.2**
+- Benötigt **Java 25**
+- Nicht kompatibel mit reinem Spigot/Bukkit
+
 ## v1.6
 
 ### Neu

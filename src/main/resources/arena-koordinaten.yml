@@ -1,9 +1,16 @@
-file-version: 3
+file-version: 5
 arenas:
   japanisches-dorf:
-    name: "Japanisches Dorf"
-    description: "Eine traditionelle japanische Arena."
+    name:
+      de: "Japanisches Dorf"
+      en: "Japanese Village"
+
+    description:
+      de: "Eine traditionelle japanische Arena."
+      en: "A traditional Japanese arena."
+
     world: "world_mobarmy_arena"
+
     rot:
       corner1: [160, 57, 271]
       corner2: [238, 96, 381]
@@ -29,9 +36,16 @@ arenas:
         - [80, 63, 374]
 
   ancient-city:
-    name: "Ancient City"
-    description: "Düstere Arena in einer verlassenen antiken Stadt."
+    name:
+      de: "Ancient City"
+      en: "Ancient City"
+
+    description:
+      de: "Düstere Arena in einer verlassenen antiken Stadt."
+      en: "A dark arena in an abandoned ancient city."
+
     world: "world_mobarmy_arena"
+
     rot:
       corner1: [336, 66, 92]
       corner2: [423, 102, 3]

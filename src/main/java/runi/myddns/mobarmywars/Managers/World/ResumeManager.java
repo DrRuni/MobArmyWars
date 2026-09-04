@@ -1,16 +1,17 @@
 package runi.myddns.mobarmywars.Managers.World;
 
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
+import net.kyori.adventure.text.Component;
 import runi.myddns.mobarmywars.Managers.Event.MobSaveManager;
 import runi.myddns.mobarmywars.MobArmyMain;
-import runi.myddns.mobarmywars.Utils.Message;
 
+import java.util.Locale;
+import java.util.logging.Level;
 import java.io.File;
 import java.io.IOException;
 
@@ -18,10 +19,10 @@ public class ResumeManager {
 
     private final MobArmyMain plugin;
 
-    private File file;
-    private FileConfiguration config;
+    private final File file;
+    private final FileConfiguration config;
     private boolean suppressSave = false;
-    private PlayerLocationManager locationManager;
+    private final PlayerLocationManager locationManager;
 
     public static final int PHASE_LOBBY = 0;
     public static final int PHASE_TEAMWELT = 1;
@@ -30,14 +31,13 @@ public class ResumeManager {
 
     public ResumeManager(MobArmyMain plugin) {
         this.plugin = plugin;
-        file = new File(plugin.getDataFolder(), "eventdaten.yml");
-        loadConfig();
-
-        this.locationManager = new PlayerLocationManager(config);
-    }
-
-    private void loadConfig() {
-        config = YamlConfiguration.loadConfiguration(file);
+        this.file = new File(
+                plugin.getDataFolder(),
+                "eventdaten.yml"
+        );
+        this.config = YamlConfiguration.loadConfiguration(file);
+        this.locationManager =
+                new PlayerLocationManager(config);
     }
 
     private void saveConfig() {
@@ -46,7 +46,11 @@ public class ResumeManager {
         try {
             config.save(file);
         } catch (IOException e) {
-            e.printStackTrace();
+            plugin.getLogger().log(
+                    Level.SEVERE,
+                    "Failed to save eventdaten.yml.",
+                    e
+            );
         }
     }
 
@@ -124,12 +128,16 @@ public class ResumeManager {
     public boolean resumeEvent() {
 
         if (!isEventStarted()) {
-            Message.sendChatToAll(ChatColor.RED + "✖ Das Event wurde noch nicht gestartet.");
+            broadcast(
+                    lang("resume-manager.not-started")
+            );
             return false;
         }
 
         if (!isEventPaused()) {
-            Message.sendChatToAll(ChatColor.RED + "✖ Das Event läuft bereits.");
+            broadcast(
+                    lang("resume-manager.already-running")
+            );
             return false;
         }
 
@@ -142,18 +150,22 @@ public class ResumeManager {
 
             if (team == null || team.equalsIgnoreCase("Kein Team")) {
                 allPlayersHaveTeam = false;
-                Message.sendToPlayer(player, ChatColor.YELLOW + "⚠ Du hast noch kein Team!");
+                player.sendMessage(
+                        lang("resume-manager.no-team")
+                );
                 plugin.getTeamSelectionGUI().openGUI(player);
             }
         }
 
         if (!allPlayersHaveTeam) {
-            Message.sendChatToAll(ChatColor.RED + "✖ Resume abgebrochen. Nicht alle Online-Spieler haben ein Team.");
+            broadcast(
+                    lang("resume-manager.missing-teams")
+            );
             return false;
         }
 
         plugin.getTimerManager().stopTimer();
-        plugin.getTimerManager().updateBossBar(null);
+        plugin.getTimerManager().updateBossBar();
 
         if (phase == PHASE_TEAMWELT) {
             for (Player p : Bukkit.getOnlinePlayers()) {
@@ -200,7 +212,9 @@ public class ResumeManager {
             setEventStarted(true);
             setEventPaused(false);
 
-            Message.sendChatToAll(ChatColor.GREEN + "▶ Event wird in der Teamwelt fortgesetzt.");
+            broadcast(
+                    lang("resume-manager.resumed-team-world")
+            );
             return true;
         }
 
@@ -222,7 +236,9 @@ public class ResumeManager {
             setEventStarted(true);
             setEventPaused(false);
 
-            Message.sendChatToAll(ChatColor.GREEN + "▶ Event wird in der Wave-Auswahl fortgesetzt.");
+            broadcast(
+                    lang("resume-manager.resumed-wave-selection")
+            );
             return true;
         }
 
@@ -244,11 +260,15 @@ public class ResumeManager {
             setEventStarted(true);
             setEventPaused(false);
 
-            Message.sendChatToAll(ChatColor.GREEN + "▶ Event wird in der Arena fortgesetzt.");
+            broadcast(
+                    lang("resume-manager.resumed-arena")
+            );
             return true;
         }
 
-        Message.sendChatToAll(ChatColor.DARK_RED + "✖ Unbekannte Phase. Resume abgebrochen.");
+        broadcast(
+                lang("resume-manager.unknown-phase")
+        );
         return false;
     }
 
@@ -256,7 +276,10 @@ public class ResumeManager {
         if (player == null || loc == null || loc.getWorld() == null) return false;
 
         String team = plugin.getTeamManager().getPlayerTeam(player);
-        String worldName = loc.getWorld().getName().toLowerCase();
+        String worldName =
+                loc.getWorld()
+                        .getName()
+                        .toLowerCase(Locale.ROOT);
 
         if ("rot".equalsIgnoreCase(team)) {
             return worldName.equals("world_rot") || worldName.equals("world_rot_nether");
@@ -284,10 +307,6 @@ public class ResumeManager {
         saveConfig();
     }
 
-    public Location getSavedSpawn(Player player) {
-        return locationManager.getSpawn(player);
-    }
-
     public void beginBatch() {
         suppressSave = true;
     }
@@ -295,5 +314,16 @@ public class ResumeManager {
     public void endBatch() {
         suppressSave = false;
         saveConfig();
+    }
+
+    private Component lang(String path) {
+        return plugin.getLanguageManager()
+                .getComponent(path);
+    }
+
+    private void broadcast(Component message) {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            player.sendMessage(message);
+        }
     }
 }

@@ -1,60 +1,63 @@
 name: MobArmyWars
-version: "1.6"
+version: "1.7"
 author: Runi
 main: runi.myddns.mobarmywars.MobArmyMain
 api-version: '26.2'
-description: MobArmyWars (inspired by BastiGHG)
-
+description: MobArmyWars - inspired by BastiGHG
 
 commands:
+  language:
+    description: Opens the language selection
+    usage: /language
+
   arenasummary:
-    description: Zeigt die Arena-Auswertung
+    description: Shows the arena summary
     usage: /arenasummary
 
   mobarmy:
-    description: Hauptbefehl für MobArmyWars
+    description: Main command for MobArmyWars
     usage: /mobarmy resume
     aliases: [ma]
     permission: mobarmy.admin
-    permission-message: "§c❌ Keine Berechtigung!"
+    permission-message: "§c❌ You do not have permission!"
 
   mobstatus:
-    description: Zeigt gespeicherte Mobs an
+    description: Shows saved mobs
     usage: /mobstatus [rot|blau]
 
   optionen:
-    description: Öffnet die MobArmy Optionen
+    description: Opens the MobArmyWars options
     usage: /optionen
     permission: mobarmy.admin
-    permission-message: "§c❌ Keine Berechtigung!"
+    permission-message: "§c❌ You do not have permission!"
 
   resume:
-    description: Resume-Funktion für MobArmy
+    description: Resume function for MobArmyWars
     usage: /resume mobarmy
     aliases: [continue]
     permission: mobarmy.admin
-    permission-message: "§c❌ Keine Berechtigung!"
+    permission-message: "§c❌ You do not have permission!"
 
   setphase:
-    description: Setzt die Event-Phase
+    description: Sets the event phase
     usage: /setphase <lobby|teamwelt|waveauswahl|arena>
     permission: mobarmy.admin
-    permission-message: "§c❌ Keine Berechtigung!"
+    permission-message: "§c❌ You do not have permission!"
 
   team:
-    description: Team-Befehle
+    description: Team commands
     usage: /team <join|leave> [rot|blau]
 
   reset:
-    description: Reset-Befehle für MobArmyWars
+    description: Reset commands for MobArmyWars
     usage: /reset <arena|lobby|teamworld|playerdata>
     permission: mobarmy.admin
-    permission-message: "§c❌ Keine Berechtigung!"
+    permission-message: "§c❌ You do not have permission!"
 
 permissions:
   mobarmy.admin:
     default: op
 
   mobarmy.mobstatus.admin:
-    description: Kann Mobstatus aller Teams sehen
+    description: Allows viewing mob status for all teams
     default: op

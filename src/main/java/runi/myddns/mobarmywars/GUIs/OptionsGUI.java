@@ -1,6 +1,8 @@
 package runi.myddns.mobarmywars.GUIs;
 
-import org.bukkit.*;
+import net.kyori.adventure.text.Component;
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -9,132 +11,250 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import runi.myddns.mobarmywars.Utils.Sounds;
 import runi.myddns.mobarmywars.MobArmyMain;
+import runi.myddns.mobarmywars.Utils.Sounds;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class OptionsGUI implements Listener {
 
     private final MobArmyMain plugin;
-    private static final String TITLE = ChatColor.BLUE + "MobArmyWars Optionen";
 
     public OptionsGUI(MobArmyMain plugin) {
         this.plugin = plugin;
     }
 
     public void open(Player player) {
-        Inventory inv = Bukkit.createInventory(null, 45, TITLE);
 
-        inv.setItem(11, createItem(Material.ENCHANTED_GOLDEN_APPLE, "Start MobArmyWars",
-                "",
-                "Startet den Countdown"));
+        Inventory inv = Bukkit.createInventory(
+                null,
+                45,
+                lang("options-gui.title")
+        );
 
-        inv.setItem(13, createItem(Material.HONEY_BLOCK, "Event Pause",
-                "",
-                "Pausiert den Timer"));
+        inv.setItem(
+                11,
+                createItem(
+                        Material.ENCHANTED_GOLDEN_APPLE,
+                        lang("options-gui.start.name"),
+                        Component.empty(),
+                        lang("options-gui.start.description")
+                )
+        );
 
-        inv.setItem(15, createItem(Material.TOTEM_OF_UNDYING, "Event fortsetzen (Resume)",
-                "",
-                "Setzt Timer und Event fort"));
+        inv.setItem(
+                13,
+                createItem(
+                        Material.HONEY_BLOCK,
+                        lang("options-gui.pause.name"),
+                        Component.empty(),
+                        lang("options-gui.pause.description")
+                )
+        );
 
-        inv.setItem(30, createItem(Material.CLOCK, "Timer",
-                "",
-                "Öffne das Timer-Menü"));
+        inv.setItem(
+                15,
+                createItem(
+                        Material.TOTEM_OF_UNDYING,
+                        lang("options-gui.resume.name"),
+                        Component.empty(),
+                        lang("options-gui.resume.description")
+                )
+        );
 
-        inv.setItem(32, createItem(Material.COMPARATOR, "Setup",
-                "",
-                "Zugang zu allen Einstellungen"));
+        inv.setItem(
+                30,
+                createItem(
+                        Material.CLOCK,
+                        lang("options-gui.timer.name"),
+                        Component.empty(),
+                        lang("options-gui.timer.description")
+                )
+        );
 
-        inv.setItem(40, createBackButton("Menü schließen"));
+        inv.setItem(
+                32,
+                createItem(
+                        Material.COMPARATOR,
+                        lang("options-gui.setup.name"),
+                        Component.empty(),
+                        lang("options-gui.setup.description")
+                )
+        );
+
+        inv.setItem(
+                40,
+                createCloseButton()
+        );
 
         player.openInventory(inv);
     }
 
-    private ItemStack createItem(Material mat, String name, String... loreLines) {
-        ItemStack item = new ItemStack(mat);
-        ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName(ChatColor.GOLD + name);
+    private ItemStack createItem(
+            Material material,
+            Component name,
+            Component... loreLines
+    ) {
 
-        List<String> lore = new ArrayList<>();
-        if (loreLines != null && loreLines.length > 0) {
-            for (String line : loreLines) lore.add(ChatColor.GRAY + line);
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
+
+        if (meta == null) {
+            return item;
         }
-        meta.setLore(lore);
-        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_UNBREAKABLE);
+
+        meta.displayName(name);
+
+        List<Component> lore = new ArrayList<>();
+
+        if (loreLines != null) {
+            for (Component line : loreLines) {
+                if (line != null) {
+                    lore.add(line);
+                }
+            }
+        }
+
+        meta.lore(lore);
+
+        meta.addItemFlags(
+                ItemFlag.HIDE_ATTRIBUTES,
+                ItemFlag.HIDE_ENCHANTS,
+                ItemFlag.HIDE_UNBREAKABLE
+        );
+
         item.setItemMeta(meta);
+
         return item;
     }
 
-    private ItemStack createBackButton(String ziel) {
+    private ItemStack createCloseButton() {
+
         ItemStack item = new ItemStack(Material.BARRIER);
         ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName(ChatColor.DARK_AQUA + ziel);
-        meta.setLore(Arrays.asList());
+
+        if (meta == null) {
+            return item;
+        }
+
+        meta.displayName(
+                lang("options-gui.close")
+        );
+
+        meta.lore(List.of());
+
         item.setItemMeta(meta);
+
         return item;
     }
 
     @EventHandler
-    public void onClick(InventoryClickEvent e) {
-        if (!(e.getWhoClicked() instanceof Player player)) return;
-        if (!ChatColor.stripColor(e.getView().getTitle()).equalsIgnoreCase("MobArmyWars Optionen")) return;
+    public void onClick(InventoryClickEvent event) {
 
-        e.setCancelled(true);
-        ItemStack clicked = e.getCurrentItem();
-        if (clicked == null || !clicked.hasItemMeta()) return;
+        if (!(event.getWhoClicked() instanceof Player player)) {
+            return;
+        }
 
-        String name = ChatColor.stripColor(clicked.getItemMeta().getDisplayName());
+        if (!event.getView().title().equals(
+                lang("options-gui.title")
+        )) {
+            return;
+        }
 
-        switch (name) {
-            case "Start MobArmyWars" -> {
-                plugin.getEventManager().enableEventHandling();
-                plugin.getEventManager().startEvent();
+        event.setCancelled(true);
+
+        if (event.getClickedInventory() == null) {
+            return;
+        }
+
+        if (event.getRawSlot()
+                >= event.getView().getTopInventory().getSize()) {
+            return;
+        }
+
+        ItemStack clicked = event.getCurrentItem();
+
+        if (clicked == null
+                || clicked.getType() == Material.AIR) {
+            return;
+        }
+
+        int slot = event.getRawSlot();
+
+        switch (slot) {
+
+            case 11 -> {
+                plugin.getEventManager()
+                        .enableEventHandling();
+
+                plugin.getEventManager()
+                        .startEvent();
+
                 Sounds.playClick(player);
             }
 
-            case "Event Pause" -> {
-                plugin.getTimerManager().pauseTimer();
+            case 13 -> {
+
+                plugin.getTimerManager()
+                        .pauseTimer();
 
                 for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                    onlinePlayer.sendMessage(ChatColor.YELLOW + "⏸ Event pausiert!");
+                    onlinePlayer.sendMessage(
+                            lang("options-gui.pause.message")
+                    );
                 }
 
                 Sounds.playClick(player);
             }
 
-            case "Event fortsetzen (Resume)" -> {
-                boolean ok = plugin.getEventResume().resumeEvent();
+            case 15 -> {
+
+                boolean ok =
+                        plugin.getEventResume()
+                                .resumeEvent();
 
                 if (ok) {
+
                     for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                        onlinePlayer.sendMessage(ChatColor.GREEN + "▶ Event fortgesetzt!");
+                        onlinePlayer.sendMessage(
+                                lang("options-gui.resume.success")
+                        );
                     }
+
                     Sounds.playClick(player);
+
                 } else {
+
                     for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                        onlinePlayer.sendMessage(ChatColor.RED + "❌ Event konnte nicht fortgesetzt werden!");
+                        onlinePlayer.sendMessage(
+                                lang("options-gui.resume.failed")
+                        );
                     }
+
                     Sounds.playDanger(player);
                 }
             }
 
-            case "Timer" -> {
+            case 30 -> {
                 Sounds.playClick(player);
                 plugin.getTimerGUI().open(player);
             }
 
-            case "Setup" -> {
+            case 32 -> {
                 Sounds.playClick(player);
                 plugin.getEventSettingsGUI().open(player);
             }
 
-            case "Menü schließen" -> {
+            case 40 -> {
                 Sounds.playClick(player);
                 player.closeInventory();
             }
         }
+    }
+
+    private Component lang(String path) {
+        return plugin.getLanguageManager()
+                .getComponent(path);
     }
 }

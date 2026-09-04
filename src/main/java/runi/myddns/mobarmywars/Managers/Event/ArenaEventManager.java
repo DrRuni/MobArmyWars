@@ -1,10 +1,8 @@
 package runi.myddns.mobarmywars.Managers.Event;
 
-import net.md_5.bungee.api.chat.TextComponent;
-import net.md_5.bungee.api.chat.ClickEvent;
-import net.md_5.bungee.api.chat.HoverEvent;
-import net.md_5.bungee.api.chat.ComponentBuilder;
 import org.bukkit.*;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
@@ -14,24 +12,32 @@ import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.Sound;
 import org.bukkit.entity.Mob;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.title.Title;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import java.time.Duration;
 import runi.myddns.mobarmywars.Managers.World.ResumeManager;
 import runi.myddns.mobarmywars.Managers.World.TeleportManager;
 import runi.myddns.mobarmywars.MobArmyMain;
+import runi.myddns.mobarmywars.Utils.Sounds;
 
 import java.util.*;
-import java.util.List;
 
 public class ArenaEventManager implements Listener {
 
     private final MobArmyMain plugin;
     private final Map<String, Integer> currentWave = new HashMap<>();
     private final Map<String, List<LivingEntity>> activeMobs = new HashMap<>();
-    private final Set<String> finishedTeams = new HashSet<>();
+    private final Map<String, BossBar> teamBossBars = new HashMap<>();
     private final Map<String, Long> finishTimes = new HashMap<>();
     private final Map<String, Boolean> waveRunning = new HashMap<>();
     private final Set<Chunk> forcedChunks = new HashSet<>();
     private final Set<String> teamsReady = new HashSet<>();
-    private final Map<String, BossBar> teamBossBars = new HashMap<>();
+    private final Set<String> finishedTeams = new HashSet<>();
+    private final NamespacedKey arenaMobKey;
+    private final NamespacedKey enemyTeamKey;
     private final ArenaScoreboardManager scoreboardManager;
     private boolean arenaStarted = false;
     private boolean arenaRunning = false;
@@ -41,6 +47,7 @@ public class ArenaEventManager implements Listener {
     private int aggroTaskId = -1;
     private static final Set<EntityType> FLYING_MOBS = Set.of(
             EntityType.GHAST,
+            EntityType.HAPPY_GHAST,
             EntityType.PHANTOM,
             EntityType.WITHER,
             EntityType.ENDER_DRAGON,
@@ -52,6 +59,8 @@ public class ArenaEventManager implements Listener {
     public ArenaEventManager(MobArmyMain plugin) {
         this.plugin = plugin;
         this.scoreboardManager = new ArenaScoreboardManager(plugin, this);
+        this.arenaMobKey = new NamespacedKey(plugin, "arenaMob");
+        this.enemyTeamKey = new NamespacedKey(plugin, "enemyTeam");
 
         Bukkit.getPluginManager().registerEvents(this, plugin);
     }
@@ -83,8 +92,21 @@ public class ArenaEventManager implements Listener {
             TeleportManager.teleportToArena(player);
             plugin.getScoreboardSwitcher().switchToArena(player);
 
+            plugin.getArenaCompassManager().giveMonsterCompass(player);
+
             player.setGameMode(GameMode.SURVIVAL);
-            player.setHealth(player.getMaxHealth());
+
+            AttributeInstance maxHealthAttribute =
+                    player.getAttribute(
+                            Attribute.MAX_HEALTH
+                    );
+
+            if (maxHealthAttribute != null) {
+                player.setHealth(
+                        maxHealthAttribute.getValue()
+                );
+            }
+
             player.setFoodLevel(20);
             player.setSaturation(20f);
         }
@@ -96,86 +118,143 @@ public class ArenaEventManager implements Listener {
 
         plugin.getTimerManager().stopTimer();
 
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            teleportTeamsToArena();
-        }, 100L);
+        int teleportTaskId = Bukkit.getScheduler().runTaskLater(plugin, () -> {
 
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (!arenaStarted) {
+                return;
+            }
+
+            teleportTeamsToArena();
+
+        }, 100L).getTaskId();
+
+        registerTask(teleportTaskId);
+
+
+        int countdownTaskId = Bukkit.getScheduler().runTaskLater(plugin, () -> {
+
+            if (!arenaStarted) {
+                return;
+            }
+
             startArenaCountdown(() -> {
+
+                if (!arenaStarted) {
+                    return;
+                }
+
                 plugin.getTimerManager().setForward(true);
                 plugin.getTimerManager().startTimer();
 
                 startWaveBattle();
             });
-        }, 140L);
+
+        }, 140L).getTaskId();
+
+        registerTask(countdownTaskId);
     }
 
-    private void startArenaCountdown(Runnable onFinished) {
+    private void startArenaCountdown(
+            Runnable onFinished
+    ) {
 
-        new BukkitRunnable() {
+        int taskId = new BukkitRunnable() {
+
             int countdown = 5;
 
             @Override
             public void run() {
 
+                if (!arenaStarted) {
+                    cancel();
+                    return;
+                }
+
                 if (countdown > 0) {
 
-                    ChatColor color;
+                    Component title =
+                            Component.text(
+                                    countdown,
+                                    getCountdownColor(countdown)
+                            );
 
-                    if (countdown == 5 || countdown == 4) {
-                        color = ChatColor.RED;
-                    } else if (countdown == 3) {
-                        color = ChatColor.GOLD;
-                    } else {
-                        color = ChatColor.YELLOW;
-                    }
+                    Title countdownTitle =
+                            Title.title(
+                                    title,
+                                    Component.empty(),
+                                    Title.Times.times(
+                                            Duration.ZERO,
+                                            Duration.ofMillis(1250),
+                                            Duration.ZERO
+                                    )
+                            );
 
-                    for (Player player : Bukkit.getOnlinePlayers()) {
-                        if (!plugin.getTeamManager().isInTeam(player)) continue;
+                    for (Player player :
+                            Bukkit.getOnlinePlayers()) {
 
-                        player.sendTitle(
-                                color + String.valueOf(countdown),
-                                "",
-                                0, 25, 0
-                        );
+                        if (!plugin.getTeamManager()
+                                .isInTeam(player)) {
+                            continue;
+                        }
 
-                        player.playSound(
-                                player.getLocation(),
-                                Sound.BLOCK_NOTE_BLOCK_PLING,
-                                1.0F,
-                                1.0F
-                        );
+                        player.showTitle(countdownTitle);
+
+                        Sounds.playCountdown(player);
                     }
 
                     countdown--;
+                    return;
+                }
 
-                } else {
-
-                    for (Player player : Bukkit.getOnlinePlayers()) {
-                        if (!plugin.getTeamManager().isInTeam(player)) continue;
-
-                        player.sendTitle(
-                                ChatColor.GREEN + "Go!",
-                                "",
-                                0, 30, 10
+                Title goTitle =
+                        Title.title(
+                                lang(
+                                        "arena-event-manager.countdown.go"
+                                ),
+                                Component.empty(),
+                                Title.Times.times(
+                                        Duration.ZERO,
+                                        Duration.ofMillis(1500),
+                                        Duration.ofMillis(500)
+                                )
                         );
 
-                        player.playSound(
-                                player.getLocation(),
-                                Sound.ENTITY_PLAYER_LEVELUP,
-                                1.0F,
-                                1.0F
-                        );
+                for (Player player :
+                        Bukkit.getOnlinePlayers()) {
+
+                    if (!plugin.getTeamManager()
+                            .isInTeam(player)) {
+                        continue;
                     }
 
-                    cancel();
+                    player.showTitle(goTitle);
 
-                    if (onFinished != null) {
-                        Bukkit.getScheduler().runTaskLater(plugin, onFinished, 15L);
-                    }
+                    Sounds.playGo(player);
+                }
+
+                cancel();
+
+                if (onFinished != null) {
+
+                    int finishTaskId =
+                            Bukkit.getScheduler()
+                                    .runTaskLater(
+                                            plugin,
+                                            onFinished,
+                                            15L
+                                    )
+                                    .getTaskId();
+
+                    registerTask(finishTaskId);
                 }
             }
-        }.runTaskTimer(plugin, 0L, 20L);
+        }.runTaskTimer(
+                plugin,
+                0L,
+                20L
+        ).getTaskId();
+
+        registerTask(taskId);
     }
 
     public void startWaveBattle() {
@@ -184,29 +263,28 @@ public class ArenaEventManager implements Listener {
             return;
         }
 
-        arenaRunning = true;
-        plugin.setArenaRunning(true);
-
         WaveManager waveManager = plugin.getWaveManager();
 
         if (waveManager == null) {
-            Bukkit.getLogger().warning("[ArenaManager] ❌ WaveManager ist null! Abbruch von startWaveBattle().");
+            plugin.getLogger().warning("[ArenaManager] ❌ WaveManager ist null! Abbruch von startWaveBattle().");
             return;
         }
 
         ArenaConfig.ArenaData arena = plugin.getArenaConfig().getActiveArena();
 
         if (arena == null) {
-            Bukkit.getLogger().warning("[ArenaManager] ❌ Keine aktive Arena geladen! Wave abgebrochen.");
+            plugin.getLogger().warning("[ArenaManager] ❌ Keine aktive Arena geladen! Wave abgebrochen.");
             return;
         }
 
         World arenaWorld = Bukkit.getWorld(arena.world());
 
         if (arenaWorld == null) {
-            Bukkit.getLogger().warning("[ArenaManager] ❌ Arena-Welt nicht geladen: " + arena.world());
+            plugin.getLogger().warning("[ArenaManager] ❌ Arena-Welt nicht geladen: " + arena.world());
             return;
         }
+
+        arenaRunning = true;
 
         for (Chunk c : forcedChunks) {
             c.setForceLoaded(false);
@@ -243,10 +321,22 @@ public class ArenaEventManager implements Listener {
     }
 
     private void spawnWave(String teamFighting, String waveOwner, Location[] spawnPoints) {
-        int waveIndex = currentWave.get(teamFighting);
+
+        // Arena wurde inzwischen beendet/zurückgesetzt
+        if (!arenaRunning) {
+            return;
+        }
+
+        Integer waveIndexObj = currentWave.get(teamFighting);
+
+        if (waveIndexObj == null) {
+            return;
+        }
+
+        int waveIndex = waveIndexObj;
 
         if (!waveRunning.getOrDefault(waveOwner, false) && !finishedTeams.contains(waveOwner)) {
-            Bukkit.getLogger().info("⏹ Wave-Spawning abgebrochen: waveOwner=" + waveOwner + " ist nicht aktiv.");
+            plugin.getLogger().info("⏹ Wave-Spawning abgebrochen: waveOwner=" + waveOwner + " ist nicht aktiv.");
             return;
         }
 
@@ -270,11 +360,25 @@ public class ArenaEventManager implements Listener {
                 .sum();
 
         BarColor color = teamFighting.equalsIgnoreCase("Rot") ? BarColor.RED : BarColor.BLUE;
-        BossBar bar = Bukkit.createBossBar(
-                "⚔ WAVE " + finalWave + " - Gegner verbleibend",
-                color,
-                BarStyle.SOLID
-        );
+        Component bossBarName =
+                plugin.getLanguageManager()
+                        .getComponent(
+                                "arena-event-manager.bossbar.remaining",
+                                "wave",
+                                finalWave
+                        );
+
+        String bossBarText =
+                PlainTextComponentSerializer.plainText()
+                        .serialize(bossBarName);
+
+        BossBar bar =
+                Bukkit.createBossBar(
+                        bossBarText,
+                        color,
+                        BarStyle.SOLID
+                );
+
         teamBossBars.put(teamFighting, bar);
 
         for (Player p : Bukkit.getOnlinePlayers()) {
@@ -321,6 +425,9 @@ public class ArenaEventManager implements Listener {
                 new BukkitRunnable() {
                     @Override
                     public void run() {
+                        if (!arenaRunning) {
+                            return;
+                        }
                         Location actualSpawn = spawnLoc.clone();
 
                         if (FLYING_MOBS.contains(type)) {
@@ -343,14 +450,14 @@ public class ArenaEventManager implements Listener {
                         }
 
                         mob.getPersistentDataContainer().set(
-                                new NamespacedKey(plugin, "arenaMob"),
+                                arenaMobKey,
                                 PersistentDataType.BYTE,
                                 (byte) 1
                         );
 
                         String enemyTeam = waveOwner.equalsIgnoreCase("Rot") ? "Blau" : "Rot";
                         mob.getPersistentDataContainer().set(
-                                new NamespacedKey(plugin, "enemyTeam"),
+                                enemyTeamKey,
                                 PersistentDataType.STRING,
                                 enemyTeam
                         );
@@ -389,7 +496,7 @@ public class ArenaEventManager implements Listener {
                 double progress = totalMobs > 0 ? (double) alive / totalMobs : 0;
 
                 if (bar != null) {
-                    bar.setProgress(Math.max(0.0, progress));
+                    bar.setProgress( Math.clamp (progress, 0.0, 1.0));
                 }
 
                 if (alive == 0) {
@@ -408,15 +515,39 @@ public class ArenaEventManager implements Listener {
 
     private void handleEmptyWave(String teamFighting, String waveOwner, Location[] spawnPoints, int finalWave) {
 
-        for (Player p : Bukkit.getOnlinePlayers()) {
-            String team = plugin.getTeamManager().getPlayerTeam(p);
-            if (team != null && team.equalsIgnoreCase(teamFighting)) {
-                p.sendMessage(ChatColor.RED + "⚠ Wave " + finalWave + " ist leer.");
-                p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
+        for (Player player : Bukkit.getOnlinePlayers()) {
+
+            String team =
+                    plugin.getTeamManager()
+                            .getPlayerTeam(player);
+
+            if (team != null
+                    && team.equalsIgnoreCase(teamFighting)) {
+
+                player.sendMessage(
+                        plugin.getLanguageManager()
+                                .getComponent(
+                                        "arena-event-manager.wave.empty",
+                                        "wave",
+                                        finalWave
+                                )
+                );
+
+                player.playSound(
+                        player.getLocation(),
+                        Sound.ENTITY_PLAYER_LEVELUP,
+                        1.0f,
+                        1.0f
+                );
             }
         }
 
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+        int emptyWaveTaskId = Bukkit.getScheduler().runTaskLater(plugin, () -> {
+
+            if (!arenaRunning) {
+                return;
+            }
+
             Integer current = currentWave.get(teamFighting);
             if (current == null) return;
 
@@ -425,45 +556,97 @@ public class ArenaEventManager implements Listener {
 
             if (nextWave < MAX_WAVES) {
 
-                currentWave.put(teamFighting, nextWave);
+                currentWave.put(
+                        teamFighting,
+                        nextWave
+                );
 
-                for (Player p : Bukkit.getOnlinePlayers()) {
-                    String team = plugin.getTeamManager().getPlayerTeam(p);
-                    if (team != null && team.equalsIgnoreCase(teamFighting)) {
-                        p.sendTitle(
-                                ChatColor.GOLD + "WAVE " + finishedWave + " abgeschlossen",
-                                ChatColor.GRAY + "Nächste beginnt gleich...",
-                                10, 40, 10
+                for (Player p :
+                        Bukkit.getOnlinePlayers()) {
+
+                    String team =
+                            plugin.getTeamManager()
+                                    .getPlayerTeam(p);
+
+                    if (team != null
+                            && team.equalsIgnoreCase(teamFighting)) {
+
+                        showWaveCompleted(
+                                p,
+                                finishedWave
                         );
-                        p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
                     }
                 }
 
-                Bukkit.getScheduler().runTaskLater(
-                        plugin,
-                        () -> spawnWave(teamFighting, waveOwner, spawnPoints),
-                        80L
-                );
+                int taskId =
+                        Bukkit.getScheduler()
+                                .runTaskLater(
+                                        plugin,
+                                        () -> spawnWave(
+                                                teamFighting,
+                                                waveOwner,
+                                                spawnPoints
+                                        ),
+                                        80L
+                                )
+                                .getTaskId();
+
+                registerTask(taskId);
 
             } else {
                 finishTeam(teamFighting);
             }
 
-        }, 40L);
+        }, 40L).getTaskId();
+
+        registerTask(emptyWaveTaskId);
     }
 
     private void announceWaveStart(String teamFighting, int finalWave) {
-        String waveColor = teamFighting.equalsIgnoreCase("Rot") ? ChatColor.RED.toString() : ChatColor.BLUE.toString();
 
-        for (Player p : Bukkit.getOnlinePlayers()) {
-            String team = plugin.getTeamManager().getPlayerTeam(p);
-            if (team != null && team.equalsIgnoreCase(teamFighting)) {
-                p.sendTitle(
-                        waveColor + "⚔ WAVE " + finalWave,
-                        ChatColor.GRAY + "Bereit machen!",
-                        10, 40, 10
+        NamedTextColor teamColor =
+                teamFighting.equalsIgnoreCase("Rot")
+                        ? NamedTextColor.RED
+                        : NamedTextColor.BLUE;
+
+        Component title =
+                Component.text(
+                        "⚔ WAVE " + finalWave,
+                        teamColor
                 );
-                p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.2f);}
+
+        Title waveTitle =
+                Title.title(
+                        title,
+                        plugin.getLanguageManager().getComponent(
+                                "arena-event-manager.wave.start-subtitle"
+                        ),
+                        Title.Times.times(
+                                Duration.ofMillis(500),
+                                Duration.ofSeconds(2),
+                                Duration.ofMillis(500)
+                        )
+                );
+
+        for (Player player : Bukkit.getOnlinePlayers()) {
+
+            String team =
+                    plugin.getTeamManager()
+                            .getPlayerTeam(player);
+
+            if (team == null
+                    || !team.equalsIgnoreCase(teamFighting)) {
+                continue;
+            }
+
+            player.showTitle(waveTitle);
+
+            player.playSound(
+                    player.getLocation(),
+                    Sound.ENTITY_PLAYER_LEVELUP,
+                    1.0f,
+                    1.2f
+            );
         }
     }
 
@@ -488,27 +671,42 @@ public class ArenaEventManager implements Listener {
         }
     }
 
-    private void handleWaveCompletion(String teamFighting, String waveOwner, Location[] spawnPoints) {
-        int nextWave = currentWave.get(teamFighting) + 1;
-        int finishedWave = currentWave.get(teamFighting) + 1;
+    private void handleWaveCompletion(
+            String teamFighting,
+            String waveOwner,
+            Location[] spawnPoints
+    ) {
 
-        if (nextWave < 3) {
+        if (!arenaRunning) {
+            return;
+        }
+
+        Integer current = currentWave.get(teamFighting);
+
+        if (current == null) {
+            return;
+        }
+
+        int nextWave = current + 1;
+        int finishedWave = current + 1;
+
+        if (nextWave < MAX_WAVES) {
             currentWave.put(teamFighting, nextWave);
 
             for (Player p : Bukkit.getOnlinePlayers()) {
                 String team = plugin.getTeamManager().getPlayerTeam(p);
                 if (team != null && team.equalsIgnoreCase(teamFighting)) {
-                    p.sendTitle(
-                            ChatColor.GOLD + "WAVE " + finishedWave + " abgeschlossen",
-                            ChatColor.GRAY + "Nächste beginnt gleich...",
-                            10, 40, 10
-                    );
-                    p.playSound(p.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1f);
+                    showWaveCompleted(p, finishedWave);
                 }
             }
 
-            Bukkit.getScheduler().runTaskLater(plugin,
-                    () -> spawnWave(teamFighting, waveOwner, spawnPoints), 80L);
+            int taskId = Bukkit.getScheduler().runTaskLater(
+                    plugin,
+                    () -> spawnWave(teamFighting, waveOwner, spawnPoints),
+                    80L
+            ).getTaskId();
+
+            registerTask(taskId);
 
         } else {
             finishTeam(teamFighting);
@@ -517,111 +715,169 @@ public class ArenaEventManager implements Listener {
 
     private void announceWinnerToTeam(String team) {
 
-        List<? extends Player> teamPlayers = Bukkit.getOnlinePlayers().stream()
-                .filter(p -> team.equalsIgnoreCase(plugin.getTeamManager().getPlayerTeam(p)))
-                .toList();
+        List<? extends Player> teamPlayers =
+                Bukkit.getOnlinePlayers()
+                        .stream()
+                        .filter(player ->
+                                team.equalsIgnoreCase(
+                                        plugin.getTeamManager()
+                                                .getPlayerTeam(player)
+                                )
+                        )
+                        .toList();
 
-        for (Player p : teamPlayers) {
-            p.setGameMode(GameMode.SPECTATOR);
+        for (Player player : teamPlayers) {
+            player.setGameMode(GameMode.SPECTATOR);
         }
 
-        String msg = ChatColor.GOLD + "🏆 Team " + team +
-                ChatColor.YELLOW + " hat gewonnen!";
+        Component message =
+                plugin.getLanguageManager()
+                        .getComponent(
+                                "arena-event-manager.winner.first",
+                                "team",
+                                getTeamDisplayName(team)
+                        );
 
         new BukkitRunnable() {
-            int seconds = 0;
+
+            int seconds;
 
             @Override
             public void run() {
+
                 if (seconds++ >= 10) {
                     cancel();
                     return;
                 }
 
-                for (Player p : teamPlayers) {
-                    if (p.isOnline()) {
-                        p.sendActionBar(msg);
+                for (Player player : teamPlayers) {
+
+                    if (player.isOnline()) {
+                        player.sendActionBar(message);
                     }
                 }
             }
-        }.runTaskTimer(plugin, 0L, 20L);
+        }.runTaskTimer(
+                plugin,
+                0L,
+                20L
+        );
     }
-
 
     private void announceSecondPlace(String team) {
 
-        long timeUsed = finishTimes.get(team) - winningTime;
-        String time = formatMillis(timeUsed);
+        long timeUsed =
+                finishTimes.get(team)
+                        - winningTime;
 
-        String msg = ChatColor.GRAY + "🥈 Team " + team +
-                " ist 2ter Platz | Sieger: " +
-                ChatColor.GOLD + winningTeam +
-                ChatColor.GRAY + " | Zeit: " + time;
+        String time =
+                formatMillis(timeUsed);
 
-        List<? extends Player> teamPlayers = Bukkit.getOnlinePlayers().stream()
-                .filter(p -> team.equalsIgnoreCase(plugin.getTeamManager().getPlayerTeam(p)))
-                .toList();
+        Component message =
+                plugin.getLanguageManager()
+                        .getComponent(
+                                "arena-event-manager.winner.second",
+                                Map.of(
+                                        "team",
+                                        getTeamDisplayName(team),
+                                        "winner",
+                                        getTeamDisplayName(winningTeam)
+                                )
+                        )
+                        .replaceText(builder ->
+                                builder.matchLiteral("%time%")
+                                        .replacement(time)
+                        );
 
-        for (Player p : teamPlayers) {
-            p.setGameMode(GameMode.SPECTATOR);
+        List<? extends Player> teamPlayers =
+                Bukkit.getOnlinePlayers()
+                        .stream()
+                        .filter(player ->
+                                team.equalsIgnoreCase(
+                                        plugin.getTeamManager()
+                                                .getPlayerTeam(player)
+                                )
+                        )
+                        .toList();
+
+        for (Player player : teamPlayers) {
+            player.setGameMode(GameMode.SPECTATOR);
         }
 
         new BukkitRunnable() {
-            int seconds = 0;
+
+            int seconds;
 
             @Override
             public void run() {
+
                 if (seconds++ >= 10) {
                     cancel();
                     return;
                 }
 
-                for (Player p : teamPlayers) {
-                    if (p.isOnline()) {
-                        p.sendActionBar(msg);
+                for (Player player : teamPlayers) {
+
+                    if (player.isOnline()) {
+                        player.sendActionBar(message);
                     }
                 }
             }
-        }.runTaskTimer(plugin, 0L, 20L);
+        }.runTaskTimer(
+                plugin,
+                0L,
+                20L
+        );
     }
 
     private void checkWinner() {
 
         if (finishedTeams.size() < 2) return;
 
-        Bukkit.getLogger().info("🏁 Arena beendet. Gewinner: " + winningTeam);
+        plugin.getLogger().info("🏁 Arena beendet. Gewinner: " + winningTeam);
 
         arenaRunning = false;
-        plugin.setArenaRunning(false);
 
         sendArenaSummaryButton();
 
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            Bukkit.getLogger().info("🔄 Arena kann jetzt zurückgesetzt werden.");
-        }, 200L);
+        Bukkit.getScheduler().runTaskLater(
+                plugin,
+                () -> plugin.getLogger().info(
+                        "🔄 Arena kann jetzt zurückgesetzt werden."
+                ),
+                200L
+        );
     }
 
     private void sendArenaSummaryButton() {
 
-        TextComponent msg = new TextComponent("▶ AUSWERTUNG");
-        msg.setColor(net.md_5.bungee.api.ChatColor.GOLD);
-        msg.setBold(true);
+        Component message =
+                lang(
+                        "arena-event-manager.summary-button.name"
+                )
+                        .hoverEvent(
+                                lang(
+                                        "arena-event-manager.summary-button.hover"
+                                )
+                        )
+                        .clickEvent(
+                                ClickEvent.runCommand(
+                                        "/arenasummary"
+                                )
+                        );
 
-        msg.setHoverEvent(new HoverEvent(
-                HoverEvent.Action.SHOW_TEXT,
-                new ComponentBuilder("§eKlicken für die Arena-Auswertung\n§7(Kills & Mobs je Team)")
-                        .create()
-        ));
+        for (Player player :
+                Bukkit.getOnlinePlayers()) {
 
-        msg.setClickEvent(new ClickEvent(
-                ClickEvent.Action.RUN_COMMAND,
-                "/arenasummary"
-        ));
+            player.sendMessage(
+                    Component.empty()
+            );
 
-        for (Player p : Bukkit.getOnlinePlayers()) {
-            p.sendMessage("");
-            p.spigot().sendMessage(msg);
-            p.sendMessage("");
+            player.sendMessage(message);
+
+            player.sendMessage(
+                    Component.empty()
+            );
         }
     }
 
@@ -646,18 +902,17 @@ public class ArenaEventManager implements Listener {
 
         String normalizedTeam = team.toLowerCase(Locale.ROOT);
 
-        // Team wurde bereits als bereit gemeldet
         if (!teamsReady.add(normalizedTeam)) {
+
             player.sendMessage(
-                    ChatColor.YELLOW + "⚠ Dein Team ist bereits bereit."
+                    lang(
+                            "arena-event-manager.ready.already-ready"
+                    )
             );
+
             return;
         }
 
-        /*
-         * Es werden nur Teams berücksichtigt,
-         * von denen mindestens ein Spieler online ist.
-         */
         Set<String> activeTeams = new HashSet<>();
 
         for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
@@ -688,23 +943,41 @@ public class ArenaEventManager implements Listener {
 
         arenaStarted = true;
 
-        for (Player p : Bukkit.getOnlinePlayers()) {
+        Title readyTitle =
+                Title.title(
+                        lang(
+                                "arena-event-manager.ready.all-ready-title"
+                        ),
+                        lang(
+                                "arena-event-manager.ready.all-ready-subtitle"
+                        ),
+                        Title.Times.times(
+                                Duration.ofMillis(1500),
+                                Duration.ofSeconds(3),
+                                Duration.ofMillis(1500)
+                        )
+                );
 
-            String world = p.getWorld().getName().toLowerCase();
+        for (Player onlinePlayer :
+                Bukkit.getOnlinePlayers()) {
 
-            if (!world.equals("world_mobarmy_lobby")) {
+            String world =
+                    onlinePlayer.getWorld()
+                            .getName()
+                            .toLowerCase();
+
+            if (!world.equals(
+                    "world_mobarmy_lobby"
+            )) {
                 continue;
             }
 
-            p.sendTitle(
-                    ChatColor.GREEN + "✅ Alle Teams bereit!",
-                    ChatColor.YELLOW
-                            + "Die Arenaphase beginnt gleich...",
-                    30, 60, 30
+            onlinePlayer.showTitle(
+                    readyTitle
             );
 
-            p.playSound(
-                    p.getLocation(),
+            onlinePlayer.playSound(
+                    onlinePlayer.getLocation(),
                     Sound.UI_TOAST_CHALLENGE_COMPLETE,
                     1f,
                     1.2f
@@ -727,9 +1000,6 @@ public class ArenaEventManager implements Listener {
             aggroTaskId = -1;
         }
 
-        arenaRunning = false;
-        plugin.setArenaRunning(false);
-        arenaStarted = false;
 
         for (Chunk c : forcedChunks) {
             c.setForceLoaded(false);
@@ -775,7 +1045,6 @@ public class ArenaEventManager implements Listener {
             World world = Bukkit.getWorld(arena.world());
 
             if (world != null) {
-                // Alle Mobs der gesamten Arena-Welt entfernen
                 for (Mob mob : world.getEntitiesByClass(Mob.class)) {
                     mob.remove();
                 }
@@ -816,18 +1085,65 @@ public class ArenaEventManager implements Listener {
         return currentWave.getOrDefault(team, 0);
     }
 
-    public void showArenaSummary(Player player) {
-        int killsRot = scoreboardManager.getKillCount("Rot");
-        int killsBlau = scoreboardManager.getKillCount("Blau");
+    public void showArenaSummary(
+            Player player
+    ) {
 
-        player.sendMessage("");
-        player.sendMessage("");
-        player.sendMessage(ChatColor.GOLD + "====== 📊 Auswertung Arena ======");
-        player.sendMessage("");
-        player.sendMessage(ChatColor.RED + "     Team Rot Kills: " + killsRot);
-        player.sendMessage(ChatColor.BLUE + "     Team Blau Kills: " + killsBlau);
-        player.sendMessage("");
-        player.sendMessage(ChatColor.GOLD + "===============================");
+        int killsRot =
+                scoreboardManager.getKillCount(
+                        "Rot"
+                );
+
+        int killsBlau =
+                scoreboardManager.getKillCount(
+                        "Blau"
+                );
+
+        player.sendMessage(
+                Component.empty()
+        );
+
+        player.sendMessage(
+                Component.empty()
+        );
+
+        player.sendMessage(
+                lang(
+                        "arena-event-manager.summary.header"
+                )
+        );
+
+        player.sendMessage(
+                Component.empty()
+        );
+
+        player.sendMessage(
+                plugin.getLanguageManager()
+                        .getComponent(
+                                "arena-event-manager.summary.red-kills",
+                                "kills",
+                                killsRot
+                        )
+        );
+
+        player.sendMessage(
+                plugin.getLanguageManager()
+                        .getComponent(
+                                "arena-event-manager.summary.blue-kills",
+                                "kills",
+                                killsBlau
+                        )
+        );
+
+        player.sendMessage(
+                Component.empty()
+        );
+
+        player.sendMessage(
+                lang(
+                        "arena-event-manager.summary.footer"
+                )
+        );
     }
 
     private void forceAggro(LivingEntity mob, Player target) {
@@ -870,10 +1186,12 @@ public class ArenaEventManager implements Listener {
 
                         if (!(mob instanceof Mob aiMob)) continue;
 
-                        String enemyTeam = mob.getPersistentDataContainer().get(
-                                new NamespacedKey(plugin, "enemyTeam"),
-                                PersistentDataType.STRING
-                        );
+                        String enemyTeam =
+                                mob.getPersistentDataContainer().get(
+                                        enemyTeamKey,
+                                        PersistentDataType.STRING
+                                );
+
                         if (enemyTeam == null) continue;
 
                         if (aiMob.getTarget() instanceof Player currentTarget) {
@@ -900,5 +1218,73 @@ public class ArenaEventManager implements Listener {
         long min = seconds / 60;
         long sec = seconds % 60;
         return String.format("%02d:%02d", min, sec);
+    }
+
+    private void showWaveCompleted(Player player, int wave) {
+
+        Title title = Title.title(
+                plugin.getLanguageManager().getComponent(
+                        "arena-event-manager.wave.completed-title",
+                        "wave",
+                        wave
+                ),
+                plugin.getLanguageManager().getComponent(
+                        "arena-event-manager.wave.completed-subtitle"
+                ),
+                Title.Times.times(
+                        Duration.ofMillis(500),
+                        Duration.ofSeconds(2),
+                        Duration.ofMillis(500)
+                )
+        );
+
+        player.showTitle(title);
+
+        player.playSound(
+                player.getLocation(),
+                Sound.ENTITY_PLAYER_LEVELUP,
+                1.0f,
+                1.0f
+        );
+    }
+
+    private Component lang(String path) {
+
+        return plugin.getLanguageManager()
+                .getComponent(path);
+    }
+
+    private Component getTeamDisplayName(String team) {
+
+        if (team == null) {
+            return Component.empty();
+        }
+
+        if (team.equalsIgnoreCase("Rot")) {
+            return plugin.getLanguageManager().getComponent(
+                    "arena-event-manager.team.red"
+            );
+        }
+
+        if (team.equalsIgnoreCase("Blau")) {
+            return plugin.getLanguageManager().getComponent(
+                    "arena-event-manager.team.blue"
+            );
+        }
+
+        return Component.text(team);
+    }
+
+    private NamedTextColor getCountdownColor(int countdown) {
+
+        if (countdown >= 4) {
+            return NamedTextColor.RED;
+        }
+
+        if (countdown == 3) {
+            return NamedTextColor.GOLD;
+        }
+
+        return NamedTextColor.YELLOW;
     }
 }

@@ -1,6 +1,6 @@
 package runi.myddns.mobarmywars.Listeners;
 
-import org.bukkit.ChatColor;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -9,7 +9,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -17,15 +16,12 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import runi.myddns.mobarmywars.MobArmyMain;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 public class PauseListener implements Listener {
 
     private final MobArmyMain plugin;
 
-    private final Set<Player> frozenPlayers = new HashSet<>();
     private final Map<Player, Location> freezeLocations = new HashMap<>();
 
     public PauseListener(MobArmyMain plugin) {
@@ -37,101 +33,138 @@ public class PauseListener implements Listener {
                 && plugin.getEventResume().isEventPaused();
     }
 
-    private boolean isTeamWorld(Player p) {
-        String w = p.getWorld().getName().toLowerCase();
-        return w.contains("rot") || w.contains("blau");
+    private boolean isTeamWorld(Player player) {
+        String worldName = player.getWorld().getName().toLowerCase();
+        return worldName.contains("rot")
+                || worldName.contains("blau");
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void onDamage(EntityDamageEvent e) {
-        if (isPaused() && e.getEntity() instanceof Player player) {
+    public void onDamage(EntityDamageEvent event) {
+
+        if (isPaused()
+                && event.getEntity() instanceof Player player) {
+
             player.setInvulnerable(true);
-            e.setCancelled(true);
+            event.setCancelled(true);
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void onBlockBreak(BlockBreakEvent e) {
+    public void onBlockBreak(BlockBreakEvent event) {
+
         if (isPaused()) {
-            e.setCancelled(true);
+            event.setCancelled(true);
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void onBlockPlace(BlockPlaceEvent e) {
+    public void onBlockPlace(BlockPlaceEvent event) {
+
         if (isPaused()) {
-            e.setCancelled(true);
+            event.setCancelled(true);
         }
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void onInteract(PlayerInteractEvent e) {
-        if (!isPaused()) return;
+    public void onInteract(PlayerInteractEvent event) {
 
-        if (e.getClickedBlock() != null) {
-            e.setCancelled(true);
+        if (!isPaused()) {
+            return;
         }
-    }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onInventoryOpen(InventoryOpenEvent e) {
-        if (isPaused() && e.getPlayer() instanceof Player) {
+        if (event.getClickedBlock() != null) {
+            event.setCancelled(true);
         }
     }
 
     @EventHandler
-    public void onJoin(PlayerJoinEvent e) {
-        if (isPaused()) {
-            Player p = e.getPlayer();
-            frozenPlayers.add(p);
-            freezeLocations.put(p, p.getLocation());
+    public void onJoin(PlayerJoinEvent event) {
+
+        if (!isPaused()) {
+            return;
         }
+
+        Player player = event.getPlayer();
+
+        freezeLocations.put(
+                player,
+                player.getLocation()
+        );
     }
 
     @EventHandler
-    public void onQuit(PlayerQuitEvent e) {
-        Player p = e.getPlayer();
-        frozenPlayers.remove(p);
-        freezeLocations.remove(p);
+    public void onQuit(PlayerQuitEvent event) {
 
-        if (plugin.getEventResume().isEventStarted()) {
-            if (plugin.getTimerManager() != null) {
-                plugin.getTimerManager().pauseTimer();
-            }
+        Player player = event.getPlayer();
 
-            plugin.getServer().broadcastMessage(
-                    ChatColor.RED + "Spieler "
-                            + ChatColor.YELLOW + p.getName()
-                            + ChatColor.RED + " ist aus dem Event ausgetreten. "
-                            + ChatColor.GOLD + "Das Spiel wurde angehalten. "
-                            + ChatColor.GRAY + "Weiter mit /resume"
-            );
+        freezeLocations.remove(player);
+
+        if (!plugin.getEventResume().isEventStarted()) {
+            return;
         }
+
+        if (plugin.getTimerManager() != null) {
+            plugin.getTimerManager().pauseTimer();
+        }
+
+        Component message =
+                plugin.getLanguageManager().getComponent(
+                        "pause-listener.player-left",
+                        "player",
+                        player.getName()
+                );
+
+        plugin.getServer()
+                .sendMessage(message);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
-    public void onMove(PlayerMoveEvent e) {
-        if (!isPaused()) return;
+    public void onMove(PlayerMoveEvent event) {
 
-        Player p = e.getPlayer();
-        if (!isTeamWorld(p)) return;
+        if (!isPaused()) {
+            return;
+        }
 
-        freezeLocations.putIfAbsent(p, e.getFrom());
+        Player player = event.getPlayer();
 
-        Location base = freezeLocations.get(p);
-        Location to = e.getTo();
-        if (base == null || to == null) return;
+        if (!isTeamWorld(player)) {
+            return;
+        }
+
+        freezeLocations.putIfAbsent(
+                player,
+                event.getFrom()
+        );
+
+        Location base = freezeLocations.get(player);
+        Location to = event.getTo();
+
+        if (base == null) {
+            return;
+        }
 
         double dx = to.getX() - base.getX();
         double dz = to.getZ() - base.getZ();
 
         double max = 2.5;
 
-        if (Math.abs(dx) > max || Math.abs(dz) > max) {
+        if (Math.abs(dx) > max
+                || Math.abs(dz) > max) {
+
             Location corrected = to.clone();
-            corrected.setX(base.getX() + Math.max(-max, Math.min(max, dx)));
-            corrected.setZ(base.getZ() + Math.max(-max, Math.min(max, dz)));
-            e.setTo(corrected);
+
+            corrected.setX(
+                    base.getX()
+                            + Math.clamp(dx, -max, max)
+            );
+
+            corrected.setZ(
+                    base.getZ()
+                            + Math.clamp(dz, -max, max)
+            );
+
+            event.setTo(corrected);
         }
     }
 }

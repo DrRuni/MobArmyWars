@@ -1,14 +1,18 @@
 package runi.myddns.mobarmywars.Managers.Event;
 
-import org.bukkit.*;
+import org.bukkit.Bukkit;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 import org.bukkit.scheduler.BukkitTask;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+
 import runi.myddns.mobarmywars.Managers.World.ResumeManager;
 import runi.myddns.mobarmywars.MobArmyMain;
+
+import java.util.Locale;
 
 public class TimerManager implements Listener {
     private final MobArmyMain plugin;
@@ -33,7 +37,7 @@ public class TimerManager implements Listener {
     public void setTime(int seconds) {
         this.timeInSeconds = seconds;
         plugin.getEventResume().saveTimerState(seconds, isForward);
-        updateBossBar(null);
+        updateBossBar();
 
         if (seconds <= 0) {
             onTimerReachedZero();
@@ -43,14 +47,20 @@ public class TimerManager implements Listener {
     public void addPlayerToBossBar(Player player) {
 
         if (bossBar == null) {
-            bossBar = Bukkit.createBossBar("Timer", BarColor.BLUE, BarStyle.SEGMENTED_6);
+            bossBar = Bukkit.createBossBar(
+                    plugin.getLanguageManager().get(
+                            "timer-manager.bossbar.timer"
+                    ),
+                    BarColor.BLUE,
+                    BarStyle.SEGMENTED_6
+            );
         }
 
         if (!bossBar.getPlayers().contains(player)) {
             bossBar.addPlayer(player);
         }
 
-        updateBossBar(null);
+        updateBossBar();
     }
 
     public void removeBossBar() {
@@ -74,7 +84,7 @@ public class TimerManager implements Listener {
 
         if (isForward) {
             timeInSeconds++;
-            updateBossBar(null);
+            updateBossBar();
             return;
         }
 
@@ -86,19 +96,7 @@ public class TimerManager implements Listener {
             }
         }
 
-        updateBossBar(null);
-    }
-
-    public void updateBossBar(String customMessage) {
-        if (bossBar == null) return;
-
-        if (timeInSeconds < 0 && !isForward) {
-            bossBar.setTitle(ChatColor.GOLD + "Die Zeit ist abgelaufen!");
-        } else {
-            int displayTime = Math.max(0, timeInSeconds);
-            String time = customMessage != null ? customMessage : formatTime(displayTime);
-            bossBar.setTitle(time);
-        }
+        updateBossBar();
     }
 
     private String formatTime(int timeInSeconds) {
@@ -108,29 +106,49 @@ public class TimerManager implements Listener {
         int seconds = timeInSeconds % 60;
 
         if (days > 0) {
-            String dayText = (days == 1) ? "Tag" : "Tage";
+            String dayText =
+                    days == 1
+                            ? plugin.getLanguageManager().get(
+                            "timer-manager.day"
+                    )
+                            : plugin.getLanguageManager().get(
+                            "timer-manager.days"
+                    );
+
             return String.format(
-                    ChatColor.RED + "%d " + ChatColor.BLUE + "%s, " +
-                            ChatColor.RED + "%02d" + ChatColor.BLUE + "h " +
-                            ChatColor.RED + "%02d" + ChatColor.BLUE + "m " +
-                            ChatColor.RED + "%02d" + ChatColor.BLUE + "s",
-                    days, dayText, hours, minutes, seconds);
-        } else if (hours > 0) {
-            return String.format(
-                    ChatColor.RED + "%d" + ChatColor.BLUE + "h " +
-                            ChatColor.RED + "%02d" + ChatColor.BLUE + "m " +
-                            ChatColor.RED + "%02d" + ChatColor.BLUE + "s",
-                    hours, minutes, seconds);
-        } else if (minutes > 0) {
-            return String.format(
-                    ChatColor.RED + "%d" + ChatColor.BLUE + "m " +
-                            ChatColor.RED + "%02d" + ChatColor.BLUE + "s",
-                    minutes, seconds);
-        } else {
-            return String.format(
-                    ChatColor.RED + "%d" + ChatColor.BLUE + "sek",
-                    seconds);
+                    "§c%d §9%s, §c%02d§9h §c%02d§9m §c%02d§9s",
+                    days,
+                    dayText,
+                    hours,
+                    minutes,
+                    seconds
+            );
         }
+
+        if (hours > 0) {
+            return String.format(
+                    "§c%d§9h §c%02d§9m §c%02d§9s",
+                    hours,
+                    minutes,
+                    seconds
+            );
+        }
+
+        if (minutes > 0) {
+            return String.format(
+                    "§c%d§9m §c%02d§9s",
+                    minutes,
+                    seconds
+            );
+        }
+
+        return String.format(
+                "§c%d§9%s",
+                seconds,
+                plugin.getLanguageManager().get(
+                        "timer-manager.second-short"
+                )
+        );
     }
 
     public void updatePauseState() {
@@ -157,15 +175,19 @@ public class TimerManager implements Listener {
         updatePauseState();
 
         for (Player p : Bukkit.getOnlinePlayers()) {
-            String world = p.getWorld().getName().toLowerCase();
+            String world = p.getWorld().getName().toLowerCase(Locale.ROOT);
             if (world.contains("mobarena") || world.contains("rot") || world.contains("blau")) {
-                p.sendMessage(ChatColor.GREEN + "▶ Der Timer wurde gestartet!");
+                p.sendMessage(
+                        plugin.getLanguageManager().getComponent(
+                                "timer-manager.started"
+                        )
+                );
             }
         }
 
         updatePauseState();
         ensureBossBarExists();
-        updateBossBar(null);
+        updateBossBar();
     }
 
     public void pauseTimer() {
@@ -174,9 +196,13 @@ public class TimerManager implements Listener {
         updatePauseState();
 
         for (Player p : Bukkit.getOnlinePlayers()) {
-            String world = p.getWorld().getName().toLowerCase();
+            String world = p.getWorld().getName().toLowerCase(Locale.ROOT);
             if (world.contains("mobarena") || world.contains("rot") || world.contains("blau")) {
-                p.sendMessage(ChatColor.YELLOW + "⏸  Der Timer wurde pausiert!");
+                p.sendMessage(
+                        plugin.getLanguageManager().getComponent(
+                                "timer-manager.paused"
+                        )
+                );
             }
         }
     }
@@ -190,7 +216,7 @@ public class TimerManager implements Listener {
         }
 
         updatePauseState();
-        updateBossBar(null);
+        updateBossBar();
     }
 
     public boolean isRunning() {
@@ -207,12 +233,12 @@ public class TimerManager implements Listener {
 
     public void addTime(int seconds) {
         timeInSeconds += seconds;
-        updateBossBar(null);
+        updateBossBar();
     }
 
     public void removeTime(int seconds) {
         timeInSeconds = Math.max(0, timeInSeconds - seconds);
-        updateBossBar(null);
+        updateBossBar();
 
         if (timeInSeconds == 0) {
             onTimerReachedZero();
@@ -228,12 +254,18 @@ public class TimerManager implements Listener {
 
         plugin.getEventResume().saveTimerState(timeInSeconds, isForward);
 
-        updateBossBar(null);
+        updateBossBar();
     }
 
     public void ensureBossBarExists() {
         if (bossBar == null) {
-            bossBar = Bukkit.createBossBar("Timer", BarColor.BLUE, BarStyle.SEGMENTED_6);
+            bossBar = Bukkit.createBossBar(
+                    plugin.getLanguageManager().get(
+                            "timer-manager.bossbar.timer"
+                    ),
+                    BarColor.BLUE,
+                    BarStyle.SEGMENTED_6
+            );
         }
 
         for (Player player : Bukkit.getOnlinePlayers()) {
@@ -241,7 +273,7 @@ public class TimerManager implements Listener {
                 bossBar.addPlayer(player);
             }
         }
-        updateBossBar(null);
+        updateBossBar();
     }
 
     public void removeBossBarFor(Player player) {
@@ -259,9 +291,10 @@ public class TimerManager implements Listener {
 
         collectPhaseEnded = true;
 
-        Bukkit.getScheduler().runTask(plugin, () -> {
-            plugin.getEventManager().handleTimerEnd();
-        });
+        Bukkit.getScheduler().runTask(
+                plugin,
+                () -> plugin.getEventManager().handleTimerEnd()
+        );
     }
 
     private void startResumeSaveTask() {
@@ -283,5 +316,37 @@ public class TimerManager implements Listener {
             resumeSaveTask.cancel();
             resumeSaveTask = null;
         }
+    }
+
+    public void updateBossBar() {
+        updateBossBarInternal(null);
+    }
+
+    public void updateBossBar(String customMessage) {
+        updateBossBarInternal(customMessage);
+    }
+
+    private void updateBossBarInternal(String customMessage) {
+        if (bossBar == null) return;
+
+        if (timeInSeconds < 0 && !isForward) {
+            bossBar.setTitle(
+                    LegacyComponentSerializer.legacySection().serialize(
+                            plugin.getLanguageManager().getComponent(
+                                    "timer-manager.bossbar.expired"
+                            )
+                    )
+            );
+            return;
+        }
+
+        int displayTime = Math.max(0, timeInSeconds);
+
+        String time =
+                customMessage != null
+                        ? customMessage
+                        : formatTime(displayTime);
+
+        bossBar.setTitle(time);
     }
 }

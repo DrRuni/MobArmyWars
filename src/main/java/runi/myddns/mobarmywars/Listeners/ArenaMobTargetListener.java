@@ -12,15 +12,18 @@ import org.bukkit.persistence.PersistentDataType;
 import runi.myddns.mobarmywars.MobArmyMain;
 
 import java.util.Comparator;
-import java.util.List;
-import java.util.stream.Collectors;
 
 public class ArenaMobTargetListener implements Listener {
 
     private final MobArmyMain plugin;
 
+    private final NamespacedKey arenaMobKey;
+    private final NamespacedKey enemyTeamKey;
+
     public ArenaMobTargetListener(MobArmyMain plugin) {
         this.plugin = plugin;
+        this.arenaMobKey = new NamespacedKey(plugin, "arenaMob");
+        this.enemyTeamKey = new NamespacedKey(plugin, "enemyTeam");
     }
 
     @EventHandler
@@ -29,13 +32,13 @@ public class ArenaMobTargetListener implements Listener {
         if (!(entity instanceof LivingEntity mob)) return;
 
         Byte isArenaMob = mob.getPersistentDataContainer().get(
-                new NamespacedKey(plugin, "arenaMob"),
+                arenaMobKey,
                 PersistentDataType.BYTE
         );
         if (isArenaMob == null || isArenaMob != (byte) 1) return;
 
         String enemyTeam = mob.getPersistentDataContainer().get(
-                new NamespacedKey(plugin, "enemyTeam"),
+                enemyTeamKey,
                 PersistentDataType.STRING
         );
 
@@ -61,37 +64,37 @@ public class ArenaMobTargetListener implements Listener {
         if (!(entity instanceof Creature creature)) return;
 
         Byte isArenaMob = creature.getPersistentDataContainer().get(
-                new NamespacedKey(plugin, "arenaMob"),
+                arenaMobKey,
                 PersistentDataType.BYTE
         );
         if (isArenaMob == null || isArenaMob != (byte) 1) return;
 
         String enemyTeam = creature.getPersistentDataContainer().get(
-                new NamespacedKey(plugin, "enemyTeam"),
+                enemyTeamKey,
                 PersistentDataType.STRING
         );
         if (enemyTeam == null) return;
 
-        List<Player> enemies = Bukkit.getOnlinePlayers().stream()
-                .filter(p -> {
-                    String team = plugin.getTeamManager().getPlayerTeam(p);
-                    return team != null && team.equalsIgnoreCase(enemyTeam);
+        Player nearest = Bukkit.getOnlinePlayers()
+                .stream()
+                .filter(player -> {
+                    String team = plugin.getTeamManager().getPlayerTeam(player);
+                    return team != null
+                            && team.equalsIgnoreCase(enemyTeam);
                 })
-                .collect(Collectors.toList());
+                .min(Comparator.comparingDouble(
+                        player -> player.getLocation()
+                                .distanceSquared(creature.getLocation())
+                ))
+                .orElse(null);
 
-        if (enemies.isEmpty()) {
+        if (nearest == null) {
             event.setCancelled(true);
             return;
         }
 
-        Player nearest = enemies.stream()
-                .min(Comparator.comparingDouble(p -> p.getLocation().distanceSquared(creature.getLocation())))
-                .orElse(null);
-
-        if (nearest != null) {
-            creature.setTarget(nearest);
-            event.setTarget(nearest);
-        }
+        creature.setTarget(nearest);
+        event.setTarget(nearest);
     }
 
     @EventHandler
@@ -100,7 +103,7 @@ public class ArenaMobTargetListener implements Listener {
         if (!(entity instanceof LivingEntity living)) return;
 
         Byte isArenaMob = living.getPersistentDataContainer().get(
-                new NamespacedKey(plugin, "arenaMob"),
+                arenaMobKey,
                 PersistentDataType.BYTE
         );
 
@@ -113,7 +116,7 @@ public class ArenaMobTargetListener implements Listener {
     public void onEntityDeath(EntityDeathEvent event) {
         LivingEntity entity = event.getEntity();
         Byte isArenaMob = entity.getPersistentDataContainer().get(
-                new NamespacedKey(plugin, "arenaMob"),
+                arenaMobKey,
                 PersistentDataType.BYTE
         );
         if (isArenaMob == null || isArenaMob != (byte) 1) return;

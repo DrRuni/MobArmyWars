@@ -3,6 +3,7 @@ package runi.myddns.mobarmywars.Utils;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.TextColor;
 
+@SuppressWarnings("unused")
 public final class GradientText {
 
     private GradientText() {
@@ -69,7 +70,7 @@ public final class GradientText {
             return Component.empty();
         }
 
-        fade = Math.max(0.0f, Math.min(1.0f, fade));
+        fade = Math.clamp(fade, 0.0f, 1.0f);
 
         int startR = 255, startG = 215, startB = 64;
         int endR = 85, endG = 85, endB = 85;

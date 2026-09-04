@@ -1,15 +1,15 @@
 package runi.myddns.mobarmywars.Commands;
 
-import org.bukkit.ChatColor;
+import net.kyori.adventure.text.Component;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
-import runi.myddns.mobarmywars.MobArmyMain;
+import org.jetbrains.annotations.NotNull;
 import runi.myddns.mobarmywars.Managers.World.ResumeManager;
+import runi.myddns.mobarmywars.MobArmyMain;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class SetPhaseCommand implements CommandExecutor, TabCompleter {
@@ -21,10 +21,17 @@ public class SetPhaseCommand implements CommandExecutor, TabCompleter {
     }
 
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    public boolean onCommand(
+            @NotNull CommandSender sender,
+            @NotNull Command command,
+            @NotNull String label,
+            @NotNull String @NotNull [] args
+    ) {
 
         if (!sender.isOp()) {
-            sender.sendMessage(ChatColor.RED + "❌ Nur OPs dürfen diesen Befehl benutzen.");
+            sender.sendMessage(
+                    lang("commands.set-phase.op-only")
+            );
             return true;
         }
 
@@ -36,73 +43,116 @@ public class SetPhaseCommand implements CommandExecutor, TabCompleter {
         int phase = parsePhase(args[0]);
 
         if (phase == -1) {
-            sender.sendMessage(ChatColor.RED + "❌ Ungültige Phase: " + args[0]);
+
+            sender.sendMessage(
+                    plugin.getLanguageManager()
+                            .getComponent(
+                                    "commands.set-phase.invalid-phase",
+                                    "phase",
+                                    args[0]
+                            )
+            );
+
             sendUsage(sender, label);
             return true;
         }
 
         plugin.getEventResume().savePhase(phase);
 
-        sender.sendMessage(ChatColor.GREEN + "✔ Phase wurde gesetzt auf: " + getPhaseName(phase));
+        sender.sendMessage(
+                plugin.getLanguageManager()
+                        .getComponent(
+                                "commands.set-phase.success",
+                                "phase",
+                                getPhaseName(phase)
+                        )
+        );
+
         return true;
     }
 
-    private void sendUsage(CommandSender sender, String label) {
-        sender.sendMessage(ChatColor.YELLOW + "Verwendung: /" + label + " <phase>");
-        sender.sendMessage(ChatColor.GRAY + "Phasen:");
-        sender.sendMessage(ChatColor.GRAY + " - lobby oder 0");
-        sender.sendMessage(ChatColor.GRAY + " - teamwelt oder 1");
-        sender.sendMessage(ChatColor.GRAY + " - waveauswahl oder 2");
-        sender.sendMessage(ChatColor.GRAY + " - arena oder 3");
+    private void sendUsage(
+            CommandSender sender,
+            String label
+    ) {
+
+        sender.sendMessage(
+                plugin.getLanguageManager()
+                        .getComponent(
+                                "commands.set-phase.usage.title",
+                                "label",
+                                label
+                        )
+        );
+
+        sender.sendMessage(lang("commands.set-phase.usage.phases"));
+        sender.sendMessage(lang("commands.set-phase.usage.lobby"));
+        sender.sendMessage(lang("commands.set-phase.usage.teamworld"));
+        sender.sendMessage(lang("commands.set-phase.usage.wave-selection"));
+        sender.sendMessage(lang("commands.set-phase.usage.arena"));
     }
 
     private int parsePhase(String input) {
-        switch (input.toLowerCase()) {
-            case "0":
-            case "lobby":
-                return ResumeManager.PHASE_LOBBY;
 
-            case "1":
-            case "teamwelt":
-                return ResumeManager.PHASE_TEAMWELT;
+        return switch (input.toLowerCase()) {
 
-            case "2":
-            case "wave":
-            case "waveauswahl":
-                return ResumeManager.PHASE_WAVEAUSWAHL;
+            case "0", "lobby" ->
+                    ResumeManager.PHASE_LOBBY;
 
-            case "3":
-            case "arena":
-                return ResumeManager.PHASE_ARENA;
+            case "1", "teamwelt" ->
+                    ResumeManager.PHASE_TEAMWELT;
 
-            default:
-                return -1;
-        }
+            case "2", "wave", "waveauswahl" ->
+                    ResumeManager.PHASE_WAVEAUSWAHL;
+
+            case "3", "arena" ->
+                    ResumeManager.PHASE_ARENA;
+
+            default -> -1;
+        };
     }
 
     private String getPhaseName(int phase) {
-        switch (phase) {
-            case ResumeManager.PHASE_LOBBY:
-                return "Lobby";
-            case ResumeManager.PHASE_TEAMWELT:
-                return "Teamwelt";
-            case ResumeManager.PHASE_WAVEAUSWAHL:
-                return "Wave-Auswahl";
-            case ResumeManager.PHASE_ARENA:
-                return "Arena";
-            default:
-                return "Unbekannt";
-        }
+
+        return switch (phase) {
+
+            case ResumeManager.PHASE_LOBBY ->
+                    plugin.getLanguageManager()
+                            .get("commands.set-phase.phase-names.lobby");
+
+            case ResumeManager.PHASE_TEAMWELT ->
+                    plugin.getLanguageManager()
+                            .get("commands.set-phase.phase-names.teamworld");
+
+            case ResumeManager.PHASE_WAVEAUSWAHL ->
+                    plugin.getLanguageManager()
+                            .get("commands.set-phase.phase-names.wave-selection");
+
+            case ResumeManager.PHASE_ARENA ->
+                    plugin.getLanguageManager()
+                            .get("commands.set-phase.phase-names.arena");
+
+            default ->
+                    plugin.getLanguageManager()
+                            .get("commands.set-phase.phase-names.unknown");
+        };
     }
 
     @Override
-    public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
+    public List<String> onTabComplete(
+            @NotNull CommandSender sender,
+            @NotNull Command command,
+            @NotNull String alias,
+            @NotNull String @NotNull [] args
+    ) {
+
         if (!sender.isOp()) {
             return new ArrayList<>();
         }
 
         if (args.length == 1) {
-            List<String> options = Arrays.asList(
+
+            List<String> options = List.of(
                     "lobby",
                     "teamwelt",
                     "waveauswahl",
@@ -113,18 +163,21 @@ public class SetPhaseCommand implements CommandExecutor, TabCompleter {
                     "3"
             );
 
-            List<String> result = new ArrayList<>();
             String input = args[0].toLowerCase();
 
-            for (String option : options) {
-                if (option.toLowerCase().startsWith(input)) {
-                    result.add(option);
-                }
-            }
-
-            return result;
+            return options.stream()
+                    .filter(option ->
+                            option.startsWith(input)
+                    )
+                    .toList();
         }
 
         return new ArrayList<>();
+    }
+
+    private Component lang(String path) {
+
+        return plugin.getLanguageManager()
+                .getComponent(path);
     }
 }

@@ -1,17 +1,11 @@
 package runi.myddns.mobarmywars.Managers.World;
 
 import org.bukkit.Bukkit;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.scheduler.BukkitRunnable;
 import runi.myddns.mobarmywars.MobArmyMain;
 
-import java.util.ArrayList;
-import java.util.List;
 
 public class PlayerEffectManager {
 
@@ -36,17 +30,6 @@ public class PlayerEffectManager {
     public void applyNightVisionToAll() {
         for (Player player : Bukkit.getOnlinePlayers()) {
             applyNightVision(player);
-        }
-    }
-
-    public void removeNightVision(Player player) {
-        if (player == null) return;
-        player.removePotionEffect(PotionEffectType.NIGHT_VISION);
-    }
-
-    public void removeNightVisionFromAll() {
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            removeNightVision(player);
         }
     }
 }

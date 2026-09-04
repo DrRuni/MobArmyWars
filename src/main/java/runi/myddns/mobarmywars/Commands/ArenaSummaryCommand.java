@@ -4,6 +4,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
 import runi.myddns.mobarmywars.MobArmyMain;
 
 public class ArenaSummaryCommand implements CommandExecutor {
@@ -15,15 +16,26 @@ public class ArenaSummaryCommand implements CommandExecutor {
     }
 
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    public boolean onCommand(
+            @NotNull CommandSender sender,
+            @NotNull Command command,
+            @NotNull String label,
+            @NotNull String @NotNull [] args
+    ) {
 
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Dieser Command ist nur für Spieler.");
+            sender.sendMessage(
+                    plugin.getLanguageManager()
+                            .getComponent("commands.arena-summary.player-only")
+            );
             return true;
         }
 
         if (plugin.getArenaManager() == null) {
-            player.sendMessage("§cArenaManager nicht verfügbar.");
+            player.sendMessage(
+                    plugin.getLanguageManager()
+                            .getComponent("commands.arena-summary.manager-unavailable")
+            );
             return true;
         }
 

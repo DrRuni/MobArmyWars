@@ -12,7 +12,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.security.MessageDigest;
+import java.util.logging.Level;
 
 public class PluginFileManager {
 
@@ -32,7 +32,7 @@ public class PluginFileManager {
         String newestTemplateZip = findNewestTemplateZipInJar();
 
         if (newestTemplateZip != null) {
-            checkTemplateZipByVersion("world_mobarmy", newestTemplateZip);
+            checkTemplateZipByVersion(newestTemplateZip);
         } else {
             plugin.getLogger().warning("Keine world_mobarmy V*.zip in der Plugin-JAR gefunden!");
         }
@@ -49,6 +49,8 @@ public class PluginFileManager {
         checkYamlFile("team-equipment.yml");
         checkYamlFile("waves.yml");
         checkYamlFile("worldsettings.yml");
+        checkYamlFile("languages/de.yml");
+        checkYamlFile("languages/en.yml");
 
         extractServerIconIfMissing();
 
@@ -92,13 +94,17 @@ public class PluginFileManager {
             }
 
         } catch (Exception e) {
-            plugin.getLogger().warning("Konnte Template-ZIP in der Plugin-JAR nicht automatisch finden.");
-            e.printStackTrace();
+            plugin.getLogger().log(
+                    Level.SEVERE,
+                    "Failed to find the template ZIP in the plugin JAR.",
+                    e
+            );
             return null;
         }
     }
 
-    private void checkTemplateZipByVersion(String baseName, String resourceFileName) {
+    private void checkTemplateZipByVersion(String resourceFileName) {
+        String baseName = "world_mobarmy";
         File dataFolder = plugin.getDataFolder();
 
         String resourceVersion = extractVersionFromZipName(resourceFileName, baseName);
@@ -112,7 +118,7 @@ public class PluginFileManager {
             return;
         }
 
-        File[] existingZips = dataFolder.listFiles((dir, name) ->
+        File[] existingZips = dataFolder.listFiles((_, name) ->
                 name.startsWith(baseName + " V") && name.endsWith(".zip")
         );
 
@@ -135,7 +141,7 @@ public class PluginFileManager {
 
         if (newestExistingFile == null) {
             copyResource(resourceFileName, targetFile);
-            printFileStatus(resourceFileName, "", "erstellt.");
+            printFileStatus(resourceFileName, "erstellt.");
             return;
         }
 
@@ -150,11 +156,11 @@ public class PluginFileManager {
                 }
             }
 
-            printFileStatus(resourceFileName, "", "aktualisiert.");
+            printFileStatus(resourceFileName, "aktualisiert.");
             return;
         }
 
-        printFileStatus(newestExistingFile.getName(), "", "I.O.");
+        printFileStatus(newestExistingFile.getName(), "I.O.");
     }
 
     private int compareVersions(String v1, String v2) {
@@ -207,7 +213,7 @@ public class PluginFileManager {
 
         if (!targetFile.exists()) {
             plugin.saveResource(fileName, false);
-            printFileStatus(fileName, "", "erstellt.");
+            printFileStatus(fileName,  "erstellt.");
             return;
         }
 
@@ -223,11 +229,11 @@ public class PluginFileManager {
             backupFile(targetFile, fileName);
             overwriteResource(fileName, targetFile);
 
-            printFileStatus(fileName, "", "aktualisiert.");
+            printFileStatus(fileName,  "aktualisiert.");
             return;
         }
 
-        printFileStatus(fileName, "", "I.O.");
+        printFileStatus(fileName,  "I.O.");
     }
 
     private void createEmptyFileIfMissing(String fileName) {
@@ -235,18 +241,35 @@ public class PluginFileManager {
             File file = new File(plugin.getDataFolder(), fileName);
 
             if (!file.exists()) {
-                plugin.getDataFolder().mkdirs();
-                file.createNewFile();
 
-                printFileStatus(fileName, "", "erstellt.");
+                if (!plugin.getDataFolder().exists()
+                        && !plugin.getDataFolder().mkdirs()) {
+
+                    plugin.getLogger().warning(
+                            "Plugin data folder could not be created."
+                    );
+                    return;
+                }
+
+                if (!file.createNewFile()) {
+                    plugin.getLogger().warning(
+                            "File could not be created: " + fileName
+                    );
+                    return;
+                }
+
+                printFileStatus(fileName,  "erstellt.");
                 return;
             }
 
-            printFileStatus(fileName, "", "I.O.");
+            printFileStatus(fileName,  "I.O.");
 
         } catch (IOException e) {
-            plugin.getLogger().severe("❌ Konnte " + fileName + " nicht erstellen!");
-            e.printStackTrace();
+            plugin.getLogger().log(
+                    Level.SEVERE,
+                    "Failed to create " + fileName + ".",
+                    e
+            );
         }
     }
 
@@ -284,8 +307,11 @@ public class PluginFileManager {
             return 0;
 
         } catch (IOException e) {
-            plugin.getLogger().severe("Fehler beim Lesen der Resource-Version von " + fileName);
-            e.printStackTrace();
+            plugin.getLogger().log(
+                    Level.SEVERE,
+                    "Failed to read resource version of " + fileName + ".",
+                    e
+            );
             return 0;
         }
     }
@@ -294,8 +320,13 @@ public class PluginFileManager {
         try {
             File parent = targetFile.getParentFile();
 
-            if (parent != null) {
-                parent.mkdirs();
+            if (parent != null
+                    && !parent.exists()
+                    && !parent.mkdirs()) {
+                plugin.getLogger().warning(
+                        "Directory could not be created: " + parent.getPath()
+                );
+                return;
             }
 
             try (InputStream inputStream = plugin.getResource(resourcePath)) {
@@ -312,34 +343,77 @@ public class PluginFileManager {
             }
 
         } catch (IOException e) {
-            plugin.getLogger().severe("Fehler beim Überschreiben von " + resourcePath);
-            e.printStackTrace();
+            plugin.getLogger().log(
+                    Level.SEVERE,
+                    "Failed to overwrite resource " + resourcePath + ".",
+                    e
+            );
         }
+    }
+
+    private File createBackupFile(
+            File backupFolder,
+            String fileName,
+            long timestamp
+    ) {
+        String baseName = fileName;
+        String extension = "";
+
+        int dotIndex = fileName.lastIndexOf(".");
+
+        if (dotIndex > 0) {
+            baseName = fileName.substring(0, dotIndex);
+            extension = fileName.substring(dotIndex);
+        }
+
+        String backupName =
+                baseName
+                        + "-backup-"
+                        + timestamp
+                        + extension;
+
+        return new File(
+                backupFolder,
+                backupName
+        );
     }
 
     private void backupFile(File file, String fileName) {
         try {
-            File backupFolder = new File(plugin.getDataFolder(), "backups");
+            File backupFolder = new File(
+                    plugin.getDataFolder(),
+                    "backups"
+            );
 
-            if (!backupFolder.exists()) {
-                backupFolder.mkdirs();
+            if (!backupFolder.exists()
+                    && !backupFolder.mkdirs()) {
+
+                plugin.getLogger().warning(
+                        "Backup directory could not be created."
+                );
+                return;
             }
 
             long timestamp = System.currentTimeMillis();
 
-            String baseName = fileName;
-            String extension = "";
-
-            int dotIndex = fileName.lastIndexOf(".");
-            if (dotIndex > 0) {
-                baseName = fileName.substring(0, dotIndex);
-                extension = fileName.substring(dotIndex);
-            }
-
-            File backupFile = new File(
+            File backupFile = createBackupFile(
                     backupFolder,
-                    baseName + "-backup-" + timestamp + extension
+                    fileName,
+                    timestamp
             );
+
+            File parent = backupFile.getParentFile();
+
+            if (parent != null
+                    && !parent.exists()
+                    && !parent.mkdirs()) {
+
+                plugin.getLogger().warning(
+                        "Could not create backup directory: "
+                                + parent.getPath()
+                );
+                return;
+            }
 
             Files.copy(
                     file.toPath(),
@@ -348,8 +422,13 @@ public class PluginFileManager {
             );
 
         } catch (IOException e) {
-            plugin.getLogger().warning("Konnte kein Backup für " + fileName + " erstellen.");
-            e.printStackTrace();
+            plugin.getLogger().log(
+                    Level.SEVERE,
+                    "Failed to create backup for "
+                            + fileName
+                            + ".",
+                    e
+            );
         }
     }
 
@@ -385,8 +464,11 @@ public class PluginFileManager {
             );
 
         } catch (IOException e) {
-            plugin.getLogger().severe("❌ Fehler beim Kopieren der server-icon.png!");
-            e.printStackTrace();
+            plugin.getLogger().log(
+                    Level.SEVERE,
+                    "Failed to copy server-icon.png.",
+                    e
+            );
         }
     }
 
@@ -394,8 +476,13 @@ public class PluginFileManager {
         try {
             File parent = targetFile.getParentFile();
 
-            if (parent != null) {
-                parent.mkdirs();
+            if (parent != null
+                    && !parent.exists()
+                    && !parent.mkdirs()) {
+                plugin.getLogger().warning(
+                        "Directory could not be created: " + parent.getPath()
+                );
+                return;
             }
 
             try (InputStream inputStream = plugin.getResource(resourcePath)) {
@@ -412,67 +499,26 @@ public class PluginFileManager {
             }
 
         } catch (IOException e) {
-            plugin.getLogger().severe("Fehler beim Kopieren von " + resourcePath);
-            e.printStackTrace();
+            plugin.getLogger().log(
+                    Level.SEVERE,
+                    "Failed to copy resource " + resourcePath + ".",
+                    e
+            );
         }
     }
 
-    private String getFileHash(File file) {
-        try (InputStream inputStream = Files.newInputStream(file.toPath())) {
-            return sha256(inputStream);
-        } catch (IOException e) {
-            plugin.getLogger().warning("Konnte Datei-Hash nicht lesen: " + file.getName());
-            return null;
-        }
-    }
-
-    private String getResourceHash(String resourcePath) {
-        try (InputStream inputStream = plugin.getResource(resourcePath)) {
-            if (inputStream == null) {
-                return null;
-            }
-
-            return sha256(inputStream);
-
-        } catch (IOException e) {
-            plugin.getLogger().warning("Konnte Resource-Hash nicht lesen: " + resourcePath);
-            return null;
-        }
-    }
-
-    private String sha256(InputStream inputStream) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-
-            byte[] buffer = new byte[8192];
-            int read;
-
-            while ((read = inputStream.read(buffer)) != -1) {
-                digest.update(buffer, 0, read);
-            }
-
-            byte[] hashBytes = digest.digest();
-            StringBuilder hex = new StringBuilder();
-
-            for (byte b : hashBytes) {
-                hex.append(String.format("%02x", b));
-            }
-
-            return hex.toString();
-
-        } catch (Exception e) {
-            plugin.getLogger().warning("SHA-256 Hash konnte nicht erstellt werden.");
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    private void printFileStatus(String fileName, String version, String status) {
-        String versionPart = version.isEmpty() ? "  " : version;
+    private void printFileStatus(
+            String fileName,
+            String status
+    ) {
+        String versionPart = "  ";
         String namePart = "Datei - '" + fileName + "'";
 
-        String padding1 = " ".repeat(Math.max(1, 5 - versionPart.length()));
-        String padding2 = " ".repeat(Math.max(1, 34 - namePart.length()));
+        String padding1 =
+                " ".repeat(Math.max(1, 5 - versionPart.length()));
+
+        String padding2 =
+                " ".repeat(Math.max(1, 34 - namePart.length()));
 
         Bukkit.getConsoleSender().sendMessage(
                 ConsoleColor.COPPER + "   " + versionPart +

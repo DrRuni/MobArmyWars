@@ -15,13 +15,22 @@ public class UltraHardcoreListener implements Listener {
     }
 
     @EventHandler
-    public void onRegainHealth(EntityRegainHealthEvent e) {
-        if (!(e.getEntity() instanceof Player player)) return;
+    public void onRegainHealth(EntityRegainHealthEvent event) {
 
-        if (!plugin.getWorldSettings().getDifficulty().equalsIgnoreCase("ultra-ultra-hardcore")) return;
+        if (!(event.getEntity() instanceof Player)) {
+            return;
+        }
 
-        if (e.getRegainReason() == EntityRegainHealthEvent.RegainReason.SATIATED) {
-            e.setCancelled(true);
+        if (!plugin.getWorldSettings()
+                .getDifficulty()
+                .equalsIgnoreCase("ultra-ultra-hardcore")) {
+            return;
+        }
+
+        if (event.getRegainReason()
+                == EntityRegainHealthEvent.RegainReason.SATIATED) {
+
+            event.setCancelled(true);
         }
     }
 }

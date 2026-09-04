@@ -13,25 +13,17 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 
 public class ArenaConfig {
 
     private static final String ARENA_FILE_NAME = "arena-koordinaten.yml";
     private static final String EVENT_FILE_NAME = "eventdaten.yml";
 
-    /**
-     * Pfad in eventdaten.yml.
-     *
-     * Beispiel:
-     *
-     * arena:
-     *   active: "japanisches-dorf"
-     */
     private static final String ACTIVE_ARENA_PATH = "arena.active";
 
     private final MobArmyMain plugin;
 
-    private File arenaFile;
     private File eventFile;
 
     private FileConfiguration arenaConfig;
@@ -45,13 +37,6 @@ public class ArenaConfig {
         reload();
     }
 
-    /**
-     * Kompletter Reload:
-     * - arena-koordinaten.yml laden
-     * - eventdaten.yml laden
-     * - aktive Arena-ID lesen
-     * - nur diese aktive Arena komplett laden
-     */
     public void reload() {
         loadFiles();
         loadActiveArenaId();
@@ -59,11 +44,24 @@ public class ArenaConfig {
     }
 
     private void loadFiles() {
-        arenaFile = new File(plugin.getDataFolder(), ARENA_FILE_NAME);
-        eventFile = new File(plugin.getDataFolder(), EVENT_FILE_NAME);
+        File arenaFile =
+                new File(
+                        plugin.getDataFolder(),
+                        ARENA_FILE_NAME
+                );
 
-        if (!plugin.getDataFolder().exists()) {
-            plugin.getDataFolder().mkdirs();
+        eventFile =
+                new File(
+                        plugin.getDataFolder(),
+                        EVENT_FILE_NAME
+                );
+
+        if (!plugin.getDataFolder().exists()
+                && !plugin.getDataFolder().mkdirs()) {
+
+            plugin.getLogger().warning(
+                    "[ArenaConfig] Plugin data folder could not be created."
+            );
         }
 
         if (!arenaFile.exists()) {
@@ -72,9 +70,10 @@ public class ArenaConfig {
         }
 
         try {
-            if (!eventFile.exists()) {
-                eventFile.createNewFile();
-                plugin.getLogger().info("[ArenaConfig] eventdaten.yml wurde erstellt.");
+            if (eventFile.createNewFile()) {
+                plugin.getLogger().info(
+                        "[ArenaConfig] eventdaten.yml wurde erstellt."
+                );
             }
         } catch (IOException e) {
             plugin.getLogger().severe("[ArenaConfig] Konnte eventdaten.yml nicht erstellen: " + e.getMessage());
@@ -84,15 +83,11 @@ public class ArenaConfig {
         eventConfig = YamlConfiguration.loadConfiguration(eventFile);
     }
 
-    /**
-     * Liest die aktive Arena-ID aus eventdaten.yml.
-     * Wenn keine gesetzt ist oder sie ungültig ist, wird die erste Arena aus arena-koordinaten.yml genommen.
-     */
     private void loadActiveArenaId() {
         String savedArenaId = eventConfig.getString(ACTIVE_ARENA_PATH);
 
         if (savedArenaId != null && arenaExists(savedArenaId)) {
-            activeArenaId = savedArenaId.toLowerCase();
+            activeArenaId = savedArenaId.toLowerCase(Locale.ROOT);
             return;
         }
 
@@ -104,15 +99,12 @@ public class ArenaConfig {
             return;
         }
 
-        activeArenaId = fallback.toLowerCase();
+        activeArenaId = fallback.toLowerCase(Locale.ROOT);
         saveActiveArenaId();
 
         plugin.getLogger().warning("[ArenaConfig] Keine gültige aktive Arena gefunden. Fallback gesetzt: " + activeArenaId);
     }
 
-    /**
-     * Lädt nur die aktuell aktive Arena vollständig in den RAM.
-     */
     private void loadActiveArena() {
         if (activeArenaId == null) {
             activeArena = null;
@@ -128,17 +120,13 @@ public class ArenaConfig {
         }
     }
 
-    /**
-     * Setzt eine neue aktive Arena.
-     * Wird später vom GUI-Button benutzt.
-     */
     public boolean setActiveArena(String arenaId) {
         if (arenaId == null || arenaId.isBlank()) {
             plugin.getLogger().warning("[ArenaConfig] Arena-ID ist leer.");
             return false;
         }
 
-        String id = arenaId.toLowerCase();
+        String id = arenaId.toLowerCase(Locale.ROOT);
 
         if (!arenaExists(id)) {
             plugin.getLogger().warning("[ArenaConfig] Arena existiert nicht: " + id);
@@ -157,7 +145,6 @@ public class ArenaConfig {
 
         saveActiveArenaId();
 
-//        plugin.getLogger().info("[ArenaConfig] Aktive Arena gesetzt: " + id + " / " + newArena.name());
         return true;
     }
 
@@ -173,9 +160,6 @@ public class ArenaConfig {
         }
     }
 
-    /**
-     * Lädt eine einzelne Arena aus arena-koordinaten.yml.
-     */
     private ArenaData loadArenaData(String arenaId) {
         ConfigurationSection sec = arenaConfig.getConfigurationSection("arenas." + arenaId);
 
@@ -184,8 +168,20 @@ public class ArenaConfig {
             return null;
         }
 
-        String name = sec.getString("name", arenaId);
-        String description = sec.getString("description", "");
+        String language =
+                plugin.getConfig().getString("language", "de");
+
+        String name =
+                sec.getString(
+                        "name." + language,
+                        sec.getString("name.de", arenaId)
+                );
+
+        String description =
+                sec.getString(
+                        "description." + language,
+                        sec.getString("description.de", "")
+                );
         String worldName = sec.getString("world", "world_mobarmy_arena");
 
         World world = Bukkit.getWorld(worldName);
@@ -234,7 +230,9 @@ public class ArenaConfig {
 
     public boolean arenaExists(String arenaId) {
         if (arenaId == null) return false;
-        return arenaConfig.isConfigurationSection("arenas." + arenaId.toLowerCase());
+        return arenaConfig.isConfigurationSection(
+                "arenas." + arenaId.toLowerCase(Locale.ROOT)
+        );
     }
 
     private String getFirstArenaId() {
@@ -247,13 +245,9 @@ public class ArenaConfig {
         return arenasSec.getKeys(false).iterator().next();
     }
 
-    /**
-     * Für die GUI.
-     * Lädt nur ID, Name und Beschreibung aller Arenen,
-     * aber nicht alle Spawn- und Corner-Daten komplett in den RAM.
-     */
     public List<ArenaInfo> getAvailableArenas() {
-        ConfigurationSection arenasSec = arenaConfig.getConfigurationSection("arenas");
+        ConfigurationSection arenasSec =
+                arenaConfig.getConfigurationSection("arenas");
 
         if (arenasSec == null) {
             return Collections.emptyList();
@@ -261,14 +255,34 @@ public class ArenaConfig {
 
         List<ArenaInfo> result = new ArrayList<>();
 
+        String language =
+                plugin.getConfig().getString("language", "de");
+
         for (String id : arenasSec.getKeys(false)) {
-            ConfigurationSection sec = arenasSec.getConfigurationSection(id);
+            ConfigurationSection sec =
+                    arenasSec.getConfigurationSection(id);
+
             if (sec == null) continue;
 
-            String name = sec.getString("name", id);
-            String description = sec.getString("description", "");
+            String name =
+                    sec.getString(
+                            "name." + language,
+                            sec.getString("name.de", id)
+                    );
 
-            result.add(new ArenaInfo(id.toLowerCase(), name, description));
+            String description =
+                    sec.getString(
+                            "description." + language,
+                            sec.getString("description.de", "")
+                    );
+
+            result.add(
+                    new ArenaInfo(
+                            id.toLowerCase(Locale.ROOT),
+                            name,
+                            description
+                    )
+            );
         }
 
         return result;
@@ -282,15 +296,6 @@ public class ArenaConfig {
         return activeArena;
     }
 
-    public boolean hasActiveArena() {
-        return activeArena != null;
-    }
-
-    public World getActiveWorld() {
-        if (activeArena == null) return null;
-        return Bukkit.getWorld(activeArena.world());
-    }
-
     public Location getTeamSpawn(String team) {
         if (activeArena == null || team == null) return null;
 
@@ -300,48 +305,6 @@ public class ArenaConfig {
 
         if (team.equalsIgnoreCase("blau")) {
             return activeArena.blauSpawn();
-        }
-
-        return null;
-    }
-
-    public List<Location> getMobSpawns(String team) {
-        if (activeArena == null || team == null) return Collections.emptyList();
-
-        if (team.equalsIgnoreCase("rot")) {
-            return activeArena.rotMobSpawns();
-        }
-
-        if (team.equalsIgnoreCase("blau")) {
-            return activeArena.blauMobSpawns();
-        }
-
-        return Collections.emptyList();
-    }
-
-    public Location getCorner1(String team) {
-        if (activeArena == null || team == null) return null;
-
-        if (team.equalsIgnoreCase("rot")) {
-            return activeArena.rotCorner1();
-        }
-
-        if (team.equalsIgnoreCase("blau")) {
-            return activeArena.blauCorner1();
-        }
-
-        return null;
-    }
-
-    public Location getCorner2(String team) {
-        if (activeArena == null || team == null) return null;
-
-        if (team.equalsIgnoreCase("rot")) {
-            return activeArena.rotCorner2();
-        }
-
-        if (team.equalsIgnoreCase("blau")) {
-            return activeArena.blauCorner2();
         }
 
         return null;
@@ -408,10 +371,6 @@ public class ArenaConfig {
         return result;
     }
 
-    /**
-     * Komplett geladene aktive Arena.
-     * Davon liegt im RAM immer nur eine aktuell aktive Arena.
-     */
     public record ArenaData(
             String id,
             String name,
@@ -427,10 +386,6 @@ public class ArenaConfig {
             List<Location> blauMobSpawns
     ) {}
 
-    /**
-     * Kleine Arena-Info für GUI-Buttons.
-     * Diese Daten sind leicht und werden nur zur Anzeige benutzt.
-     */
     public record ArenaInfo(
             String id,
             String name,

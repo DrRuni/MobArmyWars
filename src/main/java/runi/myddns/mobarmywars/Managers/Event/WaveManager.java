@@ -1,19 +1,15 @@
 package runi.myddns.mobarmywars.Managers.Event;
 
-import runi.myddns.mobarmywars.MobArmyMain;
-
 import java.util.*;
 
 public class WaveManager {
 
-    private final MobArmyMain plugin;
     private final MobSaveManager mobSaveManager;
     private ArenaScoreboardManager scoreboardManager;
 
     private final Map<String, List<List<WaveEntry>>> teamWaves = new HashMap<>();
 
-    public WaveManager(MobArmyMain plugin, MobSaveManager mobSaveManager) {
-        this.plugin = plugin;
+    public WaveManager(MobSaveManager mobSaveManager) {
         this.mobSaveManager = mobSaveManager;
     }
 
@@ -25,7 +21,7 @@ public class WaveManager {
         if (!teamWaves.containsKey(teamName)) {
             List<List<WaveEntry>> waves = new ArrayList<>();
 
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < ArenaEventManager.MAX_WAVES; i++) {
                 waves.add(new ArrayList<>());
             }
 
@@ -64,12 +60,11 @@ public class WaveManager {
     }
 
     public void addMobToWave(String team, int waveIndex, String mobType) {
-        Objects.requireNonNull(mobSaveManager, "MobSaveManager fehlt im WaveManager");
 
         List<WaveEntry> wave = getWave(team, waveIndex);
 
         if (!wave.isEmpty()) {
-            WaveEntry last = wave.get(wave.size() - 1);
+            WaveEntry last = wave.getLast();
 
             if (last.getMobType().equals(mobType)) {
                 last.addAmount(1);
@@ -83,7 +78,11 @@ public class WaveManager {
         mobSaveManager.consumeMob(team, mobType, 1);
     }
 
-    public boolean removeMobFromWave(String team, int waveIndex, String mobType) {
+    public void removeMobFromWave(
+            String team,
+            int waveIndex,
+            String mobType
+    ) {
         List<WaveEntry> wave = getWave(team, waveIndex);
 
         for (int i = wave.size() - 1; i >= 0; i--) {
@@ -100,10 +99,8 @@ public class WaveManager {
             }
 
             mobSaveManager.restoreMob(team, mobType, 1);
-            return true;
+            return;
         }
-
-        return false;
     }
 
     public int getMobAmountInWave(String team, int waveIndex, String mobType) {

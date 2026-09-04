@@ -5,6 +5,7 @@ import org.bukkit.entity.Player;
 import runi.myddns.mobarmywars.Managers.Event.ArenaConfig;
 import runi.myddns.mobarmywars.MobArmyMain;
 
+import java.util.Locale;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class TeleportManager {
@@ -18,17 +19,10 @@ public class TeleportManager {
 
         saveResumeLocation(player, worldName);
 
-        switch (worldName.toLowerCase()) {
-
-            case "world_rot", "world_blau" -> {
-                player.teleport(world.getSpawnLocation());
-            }
-
-            case "world_mobarmy_lobby" -> {
-                teleportToLobbySpawn(player, world);
-            }
-
-            default -> player.teleport(world.getSpawnLocation());
+        if (worldName.equalsIgnoreCase("world_mobarmy_lobby")) {
+            teleportToLobbySpawn(player, world);
+        } else {
+            player.teleport(world.getSpawnLocation());
         }
     }
 
@@ -58,13 +52,21 @@ public class TeleportManager {
 
         String team = plugin.getTeamManager().getPlayerTeam(player);
         if (team == null) {
-            player.sendMessage(ChatColor.RED + "❌ Du hast kein Team!");
+            player.sendMessage(
+                    plugin.getLanguageManager().getComponent(
+                            "teleport-manager.no-team"
+                    )
+            );
             return;
         }
 
         World world = Bukkit.getWorld("world_mobarmy_lobby");
         if (world == null) {
-            player.sendMessage(ChatColor.RED + "❌ Arena-Welt ist nicht geladen!");
+            player.sendMessage(
+                    plugin.getLanguageManager().getComponent(
+                            "teleport-manager.lobby-world-not-loaded"
+                    )
+            );
             return;
         }
 
@@ -75,7 +77,13 @@ public class TeleportManager {
         } else if (team.equalsIgnoreCase("blau")) {
             target = new Location(world, 75.5, 75.0, -98.5, 0f, 27f);
         } else {
-            player.sendMessage(ChatColor.RED + "❌ Ungültiges Team: " + team);
+            player.sendMessage(
+                    plugin.getLanguageManager().getComponent(
+                            "teleport-manager.invalid-team",
+                            "team",
+                            team
+                    )
+            );
             return;
         }
 
@@ -88,28 +96,46 @@ public class TeleportManager {
 
         String team = plugin.getTeamManager().getPlayerTeam(player);
         if (team == null || team.equalsIgnoreCase("Kein Team")) {
-            player.sendMessage(ChatColor.RED + "❌ Du hast kein Team!");
+            player.sendMessage(
+                    plugin.getLanguageManager().getComponent(
+                            "teleport-manager.no-team"
+                    )
+            );
             return;
         }
 
         ArenaConfig.ArenaData arena = plugin.getArenaConfig().getActiveArena();
 
         if (arena == null) {
-            player.sendMessage(ChatColor.RED + "❌ Keine aktive Arena geladen!");
+            player.sendMessage(
+                    plugin.getLanguageManager().getComponent(
+                            "teleport-manager.no-active-arena"
+                    )
+            );
             return;
         }
 
         Location configuredSpawn = plugin.getArenaConfig().getTeamSpawn(team);
 
         if (configuredSpawn == null) {
-            player.sendMessage(ChatColor.RED + "❌ Kein Arena-Spawn für Team " + team);
+            player.sendMessage(
+                    plugin.getLanguageManager().getComponent(
+                            "teleport-manager.no-arena-spawn",
+                            "team",
+                            team
+                    )
+            );
             return;
         }
 
         World currentWorld = Bukkit.getWorld(arena.world());
 
         if (currentWorld == null) {
-            player.sendMessage(ChatColor.RED + "❌ Arena-Welt ist nicht geladen!");
+            player.sendMessage(
+                    plugin.getLanguageManager().getComponent(
+                            "teleport-manager.arena-world-not-loaded"
+                    )
+            );
             return;
         }
 
@@ -130,10 +156,10 @@ public class TeleportManager {
         if (player == null || targetWorldName == null) return;
         if (!targetWorldName.equalsIgnoreCase("world_mobarmy_lobby")) return;
 
-        World currentWorld = player.getWorld();
-        if (currentWorld == null) return;
-
-        String currentWorldName = currentWorld.getName().toLowerCase();
+        String currentWorldName =
+                player.getWorld()
+                        .getName()
+                        .toLowerCase(Locale.ROOT);
 
         boolean isTeamWorld =
                 currentWorldName.equals("world_rot") ||

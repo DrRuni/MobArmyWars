@@ -1,11 +1,13 @@
 package runi.myddns.mobarmywars.Commands;
 
-import org.bukkit.ChatColor;
+import net.kyori.adventure.text.Component;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import runi.myddns.mobarmywars.MobArmyMain;
 
 import java.util.List;
@@ -19,35 +21,56 @@ public class ResumeCommand implements CommandExecutor, TabCompleter {
     }
 
     @Override
-    public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
+    public boolean onCommand(
+            @NotNull CommandSender sender,
+            @NotNull Command cmd,
+            @NotNull String label,
+            @NotNull String @NotNull [] args
+    ) {
 
         if (!(sender instanceof Player player)) {
-            sender.sendMessage(ChatColor.RED + "❌ Nur Spieler können diesen Befehl nutzen!");
+            sender.sendMessage(
+                    lang("commands.resume.player-only")
+            );
             return true;
         }
 
         if (!player.isOp()) {
-            player.sendMessage(ChatColor.RED + "❌ Nur OPs dürfen diesen Befehl ausführen!");
+            player.sendMessage(
+                    lang("commands.resume.op-only")
+            );
             return true;
         }
 
         if (cmd.getName().equalsIgnoreCase("resume")) {
-            if (args.length == 1 && args[0].equalsIgnoreCase("mobarmy")) {
+
+            if (args.length == 1
+                    && args[0].equalsIgnoreCase("mobarmy")) {
+
                 plugin.getEventResume().resumeEvent();
                 return true;
             }
 
-            player.sendMessage(ChatColor.RED + "Verwendung: /resume mobarmy");
+            player.sendMessage(
+                    lang("commands.resume.usage-resume")
+            );
+
             return true;
         }
 
         if (cmd.getName().equalsIgnoreCase("mobarmy")) {
-            if (args.length == 1 && args[0].equalsIgnoreCase("resume")) {
+
+            if (args.length == 1
+                    && args[0].equalsIgnoreCase("resume")) {
+
                 plugin.getEventResume().resumeEvent();
                 return true;
             }
 
-            player.sendMessage(ChatColor.RED + "Verwendung: /mobarmy resume");
+            player.sendMessage(
+                    lang("commands.resume.usage-mobarmy")
+            );
+
             return true;
         }
 
@@ -55,20 +78,32 @@ public class ResumeCommand implements CommandExecutor, TabCompleter {
     }
 
     @Override
-    public List<String> onTabComplete(CommandSender sender, Command cmd, String alias, String[] args) {
+    public @Nullable List<String> onTabComplete(
+            @NotNull CommandSender sender,
+            @NotNull Command cmd,
+            @NotNull String alias,
+            @NotNull String @NotNull [] args
+    ) {
 
         if (cmd.getName().equalsIgnoreCase("resume")) {
+
             if (args.length == 1) {
                 return List.of("mobarmy");
             }
         }
 
         if (cmd.getName().equalsIgnoreCase("mobarmy")) {
+
             if (args.length == 1) {
                 return List.of("resume");
             }
         }
 
         return null;
+    }
+
+    private Component lang(String path) {
+        return plugin.getLanguageManager()
+                .getComponent(path);
     }
 }

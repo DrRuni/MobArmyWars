@@ -3,7 +3,7 @@ package runi.myddns.mobarmywars.Managers.World;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.plugin.java.JavaPlugin;
+import runi.myddns.mobarmywars.MobArmyMain;
 
 import java.io.File;
 import java.io.IOException;
@@ -11,14 +11,18 @@ import java.util.*;
 
 public class PortalManager {
 
-    private final JavaPlugin plugin;
+    private final MobArmyMain plugin;
     private final File portalDir;
     private final Map<World, List<Location>> portalCache = new HashMap<>();
 
-    public PortalManager(JavaPlugin plugin) {
+    public PortalManager(MobArmyMain plugin) {
         this.plugin = plugin;
         this.portalDir = new File(plugin.getDataFolder(), "portals");
-        if (!portalDir.exists()) portalDir.mkdirs();
+        if (!portalDir.exists() && !portalDir.mkdirs()) {
+            plugin.getLogger().warning(
+                    "Portal directory could not be created."
+            );
+        }
     }
 
     public void loadAllPortals() {
@@ -72,7 +76,10 @@ public class PortalManager {
         if (center == null || center.getWorld() == null) return;
 
         World w = center.getWorld();
-        List<Location> list = portalCache.computeIfAbsent(w, k -> new ArrayList<>());
+        List<Location> list = portalCache.computeIfAbsent(
+                w,
+                _ -> new ArrayList<>()
+        );
 
         for (Location l : list) {
             if (l.distanceSquared(center) < 1.0) return;
@@ -93,7 +100,11 @@ public class PortalManager {
         try {
             cfg.save(file);
         } catch (IOException e) {
-            e.printStackTrace();
+            plugin.getLogger().log(
+                    java.util.logging.Level.SEVERE,
+                    "Failed to save portal data for world " + w.getName() + ".",
+                    e
+            );
         }
     }
 
@@ -283,6 +294,7 @@ public class PortalManager {
             if (!areaClear) continue;
 
             boolean hasGround = true;
+
             for (int dx = -1; dx <= 2; dx++) {
                 for (int dz = -1; dz <= 1; dz++) {
                     Material ground = nether.getBlockAt(x + dx, y - 1, z + dz).getType();
@@ -292,10 +304,13 @@ public class PortalManager {
                         break;
                     }
                 }
+
                 if (!hasGround) break;
             }
 
-            return y;
+            if (hasGround) {
+                return y;
+            }
         }
 
         return 64;
@@ -319,7 +334,11 @@ public class PortalManager {
         try {
             cfg.save(file);
         } catch (IOException e) {
-            e.printStackTrace();
+            plugin.getLogger().log(
+                    java.util.logging.Level.SEVERE,
+                    "Failed to save portal data for world " + world.getName() + ".",
+                    e
+            );
         }
     }
 
@@ -328,10 +347,16 @@ public class PortalManager {
         portalCache.clear();
 
         if (portalDir.exists()) {
-            File[] files = portalDir.listFiles((dir, name) -> name.endsWith(".yml"));
+            File[] files = portalDir.listFiles(
+                    (_, name) -> name.endsWith(".yml")
+            );
             if (files != null) {
                 for (File file : files) {
-                    file.delete();
+                    if (!file.delete()) {
+                        plugin.getLogger().warning(
+                                "Portal file could not be deleted: " + file.getName()
+                        );
+                    }
                 }
             }
         }

@@ -1,26 +1,30 @@
 package runi.myddns.mobarmywars.Managers.Event;
 
+import io.papermc.paper.scoreboard.numbers.NumberFormat;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.ScoreboardManager;
 import org.bukkit.scoreboard.Team;
+import org.bukkit.scoreboard.Criteria;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import runi.myddns.mobarmywars.MobArmyMain;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.UUID;
 
 public class ArenaScoreboardManager {
 
-    private final JavaPlugin plugin;
+    private final MobArmyMain plugin;
     private final ArenaEventManager arenaManager;
     private final Map<String, Integer> killCounts = new HashMap<>();
     private final Map<UUID, Scoreboard> playerBoards = new HashMap<>();
@@ -28,14 +32,28 @@ public class ArenaScoreboardManager {
     private File scoreboardFile;
     private FileConfiguration scoreboardConfig;
 
-    private static final String ROT_WAVE_LINE = ChatColor.RED + "Rot Wave:";
-    private static final String ROT_KILL_LINE = ChatColor.RED + "Rot Kills:";
-    private static final String BLAU_WAVE_LINE = ChatColor.BLUE + "Blau Wave:";
-    private static final String BLAU_KILL_LINE = ChatColor.BLUE + "Blau Kills:";
-    private static final String EMPTY_1 = ChatColor.BLACK + "";
-    private static final String EMPTY_2 = ChatColor.DARK_GRAY + "";
+    private static final String EMPTY_TOP = "§0";
+    private static final String PANEL_TOP = "\uE020";
+    private static final String PANEL_MID = "\uE021";
+    private static final String PANEL_BOTTOM = "\uE022";
 
-    public ArenaScoreboardManager(JavaPlugin plugin, ArenaEventManager arenaManager) {
+    private static final String BACK = "\uF805";
+    private static final String RIGHT_SHIFT = "\uF806";
+
+    private static final String TEAM_INDENT = "      ";
+    private static final String TEXT_INDENT = "       ";
+
+    private static final String TOP_LINE = PANEL_TOP;
+
+    private static final String MIDDLE_EMPTY_LINE = PANEL_MID + "§4";
+    private static final String BOTTOM_EMPTY_LINE = PANEL_MID + "§8";
+
+    private static final String BOTTOM_LINE = PANEL_BOTTOM;
+
+    public ArenaScoreboardManager(
+            MobArmyMain plugin,
+            ArenaEventManager arenaManager
+    ) {
         this.plugin = plugin;
         this.arenaManager = arenaManager;
 
@@ -58,8 +76,11 @@ public class ArenaScoreboardManager {
         try {
             scoreboardConfig.save(scoreboardFile);
         } catch (IOException e) {
-            plugin.getLogger().severe("❌ Fehler beim Speichern von scoreboard.yml!");
-            e.printStackTrace();
+            plugin.getLogger().log(
+                    Level.SEVERE,
+                    "Failed to save scoreboard.yml.",
+                    e
+            );
         }
     }
 
@@ -131,16 +152,8 @@ public class ArenaScoreboardManager {
         updateAllArenaPlayers();
     }
 
-    public Map<String, Integer> getKillCounts() {
-        return killCounts;
-    }
-
     public int getKillCount(String team) {
         return killCounts.getOrDefault(team, 0);
-    }
-
-    public int getWave(String team) {
-        return arenaManager.getCurrentWave(team);
     }
 
     private Scoreboard getOrCreateBoard(Player player) {
@@ -150,33 +163,48 @@ public class ArenaScoreboardManager {
         }
 
         ScoreboardManager manager = Bukkit.getScoreboardManager();
-        if (manager == null) {
-            throw new IllegalStateException("ScoreboardManager ist null");
-        }
-
         board = manager.getNewScoreboard();
 
-        Objective obj = board.registerNewObjective("arena", "dummy", ChatColor.GOLD + "MobArmyWars");
-        obj.setDisplaySlot(DisplaySlot.SIDEBAR);
+        String rotTeamLine = rotTeamLine();
+        String rotWaveLine = rotWaveLine();
+        String rotKillLine = rotKillLine();
 
-        obj.getScore(EMPTY_1).setScore(8);
-        obj.getScore(ROT_WAVE_LINE).setScore(7);
-        obj.getScore(ROT_KILL_LINE).setScore(6);
-        obj.getScore(EMPTY_2).setScore(5);
-        obj.getScore(BLAU_WAVE_LINE).setScore(4);
-        obj.getScore(BLAU_KILL_LINE).setScore(3);
+        String blauTeamLine = blauTeamLine();
+        String blauWaveLine = blauWaveLine();
+        String blauKillLine = blauKillLine();
+
+        Objective obj = board.registerNewObjective(
+                "arena",
+                Criteria.DUMMY,
+                Component.text("\uE010")
+        );
+
+        obj.setDisplaySlot(DisplaySlot.SIDEBAR);
+        obj.numberFormat(NumberFormat.blank());
+
+        obj.getScore(EMPTY_TOP).setScore(12);
+        obj.getScore(TOP_LINE).setScore(11);
+        obj.getScore(rotTeamLine).setScore(10);
+        obj.getScore(rotWaveLine).setScore(9);
+        obj.getScore(rotKillLine).setScore(8);
+        obj.getScore(MIDDLE_EMPTY_LINE).setScore(7);
+        obj.getScore(blauTeamLine).setScore(6);
+        obj.getScore(blauWaveLine).setScore(5);
+        obj.getScore(blauKillLine).setScore(4);
+        obj.getScore(BOTTOM_EMPTY_LINE).setScore(3);
+        obj.getScore(BOTTOM_LINE).setScore(2);
 
         Team rotWave = board.registerNewTeam("rotWave");
-        rotWave.addEntry(ROT_WAVE_LINE);
+        rotWave.addEntry(rotWaveLine);
 
         Team rotKills = board.registerNewTeam("rotKills");
-        rotKills.addEntry(ROT_KILL_LINE);
+        rotKills.addEntry(rotKillLine);
 
         Team blauWave = board.registerNewTeam("blauWave");
-        blauWave.addEntry(BLAU_WAVE_LINE);
+        blauWave.addEntry(blauWaveLine);
 
         Team blauKills = board.registerNewTeam("blauKills");
-        blauKills.addEntry(BLAU_KILL_LINE);
+        blauKills.addEntry(blauKillLine);
 
         playerBoards.put(player.getUniqueId(), board);
         return board;
@@ -188,14 +216,124 @@ public class ArenaScoreboardManager {
         Team blauWave = board.getTeam("blauWave");
         Team blauKills = board.getTeam("blauKills");
 
-        if (rotWave == null || rotKills == null || blauWave == null || blauKills == null) {
+        if (rotWave == null
+                || rotKills == null
+                || blauWave == null
+                || blauKills == null) {
             return;
         }
 
-        rotWave.setSuffix(ChatColor.GRAY + " " + (arenaManager.getCurrentWave("Rot") + 1));
-        rotKills.setSuffix(ChatColor.GRAY + " " + getKillCount("Rot"));
+        rotWave.suffix(
+                Component.text(
+                        " "
+                                + (arenaManager.getCurrentWave("Rot") + 1)
+                                + RIGHT_SHIFT,
+                        NamedTextColor.GRAY
+                )
+        );
 
-        blauWave.setSuffix(ChatColor.GRAY + " " + (arenaManager.getCurrentWave("Blau") + 1));
-        blauKills.setSuffix(ChatColor.GRAY + " " + getKillCount("Blau"));
+        rotKills.suffix(
+                Component.text(
+                        " "
+                                + getKillCount("Rot")
+                                + RIGHT_SHIFT,
+                        NamedTextColor.GRAY
+                )
+        );
+
+        blauWave.suffix(
+                Component.text(
+                        " "
+                                + (arenaManager.getCurrentWave("Blau") + 1)
+                                + RIGHT_SHIFT,
+                        NamedTextColor.GRAY
+                )
+        );
+
+        blauKills.suffix(
+                Component.text(
+                        " "
+                                + getKillCount("Blau")
+                                + RIGHT_SHIFT,
+                        NamedTextColor.GRAY
+                )
+        );
+    }
+
+    private String rotTeamLine() {
+        return PANEL_MID
+                + BACK
+                + TEAM_INDENT
+                + "\uE001 "
+                + plugin.getLanguageManager().get(
+                "arena-scoreboard.red-team"
+        )
+                + RIGHT_SHIFT;
+    }
+
+    private String rotWaveLine() {
+        return PANEL_MID
+                + BACK
+                + TEXT_INDENT
+                + "\uE004 "
+                + plugin.getLanguageManager().get(
+                "arena-scoreboard.wave"
+        );
+    }
+
+    private String rotKillLine() {
+        return PANEL_MID
+                + BACK
+                + TEXT_INDENT
+                + "\uE005 "
+                + plugin.getLanguageManager().get(
+                "arena-scoreboard.kills"
+        );
+    }
+
+    private String blauTeamLine() {
+        return PANEL_MID
+                + BACK
+                + TEAM_INDENT
+                + "\uE002 "
+                + plugin.getLanguageManager().get(
+                "arena-scoreboard.blue-team"
+        )
+                + RIGHT_SHIFT;
+    }
+
+    private String blauWaveLine() {
+        return PANEL_MID
+                + BACK
+                + TEXT_INDENT
+                + "\uE004 "
+                + plugin.getLanguageManager().get(
+                "arena-scoreboard.wave"
+        );
+    }
+
+    private String blauKillLine() {
+        return PANEL_MID
+                + BACK
+                + TEXT_INDENT
+                + "\uE005 "
+                + plugin.getLanguageManager().get(
+                "arena-scoreboard.kills"
+        );
+    }
+
+    public void reloadLanguage() {
+
+        var playersWithBoard =
+                playerBoards.keySet().stream()
+                        .map(Bukkit::getPlayer)
+                        .filter(player -> player != null && player.isOnline())
+                        .toList();
+
+        playerBoards.clear();
+
+        for (Player player : playersWithBoard) {
+            setBoard(player);
+        }
     }
 }

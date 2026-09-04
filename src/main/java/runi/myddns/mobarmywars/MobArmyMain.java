@@ -8,12 +8,15 @@ import org.bukkit.command.PluginCommand;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.plugin.java.JavaPlugin;
 import runi.myddns.mobarmywars.Managers.Event.*;
+import runi.myddns.mobarmywars.Managers.World.LanguageManager;
 import runi.myddns.mobarmywars.Utils.PluginFileManager;
 import runi.myddns.mobarmywars.Utils.ConsoleColor;
 import runi.myddns.mobarmywars.Commands.*;
 import runi.myddns.mobarmywars.GUIs.*;
 import runi.myddns.mobarmywars.Listeners.*;
 import runi.myddns.mobarmywars.Managers.World.*;
+
+import java.util.logging.Level;
 
 public class MobArmyMain extends JavaPlugin {
 
@@ -38,7 +41,6 @@ public class MobArmyMain extends JavaPlugin {
     public ArenaBuildProtectionManager arenaBuildProtectionManager;
     private ResumeManager eventResume;
     private WorldSettings worldSettings;
-    private PlayerLocationManager playerLocationManager;
     private PortalManager portalManager;
     private PlayerEffectManager playerEffectManager;
     private ArenaConfig arenaConfig;
@@ -59,9 +61,9 @@ public class MobArmyMain extends JavaPlugin {
     private ArenaCompassManager arenaCompassManager;
     private TeamEquipmentManager teamEquipmentManager;
     private TeamEquipmentGUI teamEquipmentGUI;
-
-    private boolean arenaRunning = false;
-    public void setArenaRunning(boolean running) { arenaRunning = running; }
+    private LanguageSelectionGUI languageSelectionGUI;
+    private LanguageManager languageManager;
+    private PlayerJoinListener playerJoinListener;
 
     @Override
     public void onLoad() {
@@ -70,7 +72,7 @@ public class MobArmyMain extends JavaPlugin {
         Bukkit.getConsoleSender().sendMessage(
                 ConsoleColor.COPPER + "  ═══════════════  MobArmyWars  ═══════════════" + ConsoleColor.RESET);
         Bukkit.getConsoleSender().sendMessage(
-                ConsoleColor.COPPER + "                      V1.6" + ConsoleColor.RESET);
+                ConsoleColor.COPPER + "                      V1.7" + ConsoleColor.RESET);
         Bukkit.getConsoleSender().sendMessage(
                 ConsoleColor.COPPER + "                  L O A D I N G" + ConsoleColor.RESET);
         Bukkit.getConsoleSender().sendMessage("");
@@ -82,23 +84,14 @@ public class MobArmyMain extends JavaPlugin {
     public void onEnable() {
         instance = this;
 
-        MiniMessage mm = MiniMessage.miniMessage();
+        saveDefaultConfig();
 
-        Component motd = mm.deserialize(
-                "<bold><gradient:#FF3B3B:#8B0000>        Runi´s </gradient>" +
-                        "<gradient:#4DA6FF:#004C99>MobArmyWars</gradient> " +
-                        "<dark_gray>-</dark_gray> " +
-                        "<yellow>V1.6</yellow></bold>" +
-                        "\n" +
-                        "<red><obfuscated>                  X</obfuscated></red> " +
-                        "<bold><gradient:#FF3B3B:#4DA6FF>ROT  ⚔  BLAU</gradient> " +
-                        "<blue><obfuscated>X</obfuscated></blue></bold>"
-        );
-
-        getServer().motd(motd);
+        getServer().motd(createMotd());
 
         PluginFileManager pluginFileManager = new PluginFileManager(this);
         pluginFileManager.checkFilesOnStartup();
+
+        languageManager = new LanguageManager(this);
 
         worldSettings = new WorldSettings(this);
         worldManager = new WorldManager(this);
@@ -149,9 +142,9 @@ public class MobArmyMain extends JavaPlugin {
 
         mobSaveManager = new MobSaveManager(this, teamManager);
 
-        waveManager = new WaveManager(this, mobSaveManager);
+        waveManager = new WaveManager(mobSaveManager);
 
-        waveStorage = new WaveStorage(getDataFolder(), waveManager);
+        waveStorage = new WaveStorage(this, getDataFolder(), waveManager);
 
         scoreboardManager = arenaManager.getScoreboardManager();
         waveManager.setScoreboardManager(scoreboardManager);
@@ -166,7 +159,6 @@ public class MobArmyMain extends JavaPlugin {
         bundleManager.setTeamManager(teamManager);
 
         eventManager = new EventManager(this, mobSaveManager);
-        playerLocationManager = new PlayerLocationManager(getEventResume().getConfig());
 
         portalManager = new PortalManager(this);
         portalManager.loadAllPortals();
@@ -186,19 +178,21 @@ public class MobArmyMain extends JavaPlugin {
         mobArmySettingsGUI = new TeleportGUI(this);
         teamSelectionGUI = new TeamSelectionGUI(this, teamManager);
         bundleGUI = new BundleGUI(this, teamManager);
-        spawnEggGUI = new RandomizerExclusionGUI(blockRandomizerManager, this, timerManager);
+        spawnEggGUI = new RandomizerExclusionGUI(blockRandomizerManager, this);
         arenaSettingsGUI = new ArenaSettingsGUI(this);
         worldSettingsGUI = new WorldSettingsGUI(this, blockRandomizerManager);
         playerGUI = new PlayerGUI(this);
         playerActionGUI = new PlayerActionGUI(this);
         teamSettingsGUI = new TeamSettingsGUI(this);
         teamEquipmentGUI = new TeamEquipmentGUI(this);
+        languageSelectionGUI = new LanguageSelectionGUI(this);
+        playerJoinListener = new PlayerJoinListener(this);
 
         // ============================================================
         // Listener registrieren
         // ============================================================
         Bukkit.getPluginManager().registerEvents(new PauseListener(this), this);
-        Bukkit.getPluginManager().registerEvents(new PlayerJoinListener(this), this);
+        Bukkit.getPluginManager().registerEvents(playerJoinListener, this);
         Bukkit.getPluginManager().registerEvents(new PlayerRespawnListener(this), this);
         Bukkit.getPluginManager().registerEvents(new PortalListener(this), this);
         Bukkit.getPluginManager().registerEvents(blockRandomizerManager, this);
@@ -213,7 +207,7 @@ public class MobArmyMain extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(spawnEggGUI, this);
         Bukkit.getPluginManager().registerEvents(new ButtonManager(this), this);
         Bukkit.getPluginManager().registerEvents(new ArenaMobTargetListener(this), this);
-        Bukkit.getPluginManager().registerEvents(new BundleListener(bundleGUI, teamManager, bundleManager), this);
+        Bukkit.getPluginManager().registerEvents(new BundleListener(this, bundleGUI, teamManager, bundleManager), this);
         Bukkit.getPluginManager().registerEvents(arenaSettingsGUI, this);
         Bukkit.getPluginManager().registerEvents(worldSettingsGUI, this);
         Bukkit.getPluginManager().registerEvents(new UltraHardcoreListener(this), this);
@@ -224,6 +218,7 @@ public class MobArmyMain extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(teamEquipmentGUI, this);
         Bukkit.getPluginManager().registerEvents(new ScoreboardSwitchListener(this), this);
         Bukkit.getPluginManager().registerEvents(chestRandomizerManager, this);
+        Bukkit.getPluginManager().registerEvents(languageSelectionGUI, this);
 
         waveStorage.loadWaves();
 
@@ -232,8 +227,11 @@ public class MobArmyMain extends JavaPlugin {
                 arenaConfig.reload();
                 arenaBuildProtectionManager.loadSpawnProtectionAreas();
             } catch (Exception ex) {
-                Bukkit.getLogger().severe("[MobArmyWars] Fehler beim Nachladen der BuildProtection!");
-                ex.printStackTrace();
+                getLogger().log(
+                        Level.SEVERE,
+                        "Failed to reload build protection.",
+                        ex
+                );
             }
         }, 20L);
 
@@ -247,10 +245,13 @@ public class MobArmyMain extends JavaPlugin {
         OptionenCommand optionenCommand = new OptionenCommand(this);
         registerCommand("optionen", optionenCommand, optionenCommand);
 
+        LanguageCommand languageCommand = new LanguageCommand(this);
+        registerCommand("language", languageCommand, null);
+
         var teamCmd = new TeamCommand(this);
         registerCommand("team", teamCmd, teamCmd);
 
-        MobStatusCommand mobStatusCommand = new MobStatusCommand(mobSaveManager, teamManager);
+        MobStatusCommand mobStatusCommand = new MobStatusCommand(this, mobSaveManager, teamManager);
         registerCommand("mobstatus", mobStatusCommand, mobStatusCommand);
 
         registerCommand("arenasummary", new ArenaSummaryCommand(this), null);
@@ -265,7 +266,7 @@ public class MobArmyMain extends JavaPlugin {
         Bukkit.getConsoleSender().sendMessage(
                 ConsoleColor.DARK_GOLDEN_LIME + "  ═══════════════  MobArmyWars  ═══════════════" + ConsoleColor.RESET);
         Bukkit.getConsoleSender().sendMessage(
-                ConsoleColor.DARK_GOLDEN_LIME + "                      V1.6" + ConsoleColor.RESET);
+                ConsoleColor.DARK_GOLDEN_LIME + "                      V1.7" + ConsoleColor.RESET);
         Bukkit.getConsoleSender().sendMessage(
                 ConsoleColor.DARK_GOLDEN_LIME + "                    R E A D Y" + ConsoleColor.RESET);
         Bukkit.getConsoleSender().sendMessage("");
@@ -284,6 +285,19 @@ public class MobArmyMain extends JavaPlugin {
         if (tabCompleter != null) {
             command.setTabCompleter(tabCompleter);
         }
+    }
+
+    private Component createMotd() {
+        return MiniMessage.miniMessage().deserialize(
+                "<bold><gradient:#FF3B3B:#8B0000>        Runi´s </gradient>" +
+                        "<gradient:#4DA6FF:#004C99>MobArmyWars</gradient> " +
+                        "<dark_gray>-</dark_gray> " +
+                        "<yellow>V1.7</yellow></bold>" +
+                        "\n" +
+                        "<red><obfuscated>                  X</obfuscated></red> " +
+                        "<bold><gradient:#FF3B3B:#4DA6FF>ROT  ⚔  BLAU</gradient> " +
+                        "<blue><obfuscated>X</obfuscated></blue></bold>"
+        );
     }
 
     public TeamManager getTeamManager() { return teamManager; }
@@ -329,4 +343,7 @@ public class MobArmyMain extends JavaPlugin {
     public TeamSettingsGUI getTeamSettingsGUI() { return teamSettingsGUI; }
     public TeamEquipmentManager getTeamEquipmentManager() { return teamEquipmentManager; }
     public TeamEquipmentGUI getTeamEquipmentGUI() { return teamEquipmentGUI; }
+    public LanguageSelectionGUI getLanguageSelectionGUI() {return languageSelectionGUI; }
+    public LanguageManager getLanguageManager() {return languageManager; }
+    public PlayerJoinListener getPlayerJoinListener() {return playerJoinListener; }
 }

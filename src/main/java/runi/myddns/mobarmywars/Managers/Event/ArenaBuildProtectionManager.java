@@ -13,7 +13,6 @@ import org.bukkit.event.block.BlockBurnEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.BlockSpreadEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
-import org.bukkit.plugin.java.JavaPlugin;
 import runi.myddns.mobarmywars.MobArmyMain;
 
 import java.io.File;
@@ -21,7 +20,7 @@ import java.util.*;
 
 public class ArenaBuildProtectionManager implements Listener {
 
-    private final JavaPlugin plugin;
+    private final MobArmyMain plugin;
     private final Map<String, Set<BlockPos>> placedBlocks = new HashMap<>();
     private final List<ProtectedArea> opProtectedLobbyAreas = new ArrayList<>();
 
@@ -37,11 +36,11 @@ public class ArenaBuildProtectionManager implements Listener {
         );
     }
 
-    private boolean canBypassLobbyProtection(Player player) {
-        return player.isOp();
+    private boolean isLobbyProtectedFor(Player player) {
+        return !player.isOp();
     }
 
-    public ArenaBuildProtectionManager(JavaPlugin plugin) {
+    public ArenaBuildProtectionManager(MobArmyMain plugin) {
         this.plugin = plugin;
         Bukkit.getPluginManager().registerEvents(this, plugin);
     }
@@ -50,7 +49,7 @@ public class ArenaBuildProtectionManager implements Listener {
         File file = new File(plugin.getDataFolder(), "spawns.yml");
 
         if (!file.exists()) {
-            Bukkit.getLogger().warning("[MobArmyWars] ⚠ spawns.yml nicht gefunden – Lobby-Schutzbereiche nicht geladen!");
+            plugin.getLogger().warning("[MobArmyWars] ⚠ spawns.yml nicht gefunden – Lobby-Schutzbereiche nicht geladen!");
             return;
         }
 
@@ -66,7 +65,7 @@ public class ArenaBuildProtectionManager implements Listener {
         World world = Bukkit.getWorld(worldName);
 
         if (world == null) {
-            Bukkit.getLogger().warning("[MobArmyWars] ⚠ Welt '" + worldName + "' für " + path + " nicht gefunden!");
+            plugin.getLogger().warning("[MobArmyWars] ⚠ Welt '" + worldName + "' für " + path + " nicht gefunden!");
             return;
         }
 
@@ -74,7 +73,7 @@ public class ArenaBuildProtectionManager implements Listener {
         Location c2 = toLoc(world, cfg.getIntegerList(path + ".corner2"));
 
         if (c1 == null || c2 == null) {
-            Bukkit.getLogger().warning("[MobArmyWars] ⚠ Ungültige Corner für " + path);
+            plugin.getLogger().warning("[MobArmyWars] ⚠ Ungültige Corner für " + path);
             return;
         }
         opProtectedLobbyAreas.add(new ProtectedArea(worldName, c1, c2));
@@ -177,15 +176,10 @@ public class ArenaBuildProtectionManager implements Listener {
         };
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onBlockBreak(BlockBreakEvent e) {
-        if (!(plugin instanceof MobArmyMain ma)) {
-            e.setCancelled(true);
-            return;
-        }
-
-        if (ma.getEventResume().isEventStarted()
-                && ma.getEventResume().isEventPaused()) {
+        if (plugin.getEventResume().isEventStarted()
+                && plugin.getEventResume().isEventPaused()) {
             e.setCancelled(true);
             return;
         }
@@ -208,13 +202,14 @@ public class ArenaBuildProtectionManager implements Listener {
                 return;
             }
 
-            if (!canBypassLobbyProtection(p)) {
+            if (isLobbyProtectedFor(p)) {
                 e.setCancelled(true);
             }
             return;
         }
 
-        ArenaConfig.ArenaData arena = ma.getArenaConfig().getActiveArena();
+        ArenaConfig.ArenaData arena =
+                plugin.getArenaConfig().getActiveArena();
 
         if (arena == null) {
             e.setCancelled(true);
@@ -264,15 +259,10 @@ public class ArenaBuildProtectionManager implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = false)
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onBlockPlace(BlockPlaceEvent e) {
-        if (!(plugin instanceof MobArmyMain ma)) {
-            e.setCancelled(true);
-            return;
-        }
-
-        if (ma.getEventResume().isEventStarted()
-                && ma.getEventResume().isEventPaused()) {
+        if (plugin.getEventResume().isEventStarted()
+                && plugin.getEventResume().isEventPaused()) {
             e.setCancelled(true);
             return;
         }
@@ -294,13 +284,14 @@ public class ArenaBuildProtectionManager implements Listener {
                 return;
             }
 
-            if (!canBypassLobbyProtection(p)) {
+            if (isLobbyProtectedFor(p)) {
                 e.setCancelled(true);
             }
             return;
         }
 
-        ArenaConfig.ArenaData arena = ma.getArenaConfig().getActiveArena();
+        ArenaConfig.ArenaData arena =
+                plugin.getArenaConfig().getActiveArena();
 
         if (arena == null) {
             e.setCancelled(true);
@@ -329,7 +320,10 @@ public class ArenaBuildProtectionManager implements Listener {
             return;
         }
 
-        placedBlocks.computeIfAbsent(team.toLowerCase(), k -> new HashSet<>()).add(toPos(loc));
+        placedBlocks.computeIfAbsent(
+                team.toLowerCase(Locale.ROOT),
+                _ -> new HashSet<>()
+        ).add(toPos(loc));
     }
 
     @EventHandler
@@ -368,15 +362,11 @@ public class ArenaBuildProtectionManager implements Listener {
             return true;
         }
 
-        if (plugin instanceof MobArmyMain ma) {
-            ArenaConfig.ArenaData arena = ma.getArenaConfig().getActiveArena();
+        ArenaConfig.ArenaData arena =
+                plugin.getArenaConfig().getActiveArena();
 
-            if (arena != null && name.equalsIgnoreCase(arena.world())) {
-                return true;
-            }
-        }
-
-        return false;
+        return arena != null
+                && name.equalsIgnoreCase(arena.world());
     }
 
     private boolean isInsideTeamArea(Location loc, String team, ArenaConfig.ArenaData arena) {
@@ -412,16 +402,18 @@ public class ArenaBuildProtectionManager implements Listener {
                 z >= Math.min(c1.getZ(), c2.getZ()) && z <= Math.max(c1.getZ(), c2.getZ());
     }
 
-    private String getTeam(Player p) {
-        if (plugin instanceof MobArmyMain ma) {
-            var tm = ma.getTeamManager();
-            if (tm != null) {
-                String team = tm.getPlayerTeam(p);
-                if (team != null && !team.equalsIgnoreCase("Kein Team"))
-                    return team.toLowerCase();
-            }
+    private String getTeam(Player player) {
+
+        String team =
+                plugin.getTeamManager()
+                        .getPlayerTeam(player);
+
+        if (team == null
+                || team.equalsIgnoreCase("Kein Team")) {
+            return null;
         }
-        return null;
+
+        return team.toLowerCase(Locale.ROOT);
     }
 
     public void clearTeamData(String team) {

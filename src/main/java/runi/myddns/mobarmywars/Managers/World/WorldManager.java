@@ -2,6 +2,7 @@ package runi.myddns.mobarmywars.Managers.World;
 
 import org.bukkit.*;
 import org.bukkit.entity.Player;
+import net.kyori.adventure.text.Component;
 import runi.myddns.mobarmywars.MobArmyMain;
 import runi.myddns.mobarmywars.Utils.ConsoleColor;
 
@@ -29,16 +30,7 @@ public class WorldManager {
 
         checkTemplateWorlds();
         checkTeamWorlds();
-
-        loadWorlds(
-                WORLD_LOBBY,
-                WORLD_ARENA,
-                "world_rot",
-                "world_blau",
-                "world_rot_nether",
-                "world_blau_nether"
-        );
-
+        loadWorlds();
         plugin.getWorldSettings().applyAllSettings();
     }
 
@@ -58,7 +50,9 @@ public class WorldManager {
 
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
                     if (p.isOnline()) {
-                        p.sendActionBar(ChatColor.RED + "⚠ Lobby-Welt wird neu geladen...");
+                        p.sendActionBar(
+                                lang("world-manager.lobby-resetting")
+                        );
                         p.playSound(p.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 0.8f);
                     }
                 }, 10L);
@@ -87,12 +81,20 @@ public class WorldManager {
                         }
 
                         for (Player player : Bukkit.getOnlinePlayers()) {
-                            player.sendMessage(ChatColor.GREEN + "✔ LOBBY-Welt wurde neu geladen!");
-                            player.sendMessage("");
-                            player.sendMessage(ChatColor.DARK_RED + "  Die Spieler- und Eventdaten sind noch geladen,");
-                            player.sendMessage(ChatColor.DARK_RED + "  diese können nur über " + ChatColor.GOLD + "Reset Spielfortschritt ");
-                            player.sendMessage(ChatColor.DARK_RED + "  zurückgesetzt werden!");
-                            player.sendMessage("");
+                            player.sendMessage(
+                                    lang("world-manager.lobby-reset-complete")
+                            );
+                            player.sendMessage(Component.empty());
+                            player.sendMessage(
+                                    lang("world-manager.progress-still-loaded-1")
+                            );
+                            player.sendMessage(
+                                    lang("world-manager.progress-still-loaded-2")
+                            );
+                            player.sendMessage(
+                                    lang("world-manager.progress-still-loaded-3")
+                            );
+                            player.sendMessage(Component.empty());
                         }
 
                         Bukkit.getConsoleSender().sendMessage("");
@@ -118,7 +120,9 @@ public class WorldManager {
 
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
                     if (p.isOnline()) {
-                        p.sendActionBar(ChatColor.RED + "⚠ Arena-Welt wird neu geladen...");
+                        p.sendActionBar(
+                                lang("world-manager.arena-resetting")
+                        );
                         p.playSound(p.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 0.8f);
                     }
                 }, 10L);
@@ -143,13 +147,21 @@ public class WorldManager {
 
 
                         for (Player player : Bukkit.getOnlinePlayers()) {
-                            player.sendMessage("");
-                            player.sendMessage(ChatColor.GREEN + "✔ ARENA-Welt wurde neu geladen!");
-                            player.sendMessage("");
-                            player.sendMessage(ChatColor.DARK_RED + "  Die Spieler- und Eventdaten sind noch geladen,");
-                            player.sendMessage(ChatColor.DARK_RED + "  diese können nur über " + ChatColor.GOLD + "Reset Spielfortschritt ");
-                            player.sendMessage(ChatColor.DARK_RED + "  zurückgesetzt werden!");
-                            player.sendMessage("");
+                            player.sendMessage(Component.empty());
+                            player.sendMessage(
+                                    lang("world-manager.arena-reset-complete")
+                            );
+                            player.sendMessage(Component.empty());
+                            player.sendMessage(
+                                    lang("world-manager.progress-still-loaded-1")
+                            );
+                            player.sendMessage(
+                                    lang("world-manager.progress-still-loaded-2")
+                            );
+                            player.sendMessage(
+                                    lang("world-manager.progress-still-loaded-3")
+                            );
+                            player.sendMessage(Component.empty());
                         }
 
                         Bukkit.getConsoleSender().sendMessage("");
@@ -279,7 +291,9 @@ public class WorldManager {
 
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
                     if (p.isOnline()) {
-                        p.sendActionBar(ChatColor.RED + "⚠ Team-Welten werden neu generiert...");
+                        p.sendActionBar(
+                                lang("world-manager.team-worlds-resetting")
+                        );
                         p.playSound(p.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 0.8f);
                     }
                 }, 10L);
@@ -306,12 +320,7 @@ public class WorldManager {
 
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
 
-                    loadWorldsWithPreload(
-                            "world_rot",
-                            "world_blau",
-                            "world_rot_nether",
-                            "world_blau_nether"
-                    );
+                    loadWorldsWithPreload();
 
                     plugin.getWorldSettings().applyToWorld(Bukkit.getWorld("world_rot"));
                     plugin.getWorldSettings().applyToWorld(Bukkit.getWorld("world_blau"));
@@ -333,8 +342,10 @@ public class WorldManager {
                         }
 
                         for (Player player : Bukkit.getOnlinePlayers()) {
-                            player.sendMessage("");
-                            player.sendMessage(ChatColor.GREEN + "✔ TEAM-Welten wurden neu generiert!");
+                            player.sendMessage(Component.empty());
+                            player.sendMessage(
+                                    lang("world-manager.team-worlds-reset-complete")
+                            );
                         }
                         Bukkit.getConsoleSender().sendMessage("");
                         Bukkit.getConsoleSender().sendMessage(
@@ -348,17 +359,27 @@ public class WorldManager {
         }, 20L); // Teleports
     }
 
-    private void loadWorlds(String... names) {
-        for (String name : names) {
-            loadWorld(name);
-        }
+    private void loadWorlds() {
+        loadWorld(WORLD_LOBBY);
+        loadWorld(WORLD_ARENA);
+        loadWorld("world_rot");
+        loadWorld("world_blau");
+        loadWorld("world_rot_nether");
+        loadWorld("world_blau_nether");
     }
 
-    private void loadWorldsWithPreload(String... names) {
-        for (String name : names) {
-            World world = loadWorld(name);
-            preloadSpawnChunks(world, name.endsWith("_nether") ? 1 : 2);
-        }
+    private void loadWorldsWithPreload() {
+        World rot = loadWorld("world_rot");
+        preloadSpawnChunks(rot, 2);
+
+        World blau = loadWorld("world_blau");
+        preloadSpawnChunks(blau, 2);
+
+        World rotNether = loadWorld("world_rot_nether");
+        preloadSpawnChunks(rotNether, 1);
+
+        World blauNether = loadWorld("world_blau_nether");
+        preloadSpawnChunks(blauNether, 1);
     }
 
     private File getDimensionWorldFolder(String name) {
@@ -478,9 +499,23 @@ public class WorldManager {
                 File target = new File(targetRoot, relativePath);
 
                 if (entry.isDirectory()) {
-                    target.mkdirs();
+                    if (!target.exists() && !target.mkdirs()) {
+                        plugin.getLogger().warning(
+                                "Could not create directory: " + target.getPath()
+                        );
+                    }
                 } else {
-                    target.getParentFile().mkdirs();
+                    File parent = target.getParentFile();
+
+                    if (parent != null
+                            && !parent.exists()
+                            && !parent.mkdirs()) {
+
+                        plugin.getLogger().warning(
+                                "Could not create directory: " + parent.getPath()
+                        );
+                        continue;
+                    }
                     try (FileOutputStream fos = new FileOutputStream(target)) {
                         zis.transferTo(fos);
                     }
@@ -568,10 +603,13 @@ public class WorldManager {
         }
     }
 
-    public synchronized boolean tryStartWorldReset() {
-        if (isWorldResetRunning) return false;
+    public synchronized boolean isWorldResetBlocked() {
+        if (isWorldResetRunning) {
+            return true;
+        }
+
         isWorldResetRunning = true;
-        return true;
+        return false;
     }
 
     private void endWorldReset() {
@@ -603,8 +641,9 @@ public class WorldManager {
     }
 
     private File findNewestTemplateZipInDataFolder() {
-        File[] files = plugin.getDataFolder().listFiles((dir, name) ->
-                name.startsWith("world_mobarmy V") && name.endsWith(".zip")
+        File[] files = plugin.getDataFolder().listFiles((_, name) ->
+                name.startsWith("world_mobarmy V")
+                        && name.endsWith(".zip")
         );
 
         if (files == null || files.length == 0) {
@@ -665,5 +704,10 @@ public class WorldManager {
         } catch (NumberFormatException e) {
             return 0;
         }
+    }
+
+    private Component lang(String path) {
+        return plugin.getLanguageManager()
+                .getComponent(path);
     }
 }

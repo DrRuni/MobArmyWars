@@ -7,15 +7,19 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.scheduler.BukkitRunnable;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.title.Title;
+import net.kyori.adventure.text.Component;
 import runi.myddns.mobarmywars.GUIs.UnifiedWaveGUI;
 import runi.myddns.mobarmywars.MobArmyMain;
-import runi.myddns.mobarmywars.Utils.Message;
 import runi.myddns.mobarmywars.Utils.Sounds;
+
+import java.time.Duration;
+import java.util.Locale;
 
 public class ButtonManager implements Listener {
 
     private static final String WORLD_LOBBY = "world_mobarmy_lobby";
-    private static final String WORLD_ARENA = "world_mobarmy_arena";
 
     private final MobArmyMain plugin;
 
@@ -35,7 +39,9 @@ public class ButtonManager implements Listener {
 
         World pluginWorld = Bukkit.getWorld(WORLD_LOBBY);
         if (pluginWorld == null) {
-            Bukkit.getLogger().warning("❗ " + WORLD_LOBBY + " ist nicht geladen!");
+            plugin.getLogger().warning(
+                    "❗ " + WORLD_LOBBY + " ist nicht geladen!"
+            );
             return;
         }
 
@@ -43,13 +49,13 @@ public class ButtonManager implements Listener {
         Player player = event.getPlayer();
 
         // Team Auswahl
-        if (isButtonAt(clicked, WORLD_LOBBY, 28, 65, 1)) {
+        if (isButtonAt(clicked, 28, 65, 1)) {
 
             if (plugin.getEventResume().loadPhase() != ResumeManager.PHASE_LOBBY) {
-                player.sendMessage("");
-                player.sendMessage(ChatColor.RED + "⚠ Team-Auswahl ist nur in der Lobby-Phase möglich.");
-                player.sendMessage(ChatColor.GOLD + "nutze /set phase lobby");
-                player.sendMessage("");
+                player.sendMessage(Component.empty());
+                player.sendMessage(lang("button-manager.team-selection-only-lobby"));
+                player.sendMessage(lang("button-manager.use-phase-lobby"));
+                player.sendMessage(Component.empty());
                 event.setCancelled(true);
                 return;
             }
@@ -67,19 +73,21 @@ public class ButtonManager implements Listener {
         }
 
         // START EVENT
-        if (isButtonAt(clicked, WORLD_LOBBY, 28, 65, -5)) {
+        if (isButtonAt(clicked, 28, 65, -5)) {
 
             if (!player.isOp()) {
-                Message.sendToPlayer(player, ChatColor.RED + "❌ Nur Operatoren dürfen das Event starten!");
+                player.sendMessage(
+                        lang("button-manager.operators-only")
+                );
                 event.setCancelled(true);
                 return;
             }
 
             if (plugin.getEventResume().loadPhase() != ResumeManager.PHASE_LOBBY) {
-                player.sendMessage("");
-                player.sendMessage(ChatColor.RED + "⚠ Das Event kann nur aus der Lobby-Phase gestartet werden.");
-                player.sendMessage(ChatColor.GOLD + "nutze /set phase lobby");
-                player.sendMessage("");
+                player.sendMessage(Component.empty());
+                player.sendMessage(lang("button-manager.event-only-lobby"));
+                player.sendMessage(lang("button-manager.use-phase-lobby"));
+                player.sendMessage(Component.empty());
                 event.setCancelled(true);
                 return;
             }
@@ -98,13 +106,13 @@ public class ButtonManager implements Listener {
         }
 
         // Waveauswahl GUI
-        if (isButtonAt(clicked, WORLD_LOBBY, 104, 75, -95) || isButtonAt(clicked, WORLD_LOBBY, 75, 75, -95)) {
+        if (isButtonAt(clicked, 104, 75, -95) || isButtonAt(clicked, 75, 75, -95)) {
 
             if (plugin.getEventResume().loadPhase() != ResumeManager.PHASE_WAVEAUSWAHL) {
-                player.sendMessage("");
-                player.sendMessage(ChatColor.RED + "⚠ Wave-Auswahl ist nur in der Waveauswahl-Phase möglich.");
-                player.sendMessage(ChatColor.GOLD + "nutze /set phase waveauswahl");
-                player.sendMessage("");
+                player.sendMessage(Component.empty());
+                player.sendMessage(lang("button-manager.wave-selection-only-phase"));
+                player.sendMessage(lang("button-manager.use-phase-wave-selection"));
+                player.sendMessage(Component.empty());
                 event.setCancelled(true);
                 return;
             }
@@ -129,58 +137,124 @@ public class ButtonManager implements Listener {
         }
 
         // Waveauswahl Ready Rot
-        if (handleReadyButton(player, clicked, "Rot", WORLD_LOBBY, 102, 75, -95, ChatColor.RED)) {
+        if (handleReadyButton(
+                player,
+                clicked,
+                "Rot",
+                102
+        )) {
             Sounds.playClick(player);
             event.setCancelled(true);
             return;
         }
 
         // Waveauswahl Ready Blau
-        if (handleReadyButton(player, clicked, "Blau", WORLD_LOBBY, 73, 75, -95, ChatColor.BLUE)) {
+        if (handleReadyButton(
+                player,
+                clicked,
+                "Blau",
+                73
+        )) {
             Sounds.playClick(player);
             event.setCancelled(true);
         }
     }
 
-    private boolean handleReadyButton(Player player, Location clicked, String expectedTeam,
-                                      String worldName, int x, int y, int z, ChatColor color) {
+    private boolean handleReadyButton(
+            Player player,
+            Location clicked,
+            String expectedTeam,
+            int x
+    ) {
 
-        if (!isButtonAt(clicked, worldName, x, y, z)) {
+        if (!isButtonAt(
+                clicked,
+                x,
+                75,
+                -95
+        )) {
             return false;
         }
 
         if (plugin.getEventResume().loadPhase() != ResumeManager.PHASE_WAVEAUSWAHL) {
-            player.sendMessage("");
-            player.sendMessage(ChatColor.RED + "⚠ Ready ist nur in der Waveauswahl-Phase möglich.");
-            player.sendMessage(ChatColor.GOLD + "nutze /set phase waveauswahl");
-            player.sendMessage("");
+            player.sendMessage(Component.empty());
+            player.sendMessage(lang("button-manager.ready-only-phase"));
+            player.sendMessage(lang("button-manager.use-phase-wave-selection"));
+            player.sendMessage(Component.empty());
             return true;
         }
 
         String playerTeam = plugin.getTeamManager().getPlayerTeam(player);
         if (playerTeam == null) {
-            player.sendMessage(ChatColor.RED + "⚠ Du bist in keinem Team.");
+            player.sendMessage(
+                    lang("button-manager.no-team")
+            );
             return true;
         }
 
+        Component teamDisplay =
+                expectedTeam.equalsIgnoreCase("Rot")
+                        ? plugin.getLanguageManager().getComponent(
+                        "arena-event-manager.team.red"
+                )
+                        : plugin.getLanguageManager().getComponent(
+                        "arena-event-manager.team.blue"
+                );
+
         if (!playerTeam.equalsIgnoreCase(expectedTeam)) {
-            player.sendMessage(ChatColor.RED + "⚠ Dieser Ready-Button ist nur für Team " + expectedTeam + ".");
+            player.sendMessage(
+                    plugin.getLanguageManager().getComponent(
+                            "button-manager.wrong-ready-team",
+                            "team",
+                            teamDisplay
+                    )
+            );
             return true;
         }
 
         plugin.getArenaManager().markPlayerReady(player);
 
+        NamedTextColor titleColor =
+                expectedTeam.equalsIgnoreCase("Rot")
+                        ? NamedTextColor.RED
+                        : NamedTextColor.BLUE;
+
         for (Player p : Bukkit.getOnlinePlayers()) {
 
-            String w = p.getWorld().getName().toLowerCase();
-            if (!(w.contains("mobarmy_lobby") || w.contains("rot") || w.contains("blau"))) {
+            String w =
+                    p.getWorld()
+                            .getName()
+                            .toLowerCase(Locale.ROOT);
+
+            if (!(w.contains("mobarmy_lobby")
+                    || w.contains("rot")
+                    || w.contains("blau"))) {
                 continue;
             }
 
-            p.sendTitle(
-                    color + "✔ Team " + expectedTeam + " bereit!",
-                    ChatColor.GRAY + player.getName() + " hat Ready gedrückt",
-                    10, 40, 10
+            p.showTitle(
+                    Title.title(
+                            plugin.getLanguageManager()
+                                    .getComponent(
+                                            "button-manager.ready.title",
+                                            "team",
+                                            teamDisplay
+                                    )
+                                    .color(titleColor),
+
+                            plugin.getLanguageManager()
+                                    .getComponent(
+                                            "button-manager.ready.subtitle",
+                                            "player",
+                                            player.getName()
+                                    ),
+
+                            Title.Times.times(
+                                    Duration.ofMillis(500),
+                                    Duration.ofSeconds(2),
+                                    Duration.ofMillis(500)
+                            )
+                    )
             );
 
             p.playSound(
@@ -194,9 +268,18 @@ public class ButtonManager implements Listener {
         return true;
     }
 
-    private boolean isButtonAt(Location loc, String worldName, int x, int y, int z) {
-        World world = Bukkit.getWorld(worldName);
-        return world != null && loc.getWorld().equals(world)
-                && loc.getBlockX() == x && loc.getBlockY() == y && loc.getBlockZ() == z;
+    private boolean isButtonAt(Location loc, int x, int y, int z) {
+        World world = Bukkit.getWorld(WORLD_LOBBY);
+
+        return world != null
+                && loc.getWorld().equals(world)
+                && loc.getBlockX() == x
+                && loc.getBlockY() == y
+                && loc.getBlockZ() == z;
+    }
+
+    private Component lang(String path) {
+        return plugin.getLanguageManager()
+                .getComponent(path);
     }
 }

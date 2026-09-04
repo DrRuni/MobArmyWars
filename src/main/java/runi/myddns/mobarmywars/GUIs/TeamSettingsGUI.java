@@ -1,7 +1,7 @@
 package runi.myddns.mobarmywars.GUIs;
 
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -21,116 +21,204 @@ public class TeamSettingsGUI implements Listener {
 
     private final MobArmyMain plugin;
 
-    private static final String TITLE = ChatColor.BLUE + "Team Einstellungen";
-
     public TeamSettingsGUI(MobArmyMain plugin) {
         this.plugin = plugin;
     }
 
     public void open(Player player) {
-        Inventory inv = Bukkit.createInventory(null, 45, TITLE);
 
-        inv.setItem(11, createItem(
-                Material.PURPLE_BANNER,
-                ChatColor.GOLD + "Team wählen",
-                "",
-                "Öffnet die Teamauswahl für alle Spieler"
-        ));
+        Inventory inv = Bukkit.createInventory(
+                null,
+                45,
+                lang("team-settings-gui.title")
+        );
 
-        inv.setItem(13, createItem(
-                Material.WHITE_BANNER,
-                ChatColor.DARK_RED + "Teams zurücksetzen",
-                "",
-                ChatColor.RED + "Alle Spieler werden aus Teams entfernt"
-        ));
+        inv.setItem(
+                11,
+                createItem(
+                        Material.PURPLE_BANNER,
+                        lang("team-settings-gui.select.name"),
+                        Component.empty(),
+                        lang("team-settings-gui.select.description")
+                )
+        );
 
-        inv.setItem(15, createItem(
-                Material.ARMOR_STAND,
-                ChatColor.GOLD + "Team Equipment",
-                "",
-                "Equipment für Rot und Blau einstellen"
-        ));
+        inv.setItem(
+                13,
+                createItem(
+                        Material.WHITE_BANNER,
+                        lang("team-settings-gui.reset.name"),
+                        Component.empty(),
+                        lang("team-settings-gui.reset.description")
+                )
+        );
 
-        inv.setItem(40, createItem(
-                Material.ARROW,
-                ChatColor.DARK_AQUA + "Zurück"
-        ));
+        inv.setItem(
+                15,
+                createItem(
+                        Material.ARMOR_STAND,
+                        lang("team-settings-gui.equipment.name"),
+                        Component.empty(),
+                        lang("team-settings-gui.equipment.description")
+                )
+        );
+
+        inv.setItem(
+                40,
+                createBackButton()
+        );
 
         player.openInventory(inv);
     }
 
-    private ItemStack createItem(Material mat, String name, String... loreLines) {
-        ItemStack item = new ItemStack(mat);
+    private ItemStack createItem(
+            Material material,
+            Component name,
+            Component... loreLines
+    ) {
+
+        ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
 
-        meta.setDisplayName(name);
+        if (meta == null) {
+            return item;
+        }
 
-        List<String> lore = new ArrayList<>();
-        if (loreLines != null && loreLines.length > 0) {
-            for (String line : loreLines) {
-                lore.add(ChatColor.GRAY + line);
+        meta.displayName(name);
+
+        List<Component> lore = new ArrayList<>();
+
+        if (loreLines != null) {
+            for (Component line : loreLines) {
+                if (line != null) {
+                    lore.add(line);
+                }
             }
         }
 
-        meta.setLore(lore);
-        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_UNBREAKABLE);
+        meta.lore(lore);
+
+        meta.addItemFlags(
+                ItemFlag.HIDE_ATTRIBUTES,
+                ItemFlag.HIDE_ENCHANTS,
+                ItemFlag.HIDE_UNBREAKABLE
+        );
 
         item.setItemMeta(meta);
+
+        return item;
+    }
+
+    private ItemStack createBackButton() {
+
+        ItemStack item = new ItemStack(Material.ARROW);
+        ItemMeta meta = item.getItemMeta();
+
+        if (meta == null) {
+            return item;
+        }
+
+        meta.displayName(
+                lang("team-settings-gui.back")
+        );
+
+        meta.lore(List.of());
+
+        item.setItemMeta(meta);
+
         return item;
     }
 
     @EventHandler
-    public void onClick(InventoryClickEvent e) {
-        if (!(e.getWhoClicked() instanceof Player player)) return;
-        if (!ChatColor.stripColor(e.getView().getTitle()).equalsIgnoreCase("Team Einstellungen")) return;
+    public void onClick(InventoryClickEvent event) {
 
-        e.setCancelled(true);
+        if (!(event.getWhoClicked() instanceof Player player)) {
+            return;
+        }
 
-        ItemStack clicked = e.getCurrentItem();
-        if (clicked == null || !clicked.hasItemMeta()) return;
+        if (!event.getView().title().equals(
+                lang("team-settings-gui.title")
+        )) {
+            return;
+        }
 
-        String itemName = ChatColor.stripColor(clicked.getItemMeta().getDisplayName());
+        event.setCancelled(true);
 
-        switch (itemName) {
-            case "Team wählen" -> {
+        int slot = event.getRawSlot();
+
+        if (slot < 0
+                || slot >= event.getView().getTopInventory().getSize()) {
+            return;
+        }
+
+        switch (slot) {
+
+            case 11 -> {
+
                 Sounds.playClick(player);
 
-                Bukkit.getOnlinePlayers().forEach(p -> {
-                    plugin.getTeamSelectionGUI().openGUI(p);
-                    Sounds.playClick(p);
+                Bukkit.getOnlinePlayers().forEach(onlinePlayer -> {
+                    plugin.getTeamSelectionGUI().openGUI(onlinePlayer);
+                    Sounds.playClick(onlinePlayer);
                 });
 
                 for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                    onlinePlayer.sendMessage("");
-                    onlinePlayer.sendMessage(ChatColor.AQUA + "👥 " + ChatColor.GRAY + "Der Teamleiter hat die Teamauswahl geöffnet.");
+
+                    onlinePlayer.sendMessage(
+                            Component.empty()
+                    );
+
+                    onlinePlayer.sendMessage(
+                            lang("team-settings-gui.select.opened")
+                    );
                 }
             }
 
-            case "Teams zurücksetzen" -> {
+            case 13 -> {
+
                 Sounds.playReset(player);
 
-                plugin.getTeamManager().resetTeams();
-
-                for (Player p : Bukkit.getOnlinePlayers()) {
-                    plugin.getBundleManager().removeTeamBundle(p);
-                }
-
-                plugin.getScoreboardSwitcher().forceTeamForAll();
+                plugin.getTeamManager()
+                        .resetTeams();
 
                 for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                    onlinePlayer.sendMessage(ChatColor.RED + "❌ Alle Teams wurden zurückgesetzt!");
+
+                    plugin.getBundleManager()
+                            .removeTeamBundle(onlinePlayer);
+                }
+
+                plugin.getScoreboardSwitcher()
+                        .forceTeamForAll();
+
+                for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+
+                    onlinePlayer.sendMessage(
+                            lang("team-settings-gui.reset.message")
+                    );
                 }
             }
 
-            case "Team Equipment" -> {
+            case 15 -> {
+
                 Sounds.playClick(player);
-                plugin.getTeamEquipmentGUI().open(player);
+
+                plugin.getTeamEquipmentGUI()
+                        .open(player);
             }
 
-            case "Zurück" -> {
+            case 40 -> {
+
                 Sounds.playBack(player);
-                plugin.getEventSettingsGUI().open(player);
+
+                plugin.getEventSettingsGUI()
+                        .open(player);
             }
         }
+    }
+
+    private Component lang(String path) {
+
+        return plugin.getLanguageManager()
+                .getComponent(path);
     }
 }

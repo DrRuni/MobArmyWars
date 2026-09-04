@@ -1,0 +1,631 @@
+file-version: 1
+
+commands:
+  arena-summary:
+    player-only: "<red>Dieser Command ist nur für Spieler."
+    manager-unavailable: "<red>ArenaManager nicht verfügbar."
+  language:
+    player-only: "<red>Dieser Befehl kann nur von Spielern verwendet werden."
+  mob-status:
+    player-only: "<red>Nur Spieler können diesen Befehl ausführen."
+    invalid-team: "<red>❌ Ungültiges Team. Benutze: rot oder blau"
+    no-team: "<red>❌ Du bist in keinem Team!"
+    no-mobs: "<red>Team %team% hat keine gespeicherten Mobs."
+    header-red: "<red>[MobArmyWars] Team %team% – gespeicherte Mobs:"
+    header-blue: "<blue>[MobArmyWars] Team %team% – gespeicherte Mobs:"
+    mob-entry: "<gray>- %amount%x %mob%"
+  options:
+    player-only: "<red>Dieser Command ist nur für Spieler!"
+  reset:
+    player-only: "<red>❌ Nur Spieler können diesen Befehl ausführen!"
+    no-permission: "<red>❌ Du hast keine Berechtigung für diesen Befehl!"
+    unknown: "<red>❌ Unbekannter Reset-Befehl!"
+    already-running: "<red>⚠ Es läuft bereits ein Welt-Reset!"
+    usage:
+      title: "<yellow>⚠ Benutzung:"
+      arena: "<gray>/reset arena"
+      lobby: "<gray>/reset lobby"
+      teamworld: "<gray>/reset teamworld"
+      playerdata: "<gray>/reset playerdata"
+    teamworld:
+      title: "<dark_red>⚠ Reset aktiviert!"
+      subtitle: "<gold>%player% hat den Team-Welten-Reset gestartet"
+    lobby:
+      title: "<dark_red>⚠ Lobby-Reset!"
+      subtitle: "<gold>%player% hat den Lobby-Welt-Reset gestartet"
+    arena:
+      title: "<dark_red>⚠ Arena-Reset!"
+      subtitle: "<gold>%player% hat den Arena-Welt-Reset gestartet"
+  resume:
+    player-only: "<red>❌ Nur Spieler können diesen Befehl nutzen!"
+    op-only: "<red>❌ Nur OPs dürfen diesen Befehl ausführen!"
+    usage-resume: "<red>Verwendung: /resume mobarmy"
+    usage-mobarmy: "<red>Verwendung: /mobarmy resume"
+  set-phase:
+    op-only: "<red>❌ Nur OPs dürfen diesen Befehl benutzen."
+    invalid-phase: "<red>❌ Ungültige Phase: %phase%"
+    success: "<green>✔ Phase wurde gesetzt auf: %phase%"
+    usage:
+      title: '<yellow>Verwendung: /%label% \<phase>'
+      phases: "<gray>Phasen:"
+      lobby: "<gray> - lobby oder 0"
+      teamworld: "<gray> - teamwelt oder 1"
+      wave-selection: "<gray> - waveauswahl oder 2"
+      arena: "<gray> - arena oder 3"
+    phase-names:
+      lobby: "Lobby"
+      teamworld: "Teamwelt"
+      wave-selection: "Wave-Auswahl"
+      arena: "Arena"
+      unknown: "Unbekannt"
+  team:
+    player-only: "<red>❌ Nur Spieler können Teams betreten!"
+    unknown-subcommand: "<red>❌ Unbekannter Subcommand!"
+    join:
+      missing-team: "<red>❌ Bitte gib ein Team an: rot oder blau!"
+      no-change-in-teamworld: "<red>❌ Du kannst in der Teamwelt kein Team wechseln!"
+      lobby-only: "<red>⚠ Du kannst Teams nur in der MobArmy-Lobby wechseln!"
+      already-in-team: "<red>❌ Du bist bereits in einem Team! Benutze /team leave"
+      joined-red: "<red>✔ Du bist nun im Team Rot!"
+      joined-blue: "<blue>✔ Du bist nun im Team Blau!"
+      invalid-team: "<red>❌ Ungültiges Team. Benutze: rot oder blau."
+    leave:
+      not-allowed-here: "<red>❌ Du kannst dein Team hier nicht verlassen!"
+      no-team: "<gray>Du bist keinem Team zugeordnet!"
+      left: "<gray>❌ Du hast dein Team verlassen."
+    usage:
+      title: "<yellow>⚠ Benutzung:"
+      join-red: "<gray>/team join rot"
+      join-blue: "<gray>/team join blau"
+      leave: "<gray>/team leave"
+
+arena-settings:
+  title: "<blue>Arena-Einstellungen"
+  reset:
+    name: "<dark_red>Reset Arena"
+    description: "<gray>Setzt die Arena komplett zurück"
+    message: "<red>⏹ Arena wurde zurückgesetzt!"
+    title: "<dark_red>⏹ ARENA RESET"
+    subtitle: "<gray>Die Arena wurde zurückgesetzt."
+  compass:
+    name: "<aqua>Arena-Kompass"
+    description: "<gray>Gibt allen Arena-Spielern einen Spezial-Kompass"
+    status-active: "<green>Status: AKTIV"
+    status-disabled: "<dark_red>Status: DEAKTIVIERT"
+    enabled: "<green>✔ Arena-Kompass wurde aktiviert."
+    disabled: "<red>✖ Arena-Kompass wurde deaktiviert."
+  give-compass:
+    name: "<aqua>Arena-Kompass geben"
+    description: "<gray>Gibt allen Arena-Spielern den Arena-Kompass"
+    success: "<green>✔ Arena-Kompass wurde vergeben."
+  arena:
+    selected: "<green>Aktuell ausgewählt"
+    not-selected: "<red>Nicht ausgewählt"
+    active: "<green>Aktive Arena: <gold>%arena%"
+    activate: "<red>Arena auswählen: <gold>%arena%"
+    currently-active: "<green>Aktuell ausgewählt"
+    click-to-activate: "<yellow>Klicken zum Auswählen"
+    already-active: "<yellow>Diese Arena ist bereits aktiv."
+    switch-not-allowed: "<red>✖ Arena-Wechsel ist nur bis Phase 2 / Wave-Auswahl möglich."
+    id-error: "<red>✖ Arena-ID konnte nicht gelesen werden."
+    activate-error: "<red>✖ Arena konnte nicht aktiviert werden: <gold>%arena%"
+    activated: "<green>✔ Aktive Arena gesetzt: <gold>%arena%"
+  back: "<dark_aqua>Zurück"
+
+bundle:
+  blue-inventory-title: "<gold>Blau Inventar"
+  red-inventory-title: "<gold>Rot Inventar"
+  inventory-not-found: "<red>Kein Inventar für dieses Team gefunden!"
+
+language-selection:
+  title: "<blue>Sprachauswahl"
+  german:
+    name: "<gold>Deutsch"
+    description: "<gray>Ändert die Sprache auf Deutsch"
+
+  english:
+    name: "<gold>English"
+    description: "<gray>Ändert die Sprache auf Englisch"
+  back: "<dark_aqua>Zurück"
+  changed-de: "<green>✓ Sprache auf Deutsch gesetzt!"
+  changed-en: "<green>✓ Sprache auf Englisch gesetzt!"
+
+options-gui:
+  title: "<blue>MobArmyWars Optionen"
+  start:
+    name: "<gold>Start MobArmyWars"
+    description: "<gray>Startet den Countdown"
+  pause:
+    name: "<gold>Event Pause"
+    description: "<gray>Pausiert den Timer"
+    message: "<yellow>⏸ Event pausiert!"
+  resume:
+    name: "<gold>Event fortsetzen (Resume)"
+    description: "<gray>Setzt Timer und Event fort"
+    success: "<green>▶ Event fortgesetzt!"
+    failed: "<red>❌ Event konnte nicht fortgesetzt werden!"
+  timer:
+    name: "<gold>Timer"
+    description: "<gray>Öffne das Timer-Menü"
+  setup:
+    name: "<gold>Setup"
+    description: "<gray>Zugang zu allen Einstellungen"
+  close: "<dark_aqua>Menü schließen"
+
+player-action-gui:
+  title: "<blue>Spieler: <yellow>%player%"
+  inventory-title: "<blue>Inventar: <yellow>%player%"
+  heal:
+    name: "<green>Heilen"
+    description-1: "<gray>Heilt den Spieler vollständig"
+    description-2: "<gray>und entfernt alle Effekte."
+    action: "<green>Linksklick<gray> Spieler heilen"
+  kill:
+    name: "<red>Töten"
+    description: "<gray>Tötet den ausgewählten Spieler."
+    action: "<green>Linksklick<gray> Spieler töten"
+  team-blue:
+    name: "<blue>Team Blau"
+    description-1: "<gray>Verschiebt den Spieler"
+    description-2: "<gray>ins blaue Team."
+    action: "<green>Linksklick<gray> Team Blau zuweisen"
+  team-red:
+    name: "<red>Team Rot"
+    description-1: "<gray>Verschiebt den Spieler"
+    description-2: "<gray>ins rote Team."
+    action: "<green>Linksklick<gray> Team Rot zuweisen"
+  inventory:
+    name: "<gold>Inventar ansehen"
+    description-1: "<gray>Zeigt das Inventar"
+    description-2: "<gray>des Spielers."
+    action: "<green>Linksklick<gray> Inventar öffnen"
+  back: "<dark_aqua>Zurück"
+  messages:
+    offline: "<red>Der Spieler ist nicht mehr online!"
+    healed-viewer: "<green>✔ <yellow>%player%<gray> wurde geheilt und alle Effekte wurden entfernt."
+    healed-target: "<green>✔ Du wurdest vollständig geheilt."
+    killed: "<red>☠ <yellow>%player%<gray> wurde von <gold>%viewer%<gray> getötet."
+    team-blue: "<blue>✔ <yellow>%player%<gray> wurde ins Team Blau verschoben."
+    team-red: "<red>✔ <yellow>%player%<gray> wurde ins Team Rot verschoben."
+
+player-gui:
+  title: "<blue>Online-Spieler"
+  back: "<dark_aqua>Zurück"
+  offline: "<red>Der Spieler ist nicht mehr online!"
+
+randomizer-exclusion-gui:
+  title: "<blue>Randomizer-Ausnahmen"
+  copper:
+    name: "<gold>Kupferblöcke"
+    description: "<gray>Alle Materialien mit COPPER im Namen ausschließen"
+    pattern: "<gray>Pattern: <yellow>%pattern%"
+  spawn-egg:
+    enabled: "<green>Aktiviert ✅"
+    disabled: "<red>Deaktiviert ❌"
+  click-toggle: "<dark_gray>Klicken zum Umschalten"
+  back: "<dark_aqua>Zurück"
+
+setup-gui:
+  title: "<blue>Event- & Welten Einstellungen"
+  teleports:
+    name: "<gold>Teleports"
+    description: "<gray>Teleport-Menü öffnen"
+  world-settings:
+    name: "<gold>Welteinstellungen"
+    description: "<gray>Öffne das Welt-Einstellungs-Menü"
+  players:
+    name: "<gold>Spieler-Verwaltung"
+    description: "<gray>Öffnet Spieler-Einstellungen"
+  teams:
+    name: "<gold>Team Einstellungen"
+    description: "<gray>Öffnet die Team-Einstellungen"
+  arena:
+    name: "<gold>Arena-Einstellungen"
+    description: "<gray>Öffnet die Arena-Einstellungen"
+  reset-game:
+    name: "<dark_red>Reset Spielfortschritt"
+    description: "<red>Setzt Arena & Spielstatus zurück"
+  reset-teamworlds:
+    name: "<dark_red>Reset Team-Welten"
+    description: "<red>Welten Rot & Blau werden neu generiert"
+  reset-lobby:
+    name: "<dark_red>Reset Lobby-Welt"
+    description: "<red>Lobby wird komplett zurückgesetzt"
+  reset-arena:
+    name: "<dark_red>Reset Arena-Welt"
+    description: "<red>Arena wird komplett zurückgesetzt"
+  back: "<dark_aqua>Zurück"
+
+team-equipment-gui:
+  title: "<blue>Team Equipment Einstellungen"
+  back:
+    name: "<dark_aqua>Zurück"
+    description: "<gray>Zurück zu den Team Einstellungen"
+  team:
+    blue: "<blue>Blau"
+    red: "<red>Rot"
+  current: "<gray>Aktuell:"
+  left-click: "<green>Linksklick: + Stufe"
+  right-click: "<red>Rechtsklick: - Stufe"
+  type:
+    helmet: "Helm"
+    chestplate: "Brustplatte"
+    leggings: "Hose"
+    boots: "Schuhe"
+    sword: "Schwert"
+    axe: "Axt"
+    pickaxe: "Spitzhacke"
+    bow: "Bogen"
+    food: "Essen"
+    shield: "Schild"
+    op-food: "OP Essen"
+  level:
+    none: "<red>Kein Equipment"
+    leather: "<gray>Leder"
+    stone: "<dark_gray>Stein"
+    iron: "<white>Eisen"
+    diamond: "<aqua>Diamant"
+    netherite: "<dark_purple>Netherite"
+    bow: "<green>Bogen + Pfeile"
+    steak: "<green>Steak"
+    golden-carrot: "<gold>Goldene Karotten"
+    shield: "<green>Schild"
+    golden-apple: "<gold>Goldapfel"
+    enchanted-golden-apple: "<gold>Verzauberter Goldapfel"
+    unknown: "<red>Unbekannt"
+  received: "<green>✔ Du hast dein Team-Equipment erhalten."
+
+team-selection-gui:
+  title: "<blue>Team Auswahl"
+  blue: "<blue>Team Blau"
+  none: "<gray>Kein Team"
+  red: "<red>Team Rot"
+  messages:
+    none: "<gray>Du bist keinem Team zugeordnet!"
+    red: "<yellow>%player%<red> ist nun im Team Rot!"
+    blue: "<yellow>%player%<blue> ist nun im Team Blau!"
+
+team-manager:
+  joined:
+    title-blue: "<blue>✅ OK"
+    title-red: "<red>✅ OK"
+    subtitle-blue: "<blue>Du bist jetzt im Team Blau"
+    subtitle-red: "<red>Du bist jetzt im Team Rot"
+
+team-settings-gui:
+  title: "<blue>Team Einstellungen"
+  select:
+    name: "<gold>Team wählen"
+    description: "<gray>Öffnet die Teamauswahl für alle Spieler"
+    opened: "<aqua>👥 <gray>Der Teamleiter hat die Teamauswahl geöffnet."
+  reset:
+    name: "<dark_red>Teams zurücksetzen"
+    description: "<red>Alle Spieler werden aus Teams entfernt"
+    message: "<red>❌ Alle Teams wurden zurückgesetzt!"
+  equipment:
+    name: "<gold>Team Equipment"
+    description: "<gray>Equipment für Rot und Blau einstellen"
+  back: "<dark_aqua>Zurück"
+
+teleport-gui:
+  title: "<blue>Teleports für MobArmyWars"
+
+  self:
+    lobby:
+      name: "<gold>Ich → Lobby"
+    teamworld:
+      name: "<gold>Ich → Teamwelt"
+    wave:
+      name: "<gold>Ich → Waveauswahl"
+    arena:
+      name: "<gold>Ich → Arena"
+    description: "<gray>Teleportiert nur dich"
+
+  all:
+    lobby:
+      name: "<gold>Alle → Lobby"
+      phase: "<dark_red>Phase Lobby wird gesetzt!"
+    teamworld:
+      name: "<gold>Alle → Teamwelt"
+      phase: "<dark_red>Phase Teamwelt wird gesetzt!"
+    wave:
+      name: "<gold>Alle → Waveauswahl"
+      phase: "<dark_red>Phase Waveauswahl wird gesetzt!"
+    arena:
+      name: "<gold>Alle → Arena"
+      phase: "<dark_red>Phase Arena wird gesetzt!"
+    description: "<gray>Teleportiert ALLE Spieler &"
+  back: "<dark_aqua>Zurück"
+  messages:
+    no-team: "<red>❗ Du musst einem Team angehören!"
+    skipped-no-team: "<dark_red>✖ <gray>Du wurdest nicht teleportiert, da du keinem Team angehörst."
+    invalid-team: "<red>❌ Du konntest nicht teleportiert werden (ungültiges Team)."
+    no-player: "<red>❗ Kein Spieler gefunden!"
+    no-valid-player: "<red>❗ Kein Spieler mit gültigem Team gefunden!"
+    lobby-self: "<green>✔ Du wurdest zur Lobby teleportiert!"
+    lobby-all: "<green>Alle Spieler wurden zur Lobby teleportiert!"
+    teamworld-self: "<green>🌍 Du wurdest in deine Teamwelt teleportiert!"
+    teamworld-all: "<gold>📢 Der Teamleiter hat alle Team-Spieler teleportiert."
+    wave-self: "<green>🚀 Du wurdest zur Wavekonfiguration teleportiert!"
+    wave-all: "<gray>📢 Der Teamleiter hat alle Team-Spieler zur Waveauswahl teleportiert."
+    arena-self: "<green>🚀 Du wurdest zur Arena teleportiert!"
+    arena-all: "<gray>📢 Der Teamleiter hat alle Team-Spieler zur Arena teleportiert."
+
+timer-gui:
+  title: "<blue>Timer"
+  play:
+    name: "<green>Play"
+    description: "<gray>Startet den Timer (vorwärts)"
+  pause:
+    name: "<gold>Pause"
+    description: "<gray>Pausiert den Timer"
+  stop:
+    name: "<red>Stop"
+    description-1: "<gray>Beendet den Timer"
+    description-2: "<gray>Setzt ihn auf 0 zurück"
+  hour:
+    name: "<green>1 Stunde"
+    left: "<gray>Linksklick: +1 Stunde"
+    right: "<gray>Rechtsklick: -1 Stunde"
+  ten-minutes:
+    name: "<gold>10 Minuten"
+    left: "<gray>Linksklick: +10 Minuten"
+    right: "<gray>Rechtsklick: -10 Minuten"
+  minute:
+    name: "<red>1 Minute"
+    left: "<gray>Linksklick: +1 Minute"
+    right: "<gray>Rechtsklick: -1 Minute"
+  back: "<dark_aqua>Zurück"
+  messages:
+    added: "<green>+%time%<gray> hinzugefügt."
+    removed: "<red>-%time%<gray> entfernt."
+
+unified-wave-gui:
+  no-team: "<dark_red>✖ <gray>Du musst einem Team angehören, um Waves zu konfigurieren."
+  selection:
+    title: "<blue>MobArmy » Wave-Menü"
+    wave: "<yellow>Wave %wave% konfigurieren"
+    empty: "<dark_gray>Noch keine Mobs ausgewählt"
+    finish: "<green>Fertig"
+    reset: "<yellow>Waves zurücksetzen"
+  mobs:
+    title: "<gold>Wave %wave% Mobs"
+    used: "<white>Eingesetzt: %amount%"
+    available: "<white>Verfügbar: %amount%"
+    unavailable: "<red>❌ Nicht verfügbar"
+    left: "<green>Linksklick<gray> +1"
+    right: "<green>Rechtsklick<gray> -1"
+    shift: "<dark_gray>Shift = 10er Schritt"
+    save-back: "<yellow>Speichern & Zurück"
+  messages:
+    saved: "<blue>✅ Wave gespeichert!"
+    finished: "<green>✔ Wave-Auswahl beendet."
+    reset: "<dark_red>🧨 Alle Waves für dein Team wurden zurückgesetzt und die Mobs wieder freigegeben."
+
+world-settings-gui:
+  title: "<blue>Welteinstellungen"
+  status:
+    "on": "<green>AN"
+    "off": "<red>AUS"
+  block-randomizer:
+    name: "BlockRandomizer"
+    description-1: "<gray>Zufällige Blöcke beim Abbauen"
+    description-2: "<gray>global ein- oder ausschalten"
+    enabled: "<green>✅ BlockRandomizer aktiviert!"
+    disabled: "<red>⛔ BlockRandomizer deaktiviert!"
+    reset:
+      name: "<dark_red>BlockRandomizer zurücksetzen"
+      description-1: "<gray>Erstellt eine neue zufällige"
+      description-2: "<gray>Zuordnung aller Blöcke"
+      message: "<green>🔁 BlockRandomizer zurückgesetzt!"
+    exclusions:
+      name: "<gold>BlockRandomizer-Ausnahmen"
+      description-1: "<gray>Blöcke, Gegenstände und Spawn-Eier"
+      description-2: "<gray>vom Zufall ausschließen"
+  chest-randomizer:
+    name: "Kisten-Randomizer"
+    enabled: "<green>✅ Kisten-Randomizer aktiviert!"
+    disabled: "<red>⛔ Kisten-Randomizer deaktiviert!"
+  keep-inventory:
+    name: "Inventar behalten"
+    description-1: "<gray>Spieler behalten nach dem Tod"
+    description-2: "<gray>Inventar und Erfahrung"
+    enabled: "<green>✅ KeepInventory aktiviert!"
+    disabled: "<red>⛔ KeepInventory deaktiviert!"
+  mob-spawning:
+    name: "Mob-Spawning"
+    enabled: "<green>✅ Mob-Spawning aktiviert!"
+    disabled: "<red>⛔ Mob-Spawning deaktiviert!"
+  night-vision:
+    name: "Nachtsicht"
+    enabled-description: "<gray>Gibt allen Spielern dauerhaft Nachtsicht"
+    disabled-description: "<gray>Nachtsicht ist deaktiviert"
+    enabled: "<green>✅ Nachtsicht aktiviert!"
+    disabled: "<red>⛔ Nachtsicht deaktiviert!"
+  daylight-cycle:
+    name: "Tageslichtzyklus"
+    enabled-description: "<gray>Tag und Nacht wechseln automatisch"
+    disabled-description: "<gray>Die aktuelle Tageszeit bleibt stehen"
+    enabled: "<green>✅ Tageslichtzyklus aktiviert!"
+    disabled: "<red>⛔ Tageslichtzyklus deaktiviert!"
+  toggle:
+    status: "<gray>Status: %status%"
+  difficulty:
+    name: "<blue>Schwierigkeit: %phase%"
+    click: "<gray>Klicke zum Ändern"
+    changed: "<aqua>⚔ <blue>Schwierigkeit geändert: %phase%"
+    peaceful: "<white>Friedlich"
+    easy: "<green>Leicht"
+    normal: "<gold>Normal"
+    hard: "<red>Schwer"
+    ultra-ultra-hardcore: "<dark_purple>Ultra-Ultra-Hardcore"
+    unknown: "<gray>Unbekannt"
+  time:
+    name: "<blue>Tageszeit: <phase>"
+    click: "<gray>Klicke, um zur nächsten Tageszeit zu springen"
+    cycle: "<dark_gray>(<gold>Früh <dark_gray>→ <yellow>Mittag <dark_gray>→ <red>Abend <dark_gray>→ <blue>Nacht <dark_gray>→ <gold>Früh<dark_gray>)"
+    changed: "<aqua>🕒 <blue>Tageszeit geändert: <phase>"
+    morning: "<gold>Früh"
+    noon: "<yellow>Mittag"
+    evening: "<red>Abend"
+    night: "<blue>Nacht"
+  back:
+    name: "<dark_aqua>Zurück"
+    description: "<gray>Zurück zum vorherigen Menü"
+
+bundle-listener:
+  drop-denied: "<red>🚫 Du kannst dein Team-Bundle nicht droppen!"
+
+pause-listener:
+  player-left: "<red>Spieler <yellow>%player%<red> ist aus dem Event ausgetreten. <gold>Das Spiel wurde angehalten. <gray>Weiter mit /resume"
+
+arena-event-manager:
+  countdown:
+    go: "<green>Go!"
+  bossbar:
+    remaining: "⚔ WAVE %wave% - Gegner verbleibend"
+  wave:
+    empty: "<red>⚠ Wave %wave% ist leer."
+    start-title: "%teamcolor%⚔ WAVE %wave%"
+    start-subtitle: "<gray>Bereit machen!"
+    completed-title: "<gold>WAVE %wave% abgeschlossen"
+    completed-subtitle: "<gray>Nächste beginnt gleich..."
+  winner:
+    first: "<gold>🏆 Team <team><yellow> hat gewonnen!"
+    second: "<gray>🥈 Team <team><gray> ist 2ter Platz | Sieger: <winner><gray> | Zeit: <yellow>%time%"
+  summary-button:
+    name: "<gold><bold>▶ AUSWERTUNG"
+    hover: "<yellow>Klicken für die Arena-Auswertung\n<gray>(Kills & Mobs je Team)"
+  ready:
+    already-ready: "<yellow>⚠ Dein Team ist bereits bereit."
+    all-ready-title: "<green>✅ Alle Teams bereit!"
+    all-ready-subtitle: "<yellow>Die Arenaphase beginnt gleich..."
+  summary:
+    header: "<gold>====== 📊 Auswertung Arena ======"
+    red-kills: "<red>     Team Rot Kills: %kills%"
+    blue-kills: "<blue>     Team Blau Kills: %kills%"
+    footer: "<gold>==============================="
+  team:
+    red: "<red>Rot"
+    blue: "<blue>Blau"
+
+arena-compass:
+  name: "<aqua>Monster-Kompass"
+  lore:
+    line-1: "<gray>Zeigt für %duration% Sekunden"
+    line-2: "<gray>alle Monster im Umkreis von %radius% Blöcken."
+    line-3: "<gray>Verlangsamt und blendet dich kurz."
+    line-4: "<yellow>Linksklick oder Rechtsklick zum Aktivieren"
+  inventory-full:
+    title: "<dark_red>⚠ Inventar voll!"
+    subtitle: "<red>Monster-Kompass wurde vor dir gedroppt."
+  cooldown: "<red>❌ Der Kompass ist noch %seconds%s im Cooldown."
+  none-found: "<gray>Keine Lebewesen im Umkreis von %radius% Blöcken gefunden."
+
+arena-scoreboard:
+  red-team: "Team Rot"
+  blue-team: "Team Blau"
+  wave: "Wave:"
+  kills: "Kills:"
+
+chest-randomizer:
+  title: "<blue>Randomisierte Kiste"
+
+event-manager:
+  timer-not-set: "<red>❌ Der Timer muss noch eingestellt werden!"
+  no-team: "<yellow>⚠ Du hast noch kein Team! Bitte wähle eines aus."
+  start:
+    title: "<green>Event beginnt"
+    subtitle: "<yellow>Du wirst gleich teleportiert"
+  prepare:
+    title: "<yellow>Bereit machen..."
+    subtitle: "<gray>Countdown startet gleich"
+  countdown:
+    go: "<green>Go!"
+  team-world-not-found: "<red>Fehler: Team-Welt '%world%' nicht gefunden!"
+  timer-end:
+    title: "<red>⏰ Zeit abgelaufen!"
+    subtitle: "<gold>Arenakampf beginnt gleich"
+  wave-selection:
+    teleported: "<green>🚀 Du wurdest zur Wavekonfiguration teleportiert!"
+    message: "<aqua>  ⚔ Bereite nun die Waves für deinen Gegner vor."
+    title: "Vorbereitung"
+    subtitle: "<dark_aqua>Erstelle die Waves und bereite dich auf den Kampf vor."
+  reset:
+    complete: "<dark_red>   MobArmyWars wurde komplett zurückgesetzt!"
+
+mob-save-manager:
+  kill: "<white>+%amount% <mob> getötet"
+  kill-suffix: " getötet"
+
+team-scoreboard:
+  red-team: "<red>Team Rot"
+  blue-team: "<blue>Team Blau"
+  red-label: "Team Rot:"
+  blue-label: "Team Blau:"
+  no-team: "Kein Team:"
+
+timer-manager:
+  bossbar:
+    expired: "<gold>Die Zeit ist abgelaufen!"
+    timer: "<blue>Timer"
+  started: "<green>▶ Der Timer wurde gestartet!"
+  paused: "<yellow>⏸ Der Timer wurde pausiert!"
+  day: "Tag"
+  days: "Tage"
+  second-short: "sek"
+
+button-manager:
+  team-selection-only-lobby: "<red>⚠ Team-Auswahl ist nur in der Lobby-Phase möglich."
+  use-phase-lobby: "<gold>nutze /set phase lobby"
+  operators-only: "<red>❌ Nur Operatoren dürfen das Event starten!"
+  event-only-lobby: "<red>⚠ Das Event kann nur aus der Lobby-Phase gestartet werden."
+  wave-selection-only-phase: "<red>⚠ Wave-Auswahl ist nur in der Waveauswahl-Phase möglich."
+  ready-only-phase: "<red>⚠ Ready ist nur in der Waveauswahl-Phase möglich."
+  use-phase-wave-selection: "<gold>nutze /set phase waveauswahl"
+  no-team: "<red>⚠ Du bist in keinem Team."
+  wrong-ready-team: "<red>⚠ Dieser Ready-Button ist nur für Team <team><red>."
+  ready:
+    title: "✔ Team <team> bereit!"
+    subtitle: "<gray>%player% hat Ready gedrückt"
+
+resume-manager:
+  not-started: "<red>✖ Das Event wurde noch nicht gestartet."
+  already-running: "<red>✖ Das Event läuft bereits."
+  no-team: "<yellow>⚠ Du hast noch kein Team!"
+  missing-teams: "<red>✖ Resume abgebrochen. Nicht alle Online-Spieler haben ein Team."
+  resumed-team-world: "<green>▶ Event wird in der Teamwelt fortgesetzt."
+  resumed-wave-selection: "<green>▶ Event wird in der Wave-Auswahl fortgesetzt."
+  resumed-arena: "<green>▶ Event wird in der Arena fortgesetzt."
+  unknown-phase: "<dark_red>✖ Unbekannte Phase. Resume abgebrochen."
+
+teleport-manager:
+  no-team: "<red>❌ Du hast kein Team!"
+  lobby-world-not-loaded: "<red>❌ Lobby-Welt ist nicht geladen!"
+  invalid-team: "<red>❌ Ungültiges Team: %team%"
+  no-active-arena: "<red>❌ Keine aktive Arena geladen!"
+  no-arena-spawn: "<red>❌ Kein Arena-Spawn für Team %team%"
+  arena-world-not-loaded: "<red>❌ Arena-Welt ist nicht geladen!"
+
+world-manager:
+  lobby-resetting: "<red>⚠ Lobby-Welt wird neu geladen..."
+  lobby-reset-complete: "<green>✔ LOBBY-Welt wurde neu geladen!"
+  arena-resetting: "<red>⚠ Arena-Welt wird neu geladen..."
+  arena-reset-complete: "<green>✔ ARENA-Welt wurde neu geladen!"
+  team-worlds-resetting: "<red>⚠ Team-Welten werden neu generiert..."
+  team-worlds-reset-complete: "<green>✔ TEAM-Welten wurden neu generiert!"
+  progress-still-loaded-1: "<dark_red>Die Spieler- und Eventdaten sind noch geladen,"
+  progress-still-loaded-2: "<dark_red>diese können nur über <gold>Reset Spielfortschritt"
+  progress-still-loaded-3: "<dark_red>zurückgesetzt werden!"
+
+player-join-listener:
+  notice:
+    line-1: "<gold><bold>Wichtige Mitteilung:</bold> <yellow>Klicke <aqua><bold>HIER</bold></aqua>, um weitere Informationen zu erhalten."
+    details-1: "<gray>Diese Version wird vorerst die letzte Version von MobArmyWars sein."
+    details-2: "<gray>Mein nächstes Projekt wird <gold>BastiGHG Challenges - Fan Project</gold> heißen."
+    details-3: "<gray>MobArmyWars wird dort wieder enthalten sein – unter dem ursprünglichen Namen <aqua>MobArmyBattle</aqua>."
+    details-4: "<yellow>Habt etwas Geduld – es wird kommen. :D"
+    hover: "<yellow>Klicken für weitere Informationen"
+  welcome:
+    title: "Willkommen"
+    to: "zu"

@@ -17,6 +17,7 @@ import runi.myddns.mobarmywars.Managers.World.ResumeManager;
 import runi.myddns.mobarmywars.MobArmyMain;
 
 import java.io.File;
+import java.util.Locale;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class PlayerRespawnListener implements Listener {
@@ -31,9 +32,11 @@ public class PlayerRespawnListener implements Listener {
     public void onRespawn(PlayerRespawnEvent e) {
         Player player = e.getPlayer();
 
-        Bukkit.getScheduler().runTask(plugin, () -> {
-            plugin.getPlayerEffectManager().applyNightVision(player);
-        });
+        Bukkit.getScheduler().runTask(
+                plugin,
+                () -> plugin.getPlayerEffectManager()
+                        .applyNightVision(player)
+        );
 
         Location deathLocation = player.getLocation();
         World deathWorld = deathLocation.getWorld();
@@ -42,19 +45,12 @@ public class PlayerRespawnListener implements Listener {
 
         int phase = plugin.getEventResume().loadPhase();
 
-        // =====================================================
-        // PHASE 0 = LOBBY
-        // Respawn aus plugins/MobArmyWars/spawns.yml -> lobbyspawn
-        // Alte gespeicherte Event-Spawns werden in Phase 0 ignoriert.
-        // =====================================================
         if (phase == ResumeManager.PHASE_LOBBY) {
             Location lobbySpawn = getLobbySpawnFromFile();
 
             if (lobbySpawn != null) {
                 e.setRespawnLocation(lobbySpawn);
             }
-
-            return;
         }
 
         String team = plugin.getTeamManager().getPlayerTeam(player);
@@ -72,24 +68,16 @@ public class PlayerRespawnListener implements Listener {
             }
         }
 
-        // =====================================================
-        // PHASE 1 = TEAMWELT
-        // Nether: Respawnanker geht vor.
-        // Danach Bett in eigener Teamwelt.
-        // Danach Spawnpunkt der eigenen Teamwelt.
-        // Gespeicherte Event-Spawns werden ignoriert.
-        // =====================================================
         if (phase == ResumeManager.PHASE_TEAMWELT) {
 
-            // Wenn der Spieler im Nether stirbt und Minecraft/Bukkit
-            // bereits einen gültigen Nether-Respawn gesetzt hat,
-            // z.B. Respawnanker, dann lassen wir diesen Respawn unverändert.
             if (deathWorld.getEnvironment() == World.Environment.NETHER) {
-                Location vanillaRespawn = e.getRespawnLocation();
+                Location vanillaRespawn =
+                        e.getRespawnLocation();
 
-                if (vanillaRespawn != null
-                        && vanillaRespawn.getWorld() != null
-                        && vanillaRespawn.getWorld().getEnvironment() == World.Environment.NETHER) {
+                if (vanillaRespawn.getWorld() != null
+                        && vanillaRespawn.getWorld().getEnvironment()
+                        == World.Environment.NETHER) {
+
                     return;
                 }
             }
@@ -117,10 +105,6 @@ public class PlayerRespawnListener implements Listener {
             return;
         }
 
-        // =====================================================
-        // PHASE 2 = WAVE-AUSWAHL
-        // Respawn am Team-Spawn der Wave-Auswahl aus spawns.yml.
-        // =====================================================
         if (phase == ResumeManager.PHASE_WAVEAUSWAHL) {
             Location waveSpawn = getWaveAuswahlTeamSpawnFromFile(player);
 
@@ -137,11 +121,6 @@ public class PlayerRespawnListener implements Listener {
             return;
         }
 
-        // =====================================================
-        // PHASE 3 = ARENA
-        // Erst Bett in der Arena-Welt, sonst Teamspawn der Arena.
-        // Arena-Kompass wird nach Respawn neu gegeben, wenn aktiv.
-        // =====================================================
         if (phase == ResumeManager.PHASE_ARENA) {
             Location arenaBed = getArenaBedSpawn(player);
 
@@ -166,16 +145,11 @@ public class PlayerRespawnListener implements Listener {
             return;
         }
 
-        // =====================================================
-        // UNBEKANNTE PHASE = FALLBACK LOBBY
-        // =====================================================
         Location lobbySpawn = getLobbySpawnFromFile();
 
         if (lobbySpawn != null) {
             e.setRespawnLocation(lobbySpawn);
         }
-
-        return;
     }
 
     @EventHandler
@@ -298,7 +272,7 @@ public class PlayerRespawnListener implements Listener {
             return null;
         }
 
-        team = team.toLowerCase();
+        team = team.toLowerCase(Locale.ROOT);
 
         if (!team.equals("rot") && !team.equals("blau")) {
             plugin.getLogger().warning("Ungültiges Team für Wave-Auswahl-Respawn: " + team);
@@ -388,7 +362,7 @@ public class PlayerRespawnListener implements Listener {
     private Location getTeamBedSpawn(Player player, String teamWorldName) {
         if (teamWorldName == null) return null;
 
-        Location bed = player.getBedSpawnLocation();
+        Location bed = player.getRespawnLocation();
         if (bed == null || bed.getWorld() == null) return null;
 
         if (bed.getWorld().getName().equalsIgnoreCase(teamWorldName)) {
@@ -399,7 +373,7 @@ public class PlayerRespawnListener implements Listener {
     }
 
     private Location getArenaBedSpawn(Player player) {
-        Location bed = player.getBedSpawnLocation();
+        Location bed = player.getRespawnLocation();
 
         if (bed == null || bed.getWorld() == null) {
             return null;

@@ -1,9 +1,11 @@
 package runi.myddns.mobarmywars.GUIs;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.title.Title;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
-import org.bukkit.Sound;
+import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -12,81 +14,106 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 import runi.myddns.mobarmywars.Managers.Event.ArenaConfig;
 import runi.myddns.mobarmywars.Managers.World.ResumeManager;
 import runi.myddns.mobarmywars.MobArmyMain;
 import runi.myddns.mobarmywars.Utils.Sounds;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ArenaSettingsGUI implements Listener {
 
     private final MobArmyMain plugin;
-    private static final String TITLE = ChatColor.BLUE + "Arena-Einstellungen";
+    private final NamespacedKey arenaIdKey;
 
     public ArenaSettingsGUI(MobArmyMain plugin) {
         this.plugin = plugin;
+        this.arenaIdKey = new NamespacedKey(plugin, "arena_id");
     }
 
     public void open(Player player) {
-        Inventory inv = Bukkit.createInventory(null, 54, TITLE);
+
+        Inventory inv = Bukkit.createInventory(
+                null,
+                54,
+                lang("arena-settings.title")
+        );
 
         inv.setItem(11, createItem(
                 Material.IRON_SWORD,
-                ChatColor.DARK_RED + "Reset Arena",
-                "",
-                "Setzt die Arena komplett zurück"
+                lang("arena-settings.reset.name"),
+                Component.empty(),
+                lang("arena-settings.reset.description")
         ));
 
-//        inv.setItem(12, createItem(
-//                Material.RESPAWN_ANCHOR,
-//                ChatColor.GREEN + "WAVES neu starten",
-//                "",
-//                "Startet alle Arena-Waves neu"
-//        ));
-
         inv.setItem(13, createItem(
-                plugin.getWorldSettings().isArenaCompassEnabled() ? Material.COMPASS : Material.GRAY_DYE,
-                ChatColor.AQUA + "Arena-Kompass",
-                "",
-                "Gibt allen Arena-Spielern einen Spezial-Kompass",
                 plugin.getWorldSettings().isArenaCompassEnabled()
-                        ? ChatColor.GREEN + "Status: AKTIV"
-                        : ChatColor.DARK_RED + "Status: DEAKTIVIERT"
+                        ? Material.COMPASS
+                        : Material.GRAY_DYE,
+
+                lang("arena-settings.compass.name"),
+
+                Component.empty(),
+                lang("arena-settings.compass.description"),
+
+                plugin.getWorldSettings().isArenaCompassEnabled()
+                        ? lang("arena-settings.compass.status-active")
+                        : lang("arena-settings.compass.status-disabled")
         ));
 
         inv.setItem(15, createItem(
                 Material.COMPASS,
-                ChatColor.AQUA + "Arena-Kompass geben",
-                "",
-                "Gibt allen Arena-Spielern den Arena-Kompass"
+                lang("arena-settings.give-compass.name"),
+                Component.empty(),
+                lang("arena-settings.give-compass.description")
         ));
 
         addArenaButtons(inv);
 
-        inv.setItem(49, createBackButton("Event-Einstellungen"));
+        inv.setItem(49, createBackButton());
 
         player.openInventory(inv);
     }
 
     private void addArenaButtons(Inventory inv) {
-        List<ArenaConfig.ArenaInfo> arenas = plugin.getArenaConfig().getAvailableArenas();
-        String activeArenaId = plugin.getArenaConfig().getActiveArenaId();
+
+        List<ArenaConfig.ArenaInfo> arenas =
+                plugin.getArenaConfig().getAvailableArenas();
+
+        String activeArenaId =
+                plugin.getArenaConfig().getActiveArenaId();
 
         int[] imageSlots = {29, 33};
         int[] buttonSlots = {38, 42};
 
         for (int i = 0; i < arenas.size() && i < 2; i++) {
-            ArenaConfig.ArenaInfo arena = arenas.get(i);
-            boolean active = arena.id().equalsIgnoreCase(activeArenaId);
 
-            inv.setItem(imageSlots[i], createArenaPreviewItem(arena, active, i));
-            inv.setItem(buttonSlots[i], createArenaSwitchButton(arena, active));
+            ArenaConfig.ArenaInfo arena = arenas.get(i);
+
+            boolean active =
+                    arena.id().equalsIgnoreCase(activeArenaId);
+
+            inv.setItem(
+                    imageSlots[i],
+                    createArenaPreviewItem(arena, active, i)
+            );
+
+            inv.setItem(
+                    buttonSlots[i],
+                    createArenaSwitchButton(arena, active)
+            );
         }
     }
 
-    private ItemStack createArenaPreviewItem(ArenaConfig.ArenaInfo arena, boolean active, int index) {
+    private ItemStack createArenaPreviewItem(
+            ArenaConfig.ArenaInfo arena,
+            boolean active,
+            int index
+    ) {
+
         Material material = switch (index) {
             case 0 -> Material.CHERRY_SAPLING;
             case 1 -> Material.SCULK_SENSOR;
@@ -95,213 +122,400 @@ public class ArenaSettingsGUI implements Listener {
 
         return createItem(
                 material,
-                ChatColor.GOLD + arena.name(),
-                "",
-                arena.description(),
-                "",
+
+                Component.text(
+                        arena.name(),
+                        NamedTextColor.GOLD
+                ),
+
+                Component.empty(),
+
+                Component.text(
+                        arena.description(),
+                        NamedTextColor.GRAY
+                ),
+
+                Component.empty(),
+
                 active
-                        ? ChatColor.GREEN + "Aktuell ausgewählt"
-                        : ChatColor.RED + "Nicht ausgewählt"
+                        ? lang("arena-settings.arena.selected")
+                        : lang("arena-settings.arena.not-selected")
         );
     }
 
-    private ItemStack createArenaSwitchButton(ArenaConfig.ArenaInfo arena, boolean active) {
-        return createItem(
-                active ? Material.LIME_DYE : Material.RED_DYE,
-                active
-                        ? ChatColor.GREEN + "Aktiv: " + arena.name()
-                        : ChatColor.RED + "Aktivieren: " + arena.name(),
-                "",
-                ChatColor.DARK_GRAY + "ID: " + arena.id(),
-                "",
-                active
-                        ? ChatColor.GREEN + "Diese Arena ist aktuell aktiv."
-                        : ChatColor.YELLOW + "Klicken, um diese Arena zu aktivieren."
-        );
-    }
+    private ItemStack createArenaSwitchButton(
+            ArenaConfig.ArenaInfo arena,
+            boolean active
+    ) {
 
-    private ItemStack createItem(Material mat, String name, String... loreLines) {
-        ItemStack item = new ItemStack(mat);
+        ItemStack item = createItem(
+                active
+                        ? Material.LIME_DYE
+                        : Material.RED_DYE,
+
+                active
+                        ? langArena(
+                        "arena-settings.arena.active",
+                        arena.name()
+                )
+                        : langArena(
+                        "arena-settings.arena.activate",
+                        arena.name()
+
+                ),
+
+                Component.empty(),
+
+                active
+                        ? lang("arena-settings.arena.currently-active")
+                        : lang("arena-settings.arena.click-to-activate")
+        );
+
         ItemMeta meta = item.getItemMeta();
-        if (meta == null) return item;
 
-        meta.setDisplayName(name);
+        if (meta != null) {
 
-        List<String> lore = new ArrayList<>();
-        if (loreLines != null && loreLines.length > 0) {
-            for (String line : loreLines) {
-                lore.add(ChatColor.GRAY + line);
-            }
+            meta.getPersistentDataContainer().set(
+                    arenaIdKey,
+                    PersistentDataType.STRING,
+                    arena.id()
+            );
+
+            item.setItemMeta(meta);
         }
 
-        meta.setLore(lore);
-        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS, ItemFlag.HIDE_UNBREAKABLE);
-        item.setItemMeta(meta);
         return item;
     }
 
-    private ItemStack createBackButton(String ziel) {
+    private ItemStack createItem(
+            Material material,
+            Component name,
+            Component... loreLines
+    ) {
+
+        ItemStack item = new ItemStack(material);
+
+        ItemMeta meta = item.getItemMeta();
+
+        if (meta == null) {
+            return item;
+        }
+
+        // Moderner Component-Name
+        meta.displayName(name);
+
+        // Moderne Component-Lore
+        List<Component> lore = new ArrayList<>();
+
+        if (loreLines != null) {
+
+            for (Component line : loreLines) {
+
+                if (line != null) {
+                    lore.add(line);
+                }
+            }
+        }
+
+        meta.lore(lore);
+
+        meta.addItemFlags(
+                ItemFlag.HIDE_ATTRIBUTES,
+                ItemFlag.HIDE_ENCHANTS,
+                ItemFlag.HIDE_UNBREAKABLE
+        );
+
+        item.setItemMeta(meta);
+
+        return item;
+    }
+
+    private ItemStack createBackButton() {
+
         ItemStack item = new ItemStack(Material.ARROW);
-        ItemMeta meta = item.getItemMeta();
-        if (meta == null) return item;
 
-        meta.setDisplayName(ChatColor.DARK_AQUA + "Zurück");
-        meta.setLore(List.of());
+        ItemMeta meta = item.getItemMeta();
+
+        if (meta == null) {
+            return item;
+        }
+
+        meta.displayName(
+                lang("arena-settings.back")
+        );
+
+        meta.lore(List.of());
+
         item.setItemMeta(meta);
+
         return item;
     }
 
+    @SuppressWarnings("unused")
     @EventHandler
-    public void onClick(InventoryClickEvent e) {
-        if (!(e.getWhoClicked() instanceof Player player)) return;
-        if (!ChatColor.stripColor(e.getView().getTitle()).equalsIgnoreCase("Arena-Einstellungen")) return;
+    public void onClick(InventoryClickEvent event) {
 
-        e.setCancelled(true);
-
-        ItemStack clicked = e.getCurrentItem();
-        if (clicked == null || !clicked.hasItemMeta()) return;
-        if (clicked.getItemMeta() == null || !clicked.getItemMeta().hasDisplayName()) return;
-
-        String name = ChatColor.stripColor(clicked.getItemMeta().getDisplayName());
-
-        if (name.startsWith("Aktivieren: ")) {
-            handleArenaSwitch(player, clicked);
+        if (!(event.getWhoClicked() instanceof Player player)) {
             return;
         }
 
-        if (name.startsWith("Aktiv: ")) {
-            Sounds.playClick(player);
-            player.sendMessage(ChatColor.YELLOW + "Diese Arena ist bereits aktiv.");
+        if (!event.getView().title().equals(
+                lang("arena-settings.title")
+        )) {
             return;
         }
 
-        switch (name) {
-            case "Zurück" -> {
+        event.setCancelled(true);
+
+        if (event.getClickedInventory() == null) {
+            return;
+        }
+
+        if (event.getRawSlot()
+                >= event.getView().getTopInventory().getSize()) {
+            return;
+        }
+
+        ItemStack clicked = event.getCurrentItem();
+
+        if (clicked == null
+                || clicked.getType() == Material.AIR
+                || !clicked.hasItemMeta()) {
+            return;
+        }
+
+        int slot = event.getRawSlot();
+
+        switch (slot) {
+
+            // Arena zurücksetzen
+            case 11 -> resetArena(player);
+
+            // Arena-Kompass aktivieren / deaktivieren
+            case 13 -> toggleArenaCompass(player);
+
+            // Arena-Kompass an Spieler geben
+            case 15 -> giveArenaCompass(player);
+
+            // Arena-Auswahl
+            case 38, 42 -> handleArenaSwitch(
+                    player,
+                    clicked
+            );
+
+            // Zurück
+            case 49 -> {
+
                 Sounds.playBack(player);
-                plugin.getEventSettingsGUI().open(player);
-            }
 
-            case "Reset Arena" -> {
-                Sounds.playDanger(player);
-                plugin.getArenaManager().resetArena();
-
-                for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                    onlinePlayer.sendMessage(ChatColor.RED + "⏹ Arena wurde zurückgesetzt!");
-                }
-            }
-
-//            case "WAVES neu starten" -> {
-//                Sounds.playClick(player);
-//
-//                if (plugin.getEventResume().loadPhase() != ResumeManager.PHASE_ARENA) {
-//                    player.sendMessage("");
-//                    player.sendMessage(ChatColor.RED + "⚠ Das Event passt nicht zur aktuellen Phase.");
-//                    player.sendMessage(ChatColor.GOLD + "Nutze /set phase arena");
-//                    player.sendMessage("");
-//                    return;
-//                }
-//
-//                boolean hasTeamPlayer = Bukkit.getOnlinePlayers().stream().anyMatch(p -> {
-//                    String team = plugin.getTeamManager().getPlayerTeam(p);
-//                    return team != null && (team.equalsIgnoreCase("rot") || team.equalsIgnoreCase("blau"));
-//                });
-//
-//                if (!hasTeamPlayer) {
-//                    player.sendMessage(ChatColor.RED + "❗ Es muss mindestens ein Spieler in einem Team sein, um Waves zu starten!");
-//                    Sounds.playClick(player);
-//                    return;
-//                }
-//
-//                for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-//                    onlinePlayer.sendMessage(ChatColor.GREEN + "⚔️ Die Waves werden neu gestartet...");
-//                    onlinePlayer.playSound(onlinePlayer.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.2f);
-//                }
-//
-//                player.closeInventory();
-//
-//                plugin.getTimerManager().stopTimer();
-//                plugin.getArenaManager().startArenaEvent();
-//                plugin.getTimerManager().updateBossBar(null);
-//                plugin.getTimerManager().setForward(true);
-//                plugin.getTimerManager().startTimer();
-//            }
-
-            case "Arena-Kompass" -> {
-                Sounds.playClick(player);
-
-                plugin.getWorldSettings().toggleArenaCompassEnabled();
-                boolean enabled = plugin.getWorldSettings().isArenaCompassEnabled();
-
-                if (enabled) {
-                    player.sendMessage(ChatColor.GREEN + "✔ Arena-Kompass wurde aktiviert.");
-                } else {
-                    for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                        plugin.getArenaCompassManager().removeArenaCompass(onlinePlayer);
-                    }
-
-                    player.sendMessage(ChatColor.RED + "✖ Arena-Kompass wurde deaktiviert.");
-                }
-
-                open(player);
-            }
-
-            case "Arena-Kompass geben" -> {
-                Sounds.playClick(player);
-
-                for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
-                    plugin.getArenaCompassManager().addMonsterCompass(onlinePlayer);
-                }
-
-                player.sendMessage(ChatColor.GREEN + "✔ Arena-Kompass wurde vergeben.");
-                open(player);
+                plugin.getEventSettingsGUI()
+                        .open(player);
             }
         }
     }
 
-    private void handleArenaSwitch(Player player, ItemStack clicked) {
-        int phase = plugin.getEventResume().loadPhase();
+    private void resetArena(Player player) {
 
-        if (phase > ResumeManager.PHASE_WAVEAUSWAHL) {
-            Sounds.playDanger(player);
-            player.sendMessage(ChatColor.RED + "✖ Arena-Wechsel ist nur bis Phase 2 / Wave-Auswahl möglich.");
-            return;
+        Sounds.playDanger(player);
+
+        plugin.getArenaManager().resetArena();
+
+        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+
+            onlinePlayer.sendMessage(
+                    lang("arena-settings.reset.message")
+            );
+
+            Title title = Title.title(
+                    lang("arena-settings.reset.title"),
+                    lang("arena-settings.reset.subtitle"),
+                    Title.Times.times(
+                            Duration.ofMillis(500),
+                            Duration.ofSeconds(3),
+                            Duration.ofSeconds(1)
+                    )
+            );
+
+            onlinePlayer.showTitle(title);
         }
+    }
+
+    private void toggleArenaCompass(Player player) {
+
+        Sounds.playClick(player);
+
+        plugin.getWorldSettings()
+                .toggleArenaCompassEnabled();
+
+        boolean enabled =
+                plugin.getWorldSettings()
+                        .isArenaCompassEnabled();
+
+        if (enabled) {
+
+            player.sendMessage(
+                    lang("arena-settings.compass.enabled")
+            );
+
+        } else {
+
+            for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+
+                plugin.getArenaCompassManager()
+                        .removeArenaCompass(onlinePlayer);
+            }
+
+            player.sendMessage(
+                    lang("arena-settings.compass.disabled")
+            );
+        }
+
+        open(player);
+    }
+
+    private void giveArenaCompass(Player player) {
+
+        Sounds.playClick(player);
+
+        for (Player onlinePlayer : Bukkit.getOnlinePlayers()) {
+
+            plugin.getArenaCompassManager()
+                    .addMonsterCompass(onlinePlayer);
+        }
+
+        player.sendMessage(
+                lang("arena-settings.give-compass.success")
+        );
+
+        open(player);
+    }
+
+    private void handleArenaSwitch(
+            Player player,
+            ItemStack clicked
+    ) {
 
         String arenaId = getArenaIdFromItem(clicked);
 
         if (arenaId == null || arenaId.isBlank()) {
+
             Sounds.playDanger(player);
-            player.sendMessage(ChatColor.RED + "✖ Arena-ID konnte nicht gelesen werden.");
+
+            player.sendMessage(
+                    lang("arena-settings.arena.id-error")
+            );
+
             return;
         }
 
-        boolean success = plugin.getArenaConfig().setActiveArena(arenaId);
+        String activeArenaId =
+                plugin.getArenaConfig()
+                        .getActiveArenaId();
+
+        /*
+         * Bereits aktive Arena angeklickt
+         */
+        if (arenaId.equalsIgnoreCase(activeArenaId)) {
+
+            Sounds.playClick(player);
+
+            player.sendMessage(
+                    lang("arena-settings.arena.already-active")
+            );
+
+            return;
+        }
+
+        int phase =
+                plugin.getEventResume()
+                        .loadPhase();
+
+        /*
+         * Arena-Wechsel nur bis zur Wave-Auswahl.
+         */
+        if (phase > ResumeManager.PHASE_WAVEAUSWAHL) {
+
+            Sounds.playDanger(player);
+
+            player.sendMessage(
+                    lang(
+                            "arena-settings.arena.switch-not-allowed"
+                    )
+            );
+
+            return;
+        }
+
+        boolean success =
+                plugin.getArenaConfig()
+                        .setActiveArena(arenaId);
 
         if (!success) {
+
             Sounds.playDanger(player);
-            player.sendMessage(ChatColor.RED + "✖ Arena konnte nicht aktiviert werden: " + arenaId);
+
+            player.sendMessage(
+                    langArena(
+                            "arena-settings.arena.activate-error",
+                            arenaId
+                    )
+            );
+
             return;
         }
 
         Sounds.playClick(player);
-        player.sendMessage(ChatColor.GREEN + "✔ Aktive Arena gesetzt: " + ChatColor.GOLD + arenaId);
+
+        player.sendMessage(
+                langArena(
+                        "arena-settings.arena.activated",
+                        arenaId
+                )
+        );
 
         open(player);
     }
 
     private String getArenaIdFromItem(ItemStack item) {
-        if (item == null || item.getItemMeta() == null || item.getItemMeta().getLore() == null) {
+
+        if (item == null) {
             return null;
         }
 
-        for (String line : item.getItemMeta().getLore()) {
-            String clean = ChatColor.stripColor(line);
+        ItemMeta meta = item.getItemMeta();
 
-            if (clean.startsWith("ID: ")) {
-                return clean.substring("ID: ".length()).trim();
-            }
+        if (meta == null) {
+            return null;
         }
 
-        return null;
+        return meta.getPersistentDataContainer().get(
+                arenaIdKey,
+                PersistentDataType.STRING
+        );
+    }
+
+    /*
+     * Sprachtext ohne Platzhalter
+     */
+    private Component lang(String path) {
+
+        return plugin.getLanguageManager()
+                .getComponent(path);
+    }
+
+    /*
+     * Sprachtext mit einem Platzhalter
+     */
+    private Component langArena(
+            String path,
+            Object value
+    ) {
+
+        return plugin.getLanguageManager()
+                .getComponent(
+                        path,
+                        "arena",
+                        value
+                );
     }
 }

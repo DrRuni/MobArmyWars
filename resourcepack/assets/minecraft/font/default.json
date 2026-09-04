@@ -1,0 +1,89 @@
+{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "mobarmywars:font/team_rot.png",
+      "ascent": 8,
+      "height": 8,
+      "chars": ["\uE001"]
+    },
+    {
+      "type": "bitmap",
+      "file": "mobarmywars:font/team_blau.png",
+      "ascent": 8,
+      "height": 8,
+      "chars": ["\uE002"]
+    },
+    {
+      "type": "bitmap",
+      "file": "mobarmywars:font/player.png",
+      "ascent": 8,
+      "height": 8,
+      "chars": ["\uE003"]
+    },
+    {
+      "type": "bitmap",
+      "file": "mobarmywars:font/wave.png",
+      "ascent": 8,
+      "height": 8,
+      "chars": ["\uE004"]
+    },
+    {
+      "type": "bitmap",
+      "file": "mobarmywars:font/kills.png",
+      "ascent": 8,
+      "height": 8,
+      "chars": ["\uE005"]
+    },
+    {
+      "type": "bitmap",
+      "file": "mobarmywars:font/no_team.png",
+      "ascent": 8,
+      "height": 8,
+      "chars": ["\uE006"]
+    },
+    {
+      "type": "bitmap",
+      "file": "mobarmywars:font/logo.png",
+      "ascent": 30,
+      "height": 30,
+      "chars": ["\uE010"]
+    },
+    {
+      "type": "space",
+      "advances": {
+        "\uF801": -256,
+        "\uF802": -220,
+        "\uF803": -180,
+        "\uF804": -140,
+        "\uF805": -100,
+        "\uF806": -60,
+        "\uF810": 10,
+        "\uF811": 20,
+        "\uF812": 30,
+        "\uF813": 40
+      }
+    },
+    {
+      "type": "bitmap",
+      "file": "mobarmywars:font/panel_top.png",
+      "ascent": 23,
+      "height": 39,
+      "chars": ["\uE020"]
+    },
+    {
+      "type": "bitmap",
+      "file": "mobarmywars:font/panel_mid.png",
+      "ascent": 9,
+      "height": 9,
+      "chars": ["\uE021"]
+    },
+    {
+      "type": "bitmap",
+      "file": "mobarmywars:font/panel_bottom.png",
+      "ascent": 30,
+      "height": 40,
+      "chars": ["\uE022"]
+    }
+  ]
+}

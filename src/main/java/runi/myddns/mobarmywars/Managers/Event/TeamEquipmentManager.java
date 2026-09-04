@@ -1,6 +1,6 @@
 package runi.myddns.mobarmywars.Managers.Event;
 
-import org.bukkit.ChatColor;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -10,6 +10,7 @@ import runi.myddns.mobarmywars.MobArmyMain;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.Locale;
 
 public class TeamEquipmentManager {
 
@@ -35,28 +36,28 @@ public class TeamEquipmentManager {
     }
 
     private void setDefault(String team) {
-        setIfMissing(path(team, "helmet"), "NONE");
-        setIfMissing(path(team, "chestplate"), "NONE");
-        setIfMissing(path(team, "leggings"), "NONE");
-        setIfMissing(path(team, "boots"), "NONE");
+        setIfMissing(path(team, "helmet"));
+        setIfMissing(path(team, "chestplate"));
+        setIfMissing(path(team, "leggings"));
+        setIfMissing(path(team, "boots"));
 
-        setIfMissing(path(team, "sword"), "NONE");
-        setIfMissing(path(team, "axe"), "NONE");
-        setIfMissing(path(team, "pickaxe"), "NONE");
+        setIfMissing(path(team, "sword"));
+        setIfMissing(path(team, "axe"));
+        setIfMissing(path(team, "pickaxe"));
 
-        setIfMissing(path(team, "bow"), "NONE");
-        setIfMissing(path(team, "food"), "NONE");
-        setIfMissing(path(team, "shield"), "NONE");
-        setIfMissing(path(team, "op_food"), "NONE");
+        setIfMissing(path(team, "bow"));
+        setIfMissing(path(team, "food"));
+        setIfMissing(path(team, "shield"));
+        setIfMissing(path(team, "op_food"));
     }
 
     private String path(String team, String setting) {
-        return BASE_PATH + "." + team.toLowerCase() + "." + setting;
+        return BASE_PATH + "." + team.toLowerCase(Locale.ROOT) + "." + setting;
     }
 
-    private void setIfMissing(String path, Object value) {
+    private void setIfMissing(String path) {
         if (!config.contains(path)) {
-            config.set(path, value);
+            config.set(path, "NONE");
         }
     }
 
@@ -64,7 +65,11 @@ public class TeamEquipmentManager {
         try {
             config.save(file);
         } catch (IOException e) {
-            e.printStackTrace();
+            plugin.getLogger().log(
+                    java.util.logging.Level.SEVERE,
+                    "Failed to save team-equipment.yml.",
+                    e
+            );
         }
     }
 
@@ -90,7 +95,7 @@ public class TeamEquipmentManager {
 
         String value = config.getString(configPath, "NONE");
 
-        if (value == null || value.equalsIgnoreCase("NONE")) {
+        if (value.equalsIgnoreCase("NONE")) {
             return 0;
         }
 
@@ -152,7 +157,7 @@ public class TeamEquipmentManager {
     }
 
     public void giveEquipment(Player player, String team) {
-        String key = team.toLowerCase();
+        String key = team.toLowerCase(Locale.ROOT);
 
         player.getInventory().setHelmet(createArmorItem(EquipmentType.HELMET, getLevel(key, EquipmentType.HELMET)));
         player.getInventory().setChestplate(createArmorItem(EquipmentType.CHESTPLATE, getLevel(key, EquipmentType.CHESTPLATE)));
@@ -200,7 +205,10 @@ public class TeamEquipmentManager {
         }
 
         player.updateInventory();
-        player.sendMessage(ChatColor.GREEN + "✔ Du hast dein Team-Equipment erhalten.");
+
+        player.sendMessage(
+                lang("team-equipment-gui.received")
+        );
     }
 
     private ItemStack createArmorItem(EquipmentType type, int level) {
@@ -270,7 +278,7 @@ public class TeamEquipmentManager {
     }
 
     private int getLevelFromConfigValue(EquipmentType type, String value) {
-        String itemName = value.toUpperCase();
+        String itemName = value.toUpperCase(Locale.ROOT);
 
         return switch (type) {
             case HELMET -> switch (itemName) {
@@ -398,42 +406,61 @@ public class TeamEquipmentManager {
         return Material.valueOf(prefix + "_" + suffix);
     }
 
-    public String getLevelName(EquipmentType type, int level) {
+    public Component getLevelName(
+            EquipmentType type,
+            int level
+    ) {
+
         if (level <= 0) {
-            return ChatColor.RED + "Kein Equipment";
+            return lang("team-equipment-gui.level.none");
         }
 
         if (type.isArmor()) {
             return switch (level) {
-                case 1 -> ChatColor.GRAY + "Leder";
-                case 2 -> ChatColor.WHITE + "Eisen";
-                case 3 -> ChatColor.AQUA + "Diamant";
-                case 4 -> ChatColor.DARK_PURPLE + "Netherite";
-                default -> ChatColor.RED + "Unbekannt";
+                case 1 -> lang("team-equipment-gui.level.leather");
+                case 2 -> lang("team-equipment-gui.level.iron");
+                case 3 -> lang("team-equipment-gui.level.diamond");
+                case 4 -> lang("team-equipment-gui.level.netherite");
+                default -> lang("team-equipment-gui.level.unknown");
             };
         }
 
         if (type.isTool()) {
             return switch (level) {
-                case 1 -> ChatColor.DARK_GRAY + "Stein";
-                case 2 -> ChatColor.WHITE + "Eisen";
-                case 3 -> ChatColor.AQUA + "Diamant";
-                case 4 -> ChatColor.DARK_PURPLE + "Netherite";
-                default -> ChatColor.RED + "Unbekannt";
+                case 1 -> lang("team-equipment-gui.level.stone");
+                case 2 -> lang("team-equipment-gui.level.iron");
+                case 3 -> lang("team-equipment-gui.level.diamond");
+                case 4 -> lang("team-equipment-gui.level.netherite");
+                default -> lang("team-equipment-gui.level.unknown");
             };
         }
 
         return switch (type) {
-            case BOW -> ChatColor.GREEN + "Bogen + Pfeile";
-            case FOOD -> level == 2
-                    ? ChatColor.GOLD + "Goldene Karotten"
-                    : ChatColor.GREEN + "Steak";
-            case SHIELD -> ChatColor.GREEN + "Schild";
-            case OP_FOOD -> level == 2
-                    ? ChatColor.GOLD + "Verzauberter Goldapfel"
-                    : ChatColor.GOLD + "Goldapfel";
-            default -> ChatColor.RED + "Unbekannt";
+            case BOW ->
+                    lang("team-equipment-gui.level.bow");
+
+            case FOOD ->
+                    level == 2
+                            ? lang("team-equipment-gui.level.golden-carrot")
+                            : lang("team-equipment-gui.level.steak");
+
+            case SHIELD ->
+                    lang("team-equipment-gui.level.shield");
+
+            case OP_FOOD ->
+                    level == 2
+                            ? lang("team-equipment-gui.level.enchanted-golden-apple")
+                            : lang("team-equipment-gui.level.golden-apple");
+
+            default ->
+                    lang("team-equipment-gui.level.unknown");
         };
+    }
+
+    private Component lang(String path) {
+
+        return plugin.getLanguageManager()
+                .getComponent(path);
     }
 
     public enum EquipmentType {

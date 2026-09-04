@@ -1,7 +1,6 @@
 package runi.myddns.mobarmywars.Managers.Event;
 
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -9,7 +8,6 @@ import org.bukkit.block.Container;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.inventory.Inventory;
@@ -20,6 +18,7 @@ import runi.myddns.mobarmywars.MobArmyMain;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.Locale;
 
 public class ChestRandomizerManager implements Listener {
 
@@ -52,7 +51,8 @@ public class ChestRandomizerManager implements Listener {
         Block block = container.getBlock();
         World world = block.getWorld();
 
-        String worldName = world.getName().toLowerCase();
+        String worldName =
+                world.getName().toLowerCase(Locale.ROOT);
 
         if (!worldName.equals("world_rot")
                 && !worldName.equals("world_blau")
@@ -74,7 +74,9 @@ public class ChestRandomizerManager implements Listener {
         Inventory virtualInventory = Bukkit.createInventory(
                 null,
                 realInventory.getSize(),
-                ChatColor.BLUE + "Randomisierte Kiste"
+                plugin.getLanguageManager().getComponent(
+                        "chest-randomizer.title"
+                )
         );
 
         fillVirtualInventory(player, realInventory, virtualInventory);
@@ -95,25 +97,23 @@ public class ChestRandomizerManager implements Listener {
                 continue;
             }
 
-            Material randomMaterial = blockRandomizerManager.getRandomizedMaterial(player, originalItem.getType());
+            Material randomMaterial =
+                    blockRandomizerManager.getRandomizedMaterial(
+                            player,
+                            originalItem.getType()
+                    );
 
-            ItemStack randomItem = new ItemStack(randomMaterial, originalItem.getAmount());
+            if (randomMaterial == null) {
+                continue;
+            }
+
+            ItemStack randomItem =
+                    new ItemStack(
+                            randomMaterial,
+                            originalItem.getAmount()
+                    );
+
             virtualInventory.setItem(slot, randomItem);
-        }
-    }
-
-    @EventHandler
-    public void onInventoryClick(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player player)) return;
-
-        Inventory randomChest = openRandomChests.get(player.getUniqueId());
-
-        if (randomChest == null) {
-            return;
-        }
-
-        if (!event.getView().getTopInventory().equals(randomChest)) {
-            return;
         }
     }
 
@@ -142,8 +142,11 @@ public class ChestRandomizerManager implements Listener {
             Material originalMaterial =
                     blockRandomizerManager.getOriginalMaterial(player, randomItem.getType());
 
-            ItemStack originalItem = randomItem.clone();
-            originalItem.setType(originalMaterial);
+            ItemStack originalItem =
+                    new ItemStack(
+                            originalMaterial,
+                            randomItem.getAmount()
+                    );
 
             realContents[slot] = originalItem;
         }

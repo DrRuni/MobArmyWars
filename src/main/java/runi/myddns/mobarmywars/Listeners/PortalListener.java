@@ -31,7 +31,7 @@ public class PortalListener implements Listener {
     @EventHandler
     public void onPortal(PlayerPortalEvent e) {
 
-        if (e.getCause() != PlayerPortalEvent.TeleportCause.NETHER_PORTAL) return;
+        if (e.getCause() != PlayerTeleportEvent.TeleportCause.NETHER_PORTAL) return;
 
         Player p = e.getPlayer();
         UUID id = p.getUniqueId();
@@ -121,10 +121,10 @@ public class PortalListener implements Listener {
     public void onTeleport(PlayerTeleportEvent e) {
         if (e.getCause() != PlayerTeleportEvent.TeleportCause.NETHER_PORTAL) return;
 
-        World to = e.getTo() != null ? e.getTo().getWorld() : null;
-        if (to == null) return;
+        World to = e.getTo().getWorld();
 
-        if (to.getName().equalsIgnoreCase("world_nether")) {
+        if (to != null
+                && to.getName().equalsIgnoreCase("world_nether")) {
             e.setCancelled(true);
         }
     }

@@ -1,6 +1,10 @@
 package runi.myddns.mobarmywars.GUIs;
 
-import org.bukkit.*;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -11,24 +15,36 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 import runi.myddns.mobarmywars.Managers.Event.MobSaveManager;
 import runi.myddns.mobarmywars.Managers.Event.WaveManager;
 import runi.myddns.mobarmywars.MobArmyMain;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class UnifiedWaveGUI implements Listener {
 
-    enum Mode {SELECT_WAVE, MOB_SELECTION, OVERVIEW}
+    public enum Mode {
+        SELECT_WAVE,
+        MOB_SELECTION,
+        OVERVIEW
+    }
 
-    private final Player player;
-    private String team;
+    private final MobArmyMain plugin;
     private final WaveManager waveManager;
     private final MobSaveManager mobSaveManager;
-    private static final NamespacedKey MOB_TYPE_KEY = new NamespacedKey(MobArmyMain.getInstance(), "mob_type");
-    Mode currentMode = Mode.SELECT_WAVE;
-    int currentWaveIndex = 0;
+    private final Player player;
+    private final NamespacedKey mobTypeKey;
+
+    private String team;
+    private final Mode currentMode;
+    private final int currentWaveIndex;
+    private Inventory currentInventory;
 
     public UnifiedWaveGUI(
             WaveManager waveManager,
@@ -36,7 +52,14 @@ public class UnifiedWaveGUI implements Listener {
             Player player,
             String team
     ) {
-        this(waveManager, mobSaveManager, player, team, Mode.SELECT_WAVE, 0);
+        this(
+                waveManager,
+                mobSaveManager,
+                player,
+                team,
+                Mode.SELECT_WAVE,
+                0
+        );
     }
 
     public UnifiedWaveGUI(
@@ -47,97 +70,196 @@ public class UnifiedWaveGUI implements Listener {
             Mode mode,
             int waveIndex
     ) {
+        this.plugin = MobArmyMain.getInstance();
         this.waveManager = waveManager;
         this.mobSaveManager = mobSaveManager;
         this.player = player;
         this.currentMode = mode;
         this.currentWaveIndex = waveIndex;
+        this.mobTypeKey = new NamespacedKey(plugin, "mob_type");
 
-        if (team == null || team.equalsIgnoreCase("Kein Team")) {
+        if (team == null
+                || team.equalsIgnoreCase("Kein Team")) {
+
             player.sendMessage(
-                    ChatColor.DARK_RED + "✖ " +
-                            ChatColor.GRAY + "Du musst einem Team angehören, um Waves zu konfigurieren."
+                    lang("unified-wave-gui.no-team")
             );
+
             return;
         }
 
         this.team = team;
 
         openGUI();
-        Bukkit.getPluginManager().registerEvents(this, MobArmyMain.getInstance());
+
+        Bukkit.getPluginManager()
+                .registerEvents(this, plugin);
     }
 
     private void openGUI() {
+
         switch (currentMode) {
-            case SELECT_WAVE -> openWaveSelection();
-            case MOB_SELECTION -> openMobSelection(currentWaveIndex);
+
+            case SELECT_WAVE ->
+                    openWaveSelection();
+
+            case MOB_SELECTION ->
+                    openMobSelection(currentWaveIndex);
+
+            case OVERVIEW -> {
+            }
         }
     }
 
     private void openWaveSelection() {
-        Inventory gui = Bukkit.createInventory(null, 18, ChatColor.BLUE + "MobArmy » Wave-Menü");
+
+        Inventory gui = Bukkit.createInventory(
+                null,
+                18,
+                lang("unified-wave-gui.selection.title")
+        );
 
         gui.setItem(2, createWaveItem(0));
         gui.setItem(4, createWaveItem(1));
         gui.setItem(6, createWaveItem(2));
 
-        gui.setItem(9, createItem(Material.LIME_WOOL, ChatColor.GREEN + "Fertig"));
+        gui.setItem(
+                9,
+                createItem(
+                        Material.LIME_WOOL,
+                        lang("unified-wave-gui.selection.finish")
+                )
+        );
 
-        gui.setItem(17, createItem(Material.BARRIER, "Waves zurücksetzen"));
+        gui.setItem(
+                17,
+                createItem(
+                        Material.BARRIER,
+                        lang("unified-wave-gui.selection.reset")
+                )
+        );
 
+        currentInventory = gui;
         player.openInventory(gui);
     }
 
     private ItemStack createWaveItem(int waveIndex) {
-        ItemStack item = new ItemStack(Material.DIAMOND_SWORD);
-        ItemMeta meta = item.getItemMeta();
-        if (meta == null) return item;
 
-        String title = "Wave " + (waveIndex + 1) + " konfigurieren";
-        meta.setDisplayName(ChatColor.YELLOW + title);
+        ItemStack item =
+                new ItemStack(Material.DIAMOND_SWORD);
 
-        Map<String, Integer> wave = waveManager.getWaveAsCountMap(team, waveIndex);
+        ItemMeta meta =
+                item.getItemMeta();
 
-        List<String> lore = getSortedMobs(wave).stream()
-                .filter(e -> e.getValue() > 0)
-                .map(e -> {
-                    String type = e.getKey();
-                    int count = e.getValue();
-
-                    String base = type.replace("ADULT_", "").replace("BABY_", "").toLowerCase();
-                    String suffix = type.startsWith("BABY_") ? " Baby" : "";
-
-                    String name = capitalize(base.replace("_", " ")) + suffix;
-
-                    return ChatColor.GRAY + (count + "x " + name);
-                })
-                .collect(Collectors.toList());
-
-        if (lore.isEmpty()) {
-            lore.add(ChatColor.DARK_GRAY + "Noch keine Mobs ausgewählt");
+        if (meta == null) {
+            return item;
         }
 
-        meta.setLore(lore);
+        meta.displayName(
+                langWave(
+                        "unified-wave-gui.selection.wave",
+                        waveIndex + 1
+                )
+        );
+
+        Map<String, Integer> wave =
+                waveManager.getWaveAsCountMap(
+                        team,
+                        waveIndex
+                );
+
+        List<Component> lore =
+                getSortedMobs(wave)
+                        .stream()
+                        .filter(entry ->
+                                entry.getValue() > 0
+                        )
+                        .map(entry -> {
+
+                            String type =
+                                    entry.getKey();
+
+                            int count =
+                                    entry.getValue();
+
+                            String base =
+                                    type.replace("ADULT_", "")
+                                            .replace("BABY_", "")
+                                            .toLowerCase();
+
+                            String suffix =
+                                    type.startsWith("BABY_")
+                                            ? " Baby"
+                                            : "";
+
+                            String name =
+                                    capitalize(
+                                            base.replace("_", " ")
+                                    ) + suffix;
+
+                            return Component.text(
+                                    count + "x " + name,
+                                    NamedTextColor.GRAY
+                            );
+                        })
+                        .collect(Collectors.toCollection(ArrayList::new));
+
+        if (lore.isEmpty()) {
+
+            lore.add(
+                    lang("unified-wave-gui.selection.empty")
+            );
+        }
+
+        meta.lore(lore);
         meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES);
+
         item.setItemMeta(meta);
+
         return item;
     }
 
-    private List<Map.Entry<String, Integer>> getSortedMobs(Map<String, Integer> mobMap) {
-        return mobMap.entrySet().stream()
+    private List<Map.Entry<String, Integer>> getSortedMobs(
+            Map<String, Integer> mobMap
+    ) {
+
+        return mobMap.entrySet()
+                .stream()
                 .sorted((a, b) -> {
-                    String baseA = a.getKey().replace("BABY_", "").replace("ADULT_", "");
-                    String baseB = b.getKey().replace("BABY_", "").replace("ADULT_", "");
 
-                    int cmp = baseA.compareTo(baseB);
-                    if (cmp != 0) return cmp;
+                    String baseA =
+                            a.getKey()
+                                    .replace("BABY_", "")
+                                    .replace("ADULT_", "");
 
-                    if (a.getKey().startsWith("BABY_") && b.getKey().startsWith("ADULT_")) return -1;
-                    if (a.getKey().startsWith("ADULT_") && b.getKey().startsWith("BABY_")) return 1;
+                    String baseB =
+                            b.getKey()
+                                    .replace("BABY_", "")
+                                    .replace("ADULT_", "");
 
-                    return a.getKey().compareTo(b.getKey());
+                    int compare =
+                            baseA.compareTo(baseB);
+
+                    if (compare != 0) {
+                        return compare;
+                    }
+
+                    if (a.getKey().startsWith("BABY_")
+                            && b.getKey().startsWith("ADULT_")) {
+
+                        return -1;
+                    }
+
+                    if (a.getKey().startsWith("ADULT_")
+                            && b.getKey().startsWith("BABY_")) {
+
+                        return 1;
+                    }
+
+                    return a.getKey()
+                            .compareTo(b.getKey());
                 })
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private void openMobSelection(int waveIndex) {
@@ -145,266 +267,553 @@ public class UnifiedWaveGUI implements Listener {
         Inventory gui = Bukkit.createInventory(
                 null,
                 54,
-                ChatColor.GOLD + "Wave " + (waveIndex + 1) + " Mobs"
+                langWave(
+                        "unified-wave-gui.mobs.title",
+                        waveIndex + 1
+                )
         );
 
-        Set<String> mobTypes = mobSaveManager.getAllKnownMobTypes(team);
+        Set<String> mobTypes =
+                mobSaveManager.getAllKnownMobTypes(team);
+
+        Map<String, Integer> mobMap =
+                mobTypes.stream()
+                        .collect(
+                                Collectors.toMap(
+                                        type -> type,
+                                        type -> mobSaveManager
+                                                .getMobCount(team, type)
+                                )
+                        );
 
         List<Map.Entry<String, Integer>> sorted =
-                mobTypes.stream()
-                        .map(type -> Map.entry(type, mobSaveManager.getMobCount(team, type)))
-                        .collect(Collectors.toList());
-
-        sorted = getSortedMobs(
-                sorted.stream()
-                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
-        );
+                getSortedMobs(mobMap);
 
         int slot = 0;
-        for (Map.Entry<String, Integer> entry : sorted) {
-            String mobType = entry.getKey();
-            int available = entry.getValue();
 
-            gui.setItem(slot++, createMobItem(mobType, available));
+        for (Map.Entry<String, Integer> entry : sorted) {
+
+            if (slot >= 49) {
+                break;
+            }
+
+            gui.setItem(
+                    slot++,
+                    createMobItem(
+                            entry.getKey(),
+                            entry.getValue()
+                    )
+            );
         }
 
-        gui.setItem(49, createItem(Material.EMERALD_BLOCK, "Speichern & Zurück"));
+        gui.setItem(
+                49,
+                createItem(
+                        Material.EMERALD_BLOCK,
+                        lang("unified-wave-gui.mobs.save-back")
+                )
+        );
+
+        currentInventory = gui;
         player.openInventory(gui);
     }
 
-    private ItemStack createItem(Material mat, String name) {
-        ItemStack item = new ItemStack(mat);
-        ItemMeta meta = item.getItemMeta();
-        if (meta != null) {
-            meta.setDisplayName(ChatColor.YELLOW + name);
-            item.setItemMeta(meta);
+    private ItemStack createItem(
+            Material material,
+            Component name
+    ) {
+
+        ItemStack item =
+                new ItemStack(material);
+
+        ItemMeta meta =
+                item.getItemMeta();
+
+        if (meta == null) {
+            return item;
         }
+
+        meta.displayName(name);
+
+        item.setItemMeta(meta);
+
         return item;
     }
 
-    private ItemStack createMobItem(String mobType, int available) {
+    private ItemStack createMobItem(
+            String mobType,
+            int available
+    ) {
 
-        String baseType = mobType.replace("ADULT_", "").replace("BABY_", "").toLowerCase();
-        String suffix = mobType.startsWith("BABY_") ? " Baby" : "";
-        String cleanName = formatMobName(baseType) + suffix;
-        String displayName = ChatColor.YELLOW + cleanName;
+        String baseType =
+                mobType.replace("ADULT_", "")
+                        .replace("BABY_", "")
+                        .toLowerCase();
+
+        String suffix =
+                mobType.startsWith("BABY_")
+                        ? " Baby"
+                        : "";
+
+        String cleanName =
+                formatMobName(baseType) + suffix;
 
         Material icon;
+
         try {
-            icon = Material.valueOf(baseType.toUpperCase() + "_SPAWN_EGG");
-        } catch (IllegalArgumentException e) {
+
+            icon = Material.valueOf(
+                    baseType.toUpperCase()
+                            + "_SPAWN_EGG"
+            );
+
+        } catch (IllegalArgumentException exception) {
+
             icon = Material.SPAWNER;
         }
 
-        int inWave = waveManager.getMobAmountInWave(team, currentWaveIndex, mobType);
+        int inWave =
+                waveManager.getMobAmountInWave(
+                        team,
+                        currentWaveIndex,
+                        mobType
+                );
 
-        List<String> lore = new ArrayList<>();
-        lore.add(ChatColor.WHITE + "Eingesetzt: " + inWave);
-        lore.add(ChatColor.WHITE + "Verfügbar: " + available);
-        lore.add("");
+        List<Component> lore =
+                new ArrayList<>();
 
-        if (available <= 0 && inWave <= 0) {
-            lore.add(ChatColor.RED + "❌ Nicht verfügbar");
-        } else {
-            lore.add(ChatColor.GREEN + "Linksklick" + ChatColor.GRAY + " +1");
-            lore.add(ChatColor.GREEN + "Rechtsklick" + ChatColor.GRAY + " -1");
-            lore.add(ChatColor.DARK_GRAY + "Shift = 10er Schritt");
-        }
+        lore.add(
+                langAmount(
+                        "unified-wave-gui.mobs.used",
+                        inWave
+                )
+        );
 
-        ItemStack item = new ItemStack(icon);
+        lore.add(
+                langAmount(
+                        "unified-wave-gui.mobs.available",
+                        available
+                )
+        );
 
-        if (inWave > 0) {
-            item.setAmount(Math.min(inWave, 64));
-        }
+        lore.add(Component.empty());
 
-        ItemMeta meta = item.getItemMeta();
+        if (available <= 0
+                && inWave <= 0) {
 
-        if (meta != null) {
-
-            if (available <= 0 && inWave <= 0) {
-                meta.setDisplayName(ChatColor.DARK_GRAY + cleanName);
-            } else {
-                meta.setDisplayName(displayName);
-            }
-
-            meta.getPersistentDataContainer().set(
-                    MOB_TYPE_KEY,
-                    org.bukkit.persistence.PersistentDataType.STRING,
-                    mobType
+            lore.add(
+                    lang("unified-wave-gui.mobs.unavailable")
             );
 
-            meta.setLore(lore);
-            item.setItemMeta(meta);
+        } else {
+
+            lore.add(
+                    lang("unified-wave-gui.mobs.left")
+            );
+
+            lore.add(
+                    lang("unified-wave-gui.mobs.right")
+            );
+
+            lore.add(
+                    lang("unified-wave-gui.mobs.shift")
+            );
         }
+
+        ItemStack item =
+                new ItemStack(icon);
+
+        if (inWave > 0) {
+
+            item.setAmount(
+                    Math.min(inWave, 64)
+            );
+        }
+
+        ItemMeta meta =
+                item.getItemMeta();
+
+        if (meta == null) {
+            return item;
+        }
+
+        if (available <= 0
+                && inWave <= 0) {
+
+            meta.displayName(
+                    Component.text(
+                            cleanName,
+                            NamedTextColor.DARK_GRAY
+                    )
+            );
+
+        } else {
+
+            meta.displayName(
+                    Component.text(
+                            cleanName,
+                            NamedTextColor.YELLOW
+                    )
+            );
+        }
+
+        meta.getPersistentDataContainer()
+                .set(
+                        mobTypeKey,
+                        PersistentDataType.STRING,
+                        mobType
+                );
+
+        meta.lore(lore);
+
+        item.setItemMeta(meta);
 
         return item;
     }
 
-    private String formatMobName(String baseType) {
-        return Arrays.stream(baseType.split("_"))
-                .map(word -> word.substring(0, 1).toUpperCase() + word.substring(1).toLowerCase())
+    private String formatMobName(
+            String baseType
+    ) {
+
+        return Arrays.stream(
+                        baseType.split("_")
+                )
+                .map(word ->
+                        word.substring(0, 1)
+                                .toUpperCase()
+                                + word.substring(1)
+                                .toLowerCase()
+                )
                 .collect(Collectors.joining(" "));
     }
 
-    private String capitalize(String str) {
-        if (str == null || str.isEmpty()) return str;
-        return str.substring(0, 1).toUpperCase() + str.substring(1);
+    private String capitalize(String value) {
+
+        if (value == null
+                || value.isEmpty()) {
+
+            return value;
+        }
+
+        return value.substring(0, 1)
+                .toUpperCase()
+                + value.substring(1);
     }
 
     @EventHandler
-    public void onInventoryClick(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player p) || !p.equals(player)) return;
+    public void onInventoryClick(
+            InventoryClickEvent event
+    ) {
+
+        if (!(event.getWhoClicked()
+                instanceof Player clickedPlayer)
+                || !clickedPlayer.equals(player)) {
+
+            return;
+        }
+
+        if (currentInventory == null
+                || !event.getView()
+                .getTopInventory()
+                .equals(currentInventory)) {
+
+            return;
+        }
 
         event.setCancelled(true);
 
-        ItemStack clicked = event.getCurrentItem();
-        if (clicked == null || !clicked.hasItemMeta()) return;
+        int slot =
+                event.getRawSlot();
 
-        String nameStripped = ChatColor.stripColor(clicked.getItemMeta().getDisplayName());
+        if (slot < 0
+                || slot >= currentInventory.getSize()) {
 
-        ItemMeta meta = clicked.getItemMeta();
-        if (meta == null) return;
+            return;
+        }
 
-        String mobType = meta.getPersistentDataContainer().get(MOB_TYPE_KEY, org.bukkit.persistence.PersistentDataType.STRING);
-        if (mobType == null) mobType = "";
+        if (currentMode == Mode.SELECT_WAVE) {
 
-        switch (nameStripped) {
-            case "Wave 1 konfigurieren" -> new UnifiedWaveGUI(
-                    waveManager,
-                    mobSaveManager,
-                    player,
-                    team,
-                    Mode.MOB_SELECTION,
-                    0
-            );
-            case "Wave 2 konfigurieren" -> new UnifiedWaveGUI(
-                    waveManager,
-                    mobSaveManager,
-                    player,
-                    team,
-                    Mode.MOB_SELECTION,
-                    1
-            );
-            case "Wave 3 konfigurieren" -> new UnifiedWaveGUI(
-                    waveManager,
-                    mobSaveManager,
-                    player,
-                    team,
-                    Mode.MOB_SELECTION,
-                    2
-            );
-            case "Wellenübersicht anzeigen" -> new UnifiedWaveGUI(
-                    waveManager,
-                    mobSaveManager,
-                    player,
-                    team,
-                    Mode.OVERVIEW,
-                    0);
-            case "Speichern & Zurück", "Zurück" -> {
-                MobArmyMain.getInstance().getWaveStorage().saveWaves();
-                p.sendMessage(ChatColor.BLUE + "✅ Wave gespeichert!");
-                new UnifiedWaveGUI(
-                        waveManager,
-                        mobSaveManager,
-                        player,
-                        team);
-            }
-            case "Fertig" -> {
-                p.closeInventory();
-                p.sendMessage(ChatColor.GREEN + "✔ Wave-Auswahl beendet.");
-            }
-            case "Waves zurücksetzen" -> {
+            switch (slot) {
 
-                List<List<WaveManager.WaveEntry>> waves = waveManager.getAllWaves(team);
+                case 2 ->
+                        openMobSelectionGUI(0);
 
-                for (List<WaveManager.WaveEntry> wave : waves) {
-                    for (WaveManager.WaveEntry entry : wave) {
-                        mobSaveManager.restoreMob(
-                                team,
-                                entry.getMobType(),
-                                entry.getAmount()
-                        );
-                    }
-                }
+                case 4 ->
+                        openMobSelectionGUI(1);
 
-                waveManager.resetWaves(team);
-                MobArmyMain.getInstance().getWaveStorage().saveWaves();
+                case 6 ->
+                        openMobSelectionGUI(2);
 
-                p.sendMessage(ChatColor.DARK_RED +
-                        "🧨 Alle Waves für dein Team wurden zurückgesetzt und die Mobs wieder freigegeben.");
+                case 9 -> {
 
-                new UnifiedWaveGUI(
-                        waveManager,
-                        mobSaveManager,
-                        player,
-                        team
-                );
-            }
-            default -> {
-                if (currentMode == Mode.MOB_SELECTION && !mobType.isEmpty()) {
+                    player.closeInventory();
 
-                    int amount = event.getClick().isShiftClick() ? 10 : 1;
-
-                    if (event.getClick().isLeftClick()) {
-                        int available = mobSaveManager.getMobCount(team, mobType);
-
-                        if (available <= 0) {
-                            return;
-                        }
-
-                        int toAdd = Math.min(amount, available);
-
-                        for (int i = 0; i < toAdd; i++) {
-                            waveManager.addMobToWave(team, currentWaveIndex, mobType);
-                        }
-
-                    } else if (event.getClick().isRightClick()) {
-                        int currentAmount = waveManager.getMobAmountInWave(team, currentWaveIndex, mobType);
-
-                        if (currentAmount <= 0) {
-                            return;
-                        }
-
-                        int toRemove = Math.min(amount, currentAmount);
-
-                        for (int i = 0; i < toRemove; i++) {
-                            waveManager.removeMobFromWave(team, currentWaveIndex, mobType);
-                        }
-                    }
-
-                    Bukkit.getScheduler().runTaskLater(
-                            MobArmyMain.getInstance(),
-                            () -> new UnifiedWaveGUI(
-                                    waveManager,
-                                    mobSaveManager,
-                                    player,
-                                    team,
-                                    Mode.MOB_SELECTION,
-                                    currentWaveIndex
-                            ),
-                            1L
+                    player.sendMessage(
+                            lang("unified-wave-gui.messages.finished")
                     );
                 }
+
+                case 17 ->
+                        resetWaves();
+            }
+
+            return;
+        }
+
+        if (currentMode != Mode.MOB_SELECTION) {
+            return;
+        }
+
+        if (slot == 49) {
+
+            plugin.getWaveStorage()
+                    .saveWaves();
+
+            player.sendMessage(
+                    lang("unified-wave-gui.messages.saved")
+            );
+
+            new UnifiedWaveGUI(
+                    waveManager,
+                    mobSaveManager,
+                    player,
+                    team
+            );
+
+            return;
+        }
+
+        ItemStack clicked =
+                event.getCurrentItem();
+
+        if (clicked == null
+                || !clicked.hasItemMeta()) {
+
+            return;
+        }
+
+        ItemMeta meta =
+                clicked.getItemMeta();
+
+        if (meta == null) {
+            return;
+        }
+
+        String mobType =
+                meta.getPersistentDataContainer()
+                        .get(
+                                mobTypeKey,
+                                PersistentDataType.STRING
+                        );
+
+        if (mobType == null
+                || mobType.isBlank()) {
+
+            return;
+        }
+
+        int amount =
+                event.getClick().isShiftClick()
+                        ? 10
+                        : 1;
+
+        if (event.getClick().isLeftClick()) {
+
+            int available =
+                    mobSaveManager.getMobCount(
+                            team,
+                            mobType
+                    );
+
+            if (available <= 0) {
+                return;
+            }
+
+            int toAdd =
+                    Math.min(
+                            amount,
+                            available
+                    );
+
+            for (int i = 0; i < toAdd; i++) {
+
+                waveManager.addMobToWave(
+                        team,
+                        currentWaveIndex,
+                        mobType
+                );
+            }
+
+        } else if (event.getClick().isRightClick()) {
+
+            int currentAmount =
+                    waveManager.getMobAmountInWave(
+                            team,
+                            currentWaveIndex,
+                            mobType
+                    );
+
+            if (currentAmount <= 0) {
+                return;
+            }
+
+            int toRemove =
+                    Math.min(
+                            amount,
+                            currentAmount
+                    );
+
+            for (int i = 0; i < toRemove; i++) {
+
+                waveManager.removeMobFromWave(
+                        team,
+                        currentWaveIndex,
+                        mobType
+                );
+            }
+
+        } else {
+
+            return;
+        }
+
+        Bukkit.getScheduler().runTaskLater(
+                plugin,
+                () -> new UnifiedWaveGUI(
+                        waveManager,
+                        mobSaveManager,
+                        player,
+                        team,
+                        Mode.MOB_SELECTION,
+                        currentWaveIndex
+                ),
+                1L
+        );
+    }
+
+    private void openMobSelectionGUI(
+            int waveIndex
+    ) {
+
+        new UnifiedWaveGUI(
+                waveManager,
+                mobSaveManager,
+                player,
+                team,
+                Mode.MOB_SELECTION,
+                waveIndex
+        );
+    }
+
+    private void resetWaves() {
+
+        List<List<WaveManager.WaveEntry>> waves =
+                waveManager.getAllWaves(team);
+
+        for (List<WaveManager.WaveEntry> wave : waves) {
+
+            for (WaveManager.WaveEntry entry : wave) {
+
+                mobSaveManager.restoreMob(
+                        team,
+                        entry.getMobType(),
+                        entry.getAmount()
+                );
             }
         }
+
+        waveManager.resetWaves(team);
+
+        plugin.getWaveStorage()
+                .saveWaves();
+
+        player.sendMessage(
+                lang("unified-wave-gui.messages.reset")
+        );
+
+        new UnifiedWaveGUI(
+                waveManager,
+                mobSaveManager,
+                player,
+                team
+        );
     }
 
     @EventHandler
-    public void onInventoryClose(InventoryCloseEvent event) {
+    public void onInventoryClose(
+            InventoryCloseEvent event
+    ) {
 
-        if (MobArmyMain.getInstance().getBundleGUI().isTeamInventory(event.getInventory())) return;
-
-        if (!(event.getPlayer() instanceof Player p) || !p.equals(player)) return;
-
-        InventoryClickEvent.getHandlerList().unregister(this);
-        InventoryCloseEvent.getHandlerList().unregister(this);
-        InventoryDragEvent.getHandlerList().unregister(this);
-    }
-
-    @EventHandler
-    public void onInventoryDrag(InventoryDragEvent event) {
-        if (event.getWhoClicked().equals(player)) {
-            event.setCancelled(true);
+        if (!event.getPlayer().equals(player)) {
+            return;
         }
+
+        if (currentInventory == null
+                || !event.getInventory()
+                .equals(currentInventory)) {
+
+            return;
+        }
+
+        InventoryClickEvent.getHandlerList()
+                .unregister(this);
+
+        InventoryCloseEvent.getHandlerList()
+                .unregister(this);
+
+        InventoryDragEvent.getHandlerList()
+                .unregister(this);
+    }
+
+    @EventHandler
+    public void onInventoryDrag(
+            InventoryDragEvent event
+    ) {
+
+        if (!event.getWhoClicked().equals(player)) {
+            return;
+        }
+
+        if (currentInventory == null
+                || !event.getView()
+                .getTopInventory()
+                .equals(currentInventory)) {
+
+            return;
+        }
+
+        event.setCancelled(true);
+    }
+
+    private Component lang(String path) {
+
+        return plugin.getLanguageManager()
+                .getComponent(path);
+    }
+
+    private Component langWave(
+            String path,
+            Object wave
+    ) {
+
+        return plugin.getLanguageManager()
+                .getComponent(
+                        path,
+                        "wave",
+                        wave
+                );
+    }
+
+    private Component langAmount(
+            String path,
+            Object amount
+    ) {
+
+        return plugin.getLanguageManager()
+                .getComponent(
+                        path,
+                        "amount",
+                        amount
+                );
     }
 }

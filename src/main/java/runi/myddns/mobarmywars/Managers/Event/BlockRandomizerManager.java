@@ -2,6 +2,7 @@ package runi.myddns.mobarmywars.Managers.Event;
 
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -18,14 +19,13 @@ import java.util.*;
 public class BlockRandomizerManager implements Listener {
 
     private final MobArmyMain plugin;
-//    private final Map<String, Boolean> playerRandomizerStatus = new HashMap<>();
     private final Map<String, Map<Material, Material>> playerBlockDropMap = new HashMap<>();
     private final List<Material> droppableMaterials = new ArrayList<>();
     private final List<Material> blockedSpawnEggs = new ArrayList<>();
     private final Set<String> blockedMaterialPatterns = new HashSet<>();
     private final Random random = new Random();
     private final File dataFile;
-    private FileConfiguration dataConfig;
+    private final FileConfiguration dataConfig;
     private boolean globalRandomizerEnabled;
     private final File worldSettingsFile;
     private FileConfiguration worldSettingsConfig;
@@ -44,16 +44,6 @@ public class BlockRandomizerManager implements Listener {
         initializeDroppableMaterials();
     }
 
-//    public void disableRandomizer(Player player) {
-//        playerRandomizerStatus.put(player.getName(), false);
-//
-//        saveBlockDrops();
-//    }
-
-//    public boolean isRandomizerEnabled(Player player) {
-//        return playerRandomizerStatus.getOrDefault(player.getName(), false);
-//    }
-
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {
         Player player = event.getPlayer();
@@ -63,7 +53,8 @@ public class BlockRandomizerManager implements Listener {
             return;
         }
 
-        String worldName = world.getName().toLowerCase();
+        String worldName =
+                world.getName().toLowerCase(Locale.ROOT);
 
         if (!worldName.equals("world_rot")
                 && !worldName.equals("world_blau")
@@ -90,7 +81,9 @@ public class BlockRandomizerManager implements Listener {
             List<Material> allowedMaterials = getAllowedDroppableMaterials();
 
             if (allowedMaterials.isEmpty()) {
-                plugin.getLogger().warning("Keine erlaubten Randomizer-Drops verfügbar!");
+                plugin.getLogger().warning(
+                        "Keine erlaubten Randomizer-Drops verfügbar!"
+                );
                 return null;
             }
 
@@ -190,7 +183,10 @@ public class BlockRandomizerManager implements Listener {
     }
 
     private Material getMaterialFromConfig(String materialName) {
-        Material material = Material.getMaterial(materialName.toUpperCase());
+        Material material =
+                Material.getMaterial(
+                        materialName.toUpperCase(Locale.ROOT)
+                );
         if (material == null) {
             plugin.getLogger().warning("Ungültiges Material in der Konfiguration: " + materialName);
         }
@@ -198,25 +194,53 @@ public class BlockRandomizerManager implements Listener {
     }
 
     public void loadBlockDrops() {
-        if (!dataConfig.contains("block_drops")) return;
+        ConfigurationSection blockDropsSection =
+                dataConfig.getConfigurationSection("block_drops");
 
-        for (String playerName : dataConfig.getConfigurationSection("block_drops").getKeys(false)) {
+        if (blockDropsSection == null) {
+            return;
+        }
+
+        for (String playerName : blockDropsSection.getKeys(false)) {
+
+            ConfigurationSection playerSection =
+                    blockDropsSection.getConfigurationSection(playerName);
+
+            if (playerSection == null) {
+                continue;
+            }
 
             Map<Material, Material> blockDropMap = new HashMap<>();
 
-            for (String blockName : dataConfig.getConfigurationSection("block_drops." + playerName).getKeys(false)) {
+            for (String blockName : playerSection.getKeys(false)) {
 
-                Material blockMaterial = Material.getMaterial(blockName);
-                Material dropMaterial = Material.getMaterial(
-                        dataConfig.getString("block_drops." + playerName + "." + blockName)
-                );
+                Material blockMaterial =
+                        Material.getMaterial(blockName);
 
-                if (blockMaterial != null && dropMaterial != null) {
-                    blockDropMap.put(blockMaterial, dropMaterial);
+                String dropName =
+                        playerSection.getString(blockName);
+
+                if (dropName == null) {
+                    continue;
+                }
+
+                Material dropMaterial =
+                        Material.getMaterial(dropName);
+
+                if (blockMaterial != null
+                        && dropMaterial != null) {
+
+                    blockDropMap.put(
+                            blockMaterial,
+                            dropMaterial
+                    );
                 }
             }
 
-            playerBlockDropMap.put(playerName, blockDropMap);
+            playerBlockDropMap.put(
+                    playerName,
+                    blockDropMap
+            );
         }
     }
 

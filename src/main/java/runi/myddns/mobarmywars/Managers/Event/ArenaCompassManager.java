@@ -15,6 +15,10 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.title.Title;
+
+import java.time.Duration;
 import runi.myddns.mobarmywars.MobArmyMain;
 
 import java.util.ArrayList;
@@ -38,25 +42,73 @@ public class ArenaCompassManager implements Listener {
     }
 
     public ItemStack createCompass() {
-        ItemStack item = new ItemStack(Material.COMPASS);
-        ItemMeta meta = item.getItemMeta();
 
-        if (meta == null) return item;
+        ItemStack item =
+                new ItemStack(Material.COMPASS);
 
-        meta.setDisplayName(ChatColor.AQUA + "Monster-Kompass");
+        ItemMeta meta =
+                item.getItemMeta();
 
-        List<String> lore = new ArrayList<>();
-        lore.add(ChatColor.GRAY + "Zeigt für " + DURATION_SECONDS + " Sekunden");
-        lore.add(ChatColor.GRAY + "alle Monster im Umkreis von " + RADIUS + " Blöcken.");
-        lore.add(ChatColor.GRAY + "Verlangsamt und blendet dich kurz.");
-        lore.add("");
-        lore.add(ChatColor.YELLOW + "Linksklick oder Rechtsklick zum Aktivieren");
+        if (meta == null) {
+            return item;
+        }
 
-        meta.setLore(lore);
-        meta.addItemFlags(ItemFlag.HIDE_ATTRIBUTES, ItemFlag.HIDE_ENCHANTS);
-        meta.getPersistentDataContainer().set(compassKey, PersistentDataType.BYTE, (byte) 1);
+        meta.displayName(
+                lang("arena-compass.name")
+        );
+
+        List<Component> lore =
+                new ArrayList<>();
+
+        lore.add(
+                plugin.getLanguageManager()
+                        .getComponent(
+                                "arena-compass.lore.line-1",
+                                "duration",
+                                DURATION_SECONDS
+                        )
+        );
+
+        lore.add(
+                plugin.getLanguageManager()
+                        .getComponent(
+                                "arena-compass.lore.line-2",
+                                "radius",
+                                RADIUS
+                        )
+        );
+
+        lore.add(
+                lang(
+                        "arena-compass.lore.line-3"
+                )
+        );
+
+        lore.add(
+                Component.empty()
+        );
+
+        lore.add(
+                lang(
+                        "arena-compass.lore.line-4"
+                )
+        );
+
+        meta.lore(lore);
+
+        meta.addItemFlags(
+                ItemFlag.HIDE_ATTRIBUTES,
+                ItemFlag.HIDE_ENCHANTS
+        );
+
+        meta.getPersistentDataContainer().set(
+                compassKey,
+                PersistentDataType.BYTE,
+                (byte) 1
+        );
 
         item.setItemMeta(meta);
+
         return item;
     }
 
@@ -96,11 +148,22 @@ public class ArenaCompassManager implements Listener {
                     player.getWorld().dropItemNaturally(player.getLocation(), item)
             );
 
-            player.sendTitle(
-                    ChatColor.DARK_RED + "⚠ Inventar voll!",
-                    ChatColor.RED + "Monster-Dedector wurde vor dir gedroppt.",
-                    10, 50, 10
-            );
+            Title title =
+                    Title.title(
+                            lang(
+                                    "arena-compass.inventory-full.title"
+                            ),
+                            lang(
+                                    "arena-compass.inventory-full.subtitle"
+                            ),
+                            Title.Times.times(
+                                    Duration.ofMillis(500),
+                                    Duration.ofMillis(2500),
+                                    Duration.ofMillis(500)
+                            )
+                    );
+
+            player.showTitle(title);
 
             player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_NO, 1.0f, 0.7f);
         }
@@ -144,7 +207,14 @@ public class ArenaCompassManager implements Listener {
 
         if (remaining > 0) {
             long secondsLeft = (long) Math.ceil(remaining / 1000.0);
-            player.sendMessage(ChatColor.RED + "❌ Der Dedector ist noch " + secondsLeft + "s im Cooldown.");
+            player.sendMessage(
+                    plugin.getLanguageManager()
+                            .getComponent(
+                                    "arena-compass.cooldown",
+                                    "seconds",
+                                    secondsLeft
+                            )
+            );
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 0.8f);
             return;
         }
@@ -203,8 +273,20 @@ public class ArenaCompassManager implements Listener {
         }
 
         if (affected == 0) {
-            player.sendMessage(ChatColor.GRAY + "Keine Lebewesen im Umkreis von " + RADIUS + " Blöcken gefunden.");
+            player.sendMessage(
+                    plugin.getLanguageManager()
+                            .getComponent(
+                                    "arena-compass.none-found",
+                                    "radius",
+                                    RADIUS
+                            )
+            );
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_BASS, 1.0f, 1.0f);
         }
+    }
+
+    private Component lang(String path) {
+        return plugin.getLanguageManager()
+                .getComponent(path);
     }
 }

@@ -1,22 +1,19 @@
 package runi.myddns.mobarmywars.Managers.Event;
 
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
-import org.bukkit.Location;
-import org.bukkit.World;
-import org.bukkit.configuration.MemorySection;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Ageable;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import runi.myddns.mobarmywars.MobArmyMain;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
 
 public class MobSaveManager {
 
@@ -39,7 +36,6 @@ public class MobSaveManager {
     public MobSaveManager(MobArmyMain plugin, TeamManager teamManager) {
         this.plugin = plugin;
         this.teamManager = teamManager;
-        this.timerManager = timerManager;
 
         this.mobDataFile = new File(plugin.getDataFolder(), "mobData.yml");
 
@@ -51,11 +47,11 @@ public class MobSaveManager {
         this.timerManager = timerManager;
     }
 
-    private ChatColor getTeamColor(String team) {
-        return switch (team.toLowerCase()) {
-            case "rot" -> ChatColor.RED;
-            case "blau" -> ChatColor.BLUE;
-            default -> ChatColor.GRAY;
+    private NamedTextColor getTeamColor(String team) {
+        return switch (team.toLowerCase(Locale.ROOT)) {
+            case "rot" -> NamedTextColor.RED;
+            case "blau" -> NamedTextColor.BLUE;
+            default -> NamedTextColor.GRAY;
         };
     }
 
@@ -65,7 +61,8 @@ public class MobSaveManager {
         if (!timerManager.isRunning()) return;
         if (mobSaveMode != MobSaveMode.ENABLED) return;
 
-        String worldName = player.getWorld().getName().toLowerCase();
+        String worldName =
+                player.getWorld().getName().toLowerCase(Locale.ROOT);
         if (!worldName.equals("world_rot") && !worldName.equals("world_blau")) {
             return;
         }
@@ -75,28 +72,28 @@ public class MobSaveManager {
 
 
         String mobType = mob.getType().name();
-        boolean isBaby = false;
-
         if (mob instanceof Ageable ageable) {
-            isBaby = !ageable.isAdult();
+            boolean isBaby = !ageable.isAdult();
             mobType = (isBaby ? "BABY_" : "ADULT_") + mobType;
         }
 
         mobKills
-                .computeIfAbsent(teamName, k -> new HashMap<>())
+                .computeIfAbsent(teamName, _ -> new HashMap<>())
                 .merge(mobType, 1, Integer::sum);
 
         saveSavedMobs();
 
         pendingKills
-                .computeIfAbsent(teamName, t -> new HashMap<>())
+                .computeIfAbsent(teamName, _ -> new HashMap<>())
                 .merge(mobType, 1, Integer::sum);
 
         if (!killFlushTasks.containsKey(teamName)) {
 
-            BukkitTask task = Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                flushKillMessage(teamName);
-            }, 20L);
+            BukkitTask task = Bukkit.getScheduler().runTaskLater(
+                    plugin,
+                    () -> flushKillMessage(teamName),
+                    20L
+            );
 
             killFlushTasks.put(teamName, task);
         }
@@ -109,7 +106,7 @@ public class MobSaveManager {
 
         if (kills == null || kills.isEmpty()) return;
 
-        ChatColor teamColor = getTeamColor(teamName);
+        NamedTextColor teamColor = getTeamColor(teamName);
 
         for (Map.Entry<String, Integer> entry : kills.entrySet()) {
 
@@ -119,14 +116,23 @@ public class MobSaveManager {
             String mobName = mobType
                     .replace("BABY_", "")
                     .replace("ADULT_", "")
-                    .toLowerCase()
+                    .toLowerCase(Locale.ROOT)
                     .replace("_", " ");
 
-            mobName = mobName.substring(0, 1).toUpperCase() + mobName.substring(1);
+            mobName =
+                    mobName.substring(0, 1).toUpperCase(Locale.ROOT)
+                            + mobName.substring(1);
 
-            String message =
-                    ChatColor.WHITE + "+" + amount + " "
-                            + teamColor + mobName + " getötet";
+            Component message =
+                    Component.text("+" + amount + " ", NamedTextColor.WHITE)
+                            .append(Component.text(mobName, teamColor))
+                            .append(
+                                    Component.text(
+                                            plugin.getLanguageManager().get(
+                                                    "mob-save-manager.kill-suffix"
+                                            )
+                                    )
+                            );
 
             for (Player p : Bukkit.getOnlinePlayers()) {
                 String pTeam = teamManager.getPlayerTeam(p);
@@ -135,51 +141,6 @@ public class MobSaveManager {
                 }
             }
         }
-    }
-
-    public void spawnSavedMobs(Player player) {
-
-        String teamName = teamManager.getPlayerTeam(player);
-        if (!mobKills.containsKey(teamName) || mobKills.get(teamName).isEmpty()) {
-            player.sendMessage(ChatColor.RED + "Dein Team hat keine gespeicherten Mobs!");
-            return;
-        }
-
-        World world = player.getWorld();
-        Location base = player.getLocation();
-        Random random = ThreadLocalRandom.current();
-
-        Map<String, Integer> saved = new HashMap<>(mobKills.get(teamName));
-
-        for (var entry : saved.entrySet()) {
-            String mobTypeString = entry.getKey();
-            boolean isBaby = mobTypeString.startsWith("BABY_");
-
-            EntityType type = EntityType.valueOf(
-                    mobTypeString.replace("BABY_", "").replace("ADULT_", "")
-            );
-
-            for (int i = 0; i < entry.getValue(); i++) {
-                Location loc = base.clone().add(
-                        random.nextDouble(-10, 10),
-                        0,
-                        random.nextDouble(-10, 10)
-                );
-                loc.setY(world.getHighestBlockYAt(loc) + 1);
-
-                LivingEntity entity = (LivingEntity) world.spawnEntity(loc, type);
-                if (entity instanceof Ageable ageable) {
-                    if (isBaby) ageable.setBaby();
-                    else ageable.setAdult();
-                }
-            }
-        }
-
-        mobKills.remove(teamName);
-        mobData.set("mobs." + teamName, null);
-        saveFile();
-
-        player.sendMessage(ChatColor.GREEN + "Alle gespeicherten Mobs wurden gespawnt!");
     }
 
     public void saveSavedMobs() {
@@ -194,35 +155,51 @@ public class MobSaveManager {
         try {
             mobData.save(mobDataFile);
         } catch (IOException e) {
-            e.printStackTrace();
+            plugin.getLogger().log(
+                    java.util.logging.Level.SEVERE,
+                    "Failed to save mobData.yml.",
+                    e
+            );
         }
     }
 
     public void loadSavedMobs() {
         if (!mobDataFile.exists()) return;
 
-        mobData = YamlConfiguration.loadConfiguration(mobDataFile);
+        mobData =
+                YamlConfiguration.loadConfiguration(mobDataFile);
 
-        if (!mobData.contains("mobs")) return;
+        ConfigurationSection section =
+                mobData.getConfigurationSection("mobs");
 
-        MemorySection section = (MemorySection) mobData.get("mobs");
+        if (section == null) {
+            return;
+        }
+
         for (String team : section.getKeys(false)) {
-            MemorySection teamSec = (MemorySection) section.get(team);
+
+            ConfigurationSection teamSec =
+                    section.getConfigurationSection(team);
+
+            if (teamSec == null) {
+                continue;
+            }
+
             Map<String, Integer> map = new HashMap<>();
 
             for (String mob : teamSec.getKeys(false)) {
-                map.put(mob, teamSec.getInt(mob));
+                map.put(
+                        mob,
+                        teamSec.getInt(mob)
+                );
             }
+
             mobKills.put(team, map);
         }
     }
 
     public void setMobSaveMode(MobSaveMode mode) {
         this.mobSaveMode = mode;
-    }
-
-    public boolean isMobSaveEnabled() {
-        return mobSaveMode == MobSaveMode.ENABLED;
     }
 
     public void clearAllMobData() {
@@ -242,7 +219,7 @@ public class MobSaveManager {
 
     public void consumeMob(String team, String mobType, int amount) {
         Map<String, Integer> teamData =
-                mobKills.computeIfAbsent(team, k -> new HashMap<>());
+                mobKills.computeIfAbsent(team, _ -> new HashMap<>());
 
         int current = teamData.getOrDefault(mobType, 0);
         int newAmount = Math.max(0, current - amount);
@@ -253,7 +230,7 @@ public class MobSaveManager {
 
     public void restoreMob(String team, String mobType, int amount) {
         Map<String, Integer> teamData =
-                mobKills.computeIfAbsent(team, k -> new HashMap<>());
+                mobKills.computeIfAbsent(team, _ -> new HashMap<>());
 
         teamData.put(
                 mobType,

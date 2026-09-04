@@ -1,5 +1,6 @@
 package runi.myddns.mobarmywars.Utils;
 
+@SuppressWarnings("unused")
 public class ConsoleColor {
 
     // 🔁 Reset

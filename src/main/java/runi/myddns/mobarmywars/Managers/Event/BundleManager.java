@@ -1,21 +1,26 @@
 package runi.myddns.mobarmywars.Managers.Event;
 
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
+import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.Material;
-import org.bukkit.inventory.Inventory;
+import org.bukkit.persistence.PersistentDataType;
 import runi.myddns.mobarmywars.MobArmyMain;
 
 public class BundleManager {
 
     private final MobArmyMain plugin;
+    private final NamespacedKey teamBundleKey;
+
     private TeamManager teamManager;
 
     public BundleManager(MobArmyMain plugin) {
         this.plugin = plugin;
+        this.teamBundleKey = new NamespacedKey(plugin, "team_bundle");
     }
 
     public void setTeamManager(TeamManager teamManager) {
@@ -30,57 +35,73 @@ public class BundleManager {
         if (bundle == null) return;
 
         Inventory inventory = player.getInventory();
-
         inventory.setItem(9, bundle);
 
-        Bukkit.getScheduler().runTaskLater(plugin, player::updateInventory, 1L);
+        Bukkit.getScheduler().runTaskLater(
+                plugin,
+                player::updateInventory,
+                1L
+        );
     }
 
     public void removeTeamBundle(Player player) {
         ItemStack slot9 = player.getInventory().getItem(9);
-        if (slot9 != null && slot9.getType().toString().endsWith("_BUNDLE")) {
+
+        if (isTeamBundle(slot9)) {
             player.getInventory().setItem(9, null);
         }
     }
 
     private ItemStack createBundle(String team) {
-        ItemStack bundle = null;
+        Material material;
+        String languagePath;
+        String teamId;
+        NamedTextColor color;
 
         if (team.equalsIgnoreCase("Blau")) {
-            bundle = new ItemStack(Material.BLUE_BUNDLE, 1);
-            ItemMeta meta = bundle.getItemMeta();
-            if (meta != null) {
-                meta.setDisplayName(ChatColor.BLUE + "Blaues Bundle");
-                bundle.setItemMeta(meta);
-            }
+            material = Material.BLUE_BUNDLE;
+            languagePath = "bundle-manager.blue-name";
+            teamId = "blue";
+            color = NamedTextColor.BLUE;
         } else if (team.equalsIgnoreCase("Rot")) {
-            bundle = new ItemStack(Material.RED_BUNDLE, 1);
-            ItemMeta meta = bundle.getItemMeta();
-            if (meta != null) {
-                meta.setDisplayName(ChatColor.RED + "Rotes Bundle");
-                bundle.setItemMeta(meta);
-            }
+            material = Material.RED_BUNDLE;
+            languagePath = "bundle-manager.red-name";
+            teamId = "red";
+            color = NamedTextColor.RED;
+        } else {
+            return null;
         }
+
+        ItemStack bundle = new ItemStack(material);
+        ItemMeta meta = bundle.getItemMeta();
+
+        meta.displayName(
+                plugin.getLanguageManager()
+                        .getComponent(languagePath)
+                        .color(color)
+        );
+
+        meta.getPersistentDataContainer().set(
+                teamBundleKey,
+                PersistentDataType.STRING,
+                teamId
+        );
+
+        bundle.setItemMeta(meta);
 
         return bundle;
     }
 
-    public boolean hasTeamBundle(Player player) {
-        for (ItemStack item : player.getInventory().getContents()) {
-            if (isTeamBundle(item)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     public boolean isTeamBundle(ItemStack item) {
-        if (item == null || !item.hasItemMeta()) return false;
-        ItemMeta meta = item.getItemMeta();
-        if (meta == null || !meta.hasDisplayName()) return false;
+        if (item == null || !item.hasItemMeta()) {
+            return false;
+        }
 
-        String name = ChatColor.stripColor(meta.getDisplayName());
-        return name.equalsIgnoreCase("Blaues Bundle")
-                || name.equalsIgnoreCase("Rotes Bundle");
+        return item.getItemMeta()
+                .getPersistentDataContainer()
+                .has(
+                        teamBundleKey,
+                        PersistentDataType.STRING
+                );
     }
 }

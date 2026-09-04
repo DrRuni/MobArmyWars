@@ -1,25 +1,30 @@
 package runi.myddns.mobarmywars.GUIs;
 
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.potion.PotionEffect;
+import org.jetbrains.annotations.NotNull;
 import runi.myddns.mobarmywars.MobArmyMain;
 import runi.myddns.mobarmywars.Utils.Sounds;
 
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 public class PlayerActionGUI implements Listener {
 
@@ -29,85 +34,162 @@ public class PlayerActionGUI implements Listener {
         this.plugin = plugin;
     }
 
-    private String getTitle(Player target) {
-        return ChatColor.BLUE + "Spieler: " + ChatColor.YELLOW + target.getName();
-    }
-
     public void open(Player viewer, Player target) {
-        Inventory inv = Bukkit.createInventory(null, 45, getTitle(target));
 
-        inv.setItem(10, createItem(
-                Material.GOLDEN_APPLE,
-                ChatColor.GREEN + "Heilen",
-                List.of(
-                        ChatColor.GRAY + "Heilt den Spieler vollständig",
-                        ChatColor.GRAY + "und entfernt alle Effekte.",
-                        "",
-                        ChatColor.GREEN + "Linksklick" + ChatColor.GRAY + " Spieler heilen"
+        PlayerActionHolder holder = new PlayerActionHolder(
+                target.getUniqueId(),
+                ViewType.ACTIONS
+        );
+
+        Inventory inv = Bukkit.createInventory(
+                holder,
+                45,
+                langPlayer(
+                        "player-action-gui.title",
+                        target.getName()
                 )
-        ));
+        );
 
-        inv.setItem(12, createItem(
-                Material.IRON_SWORD,
-                ChatColor.RED + "Töten",
-                List.of(
-                        ChatColor.GRAY + "Tötet den ausgewählten Spieler.",
-                        "",
-                        ChatColor.GREEN + "Linksklick" + ChatColor.GRAY + " Spieler töten"
+        holder.setInventory(inv);
+
+        // Heilen
+        inv.setItem(
+                10,
+                createItem(
+                        Material.GOLDEN_APPLE,
+                        lang("player-action-gui.heal.name"),
+                        List.of(
+                                lang("player-action-gui.heal.description-1"),
+                                lang("player-action-gui.heal.description-2"),
+                                Component.empty(),
+                                lang("player-action-gui.heal.action")
+                        )
                 )
-        ));
+        );
 
-        inv.setItem(14, createItem(
-                Material.BLUE_BANNER,
-                ChatColor.BLUE + "Team Blau",
-                List.of(
-                        ChatColor.GRAY + "Verschiebt den Spieler",
-                        ChatColor.GRAY + "ins blaue Team.",
-                        "",
-                        ChatColor.GREEN + "Linksklick" + ChatColor.GRAY + " Team Blau zuweisen"
+        // Töten
+        inv.setItem(
+                12,
+                createItem(
+                        Material.IRON_SWORD,
+                        lang("player-action-gui.kill.name"),
+                        List.of(
+                                lang("player-action-gui.kill.description"),
+                                Component.empty(),
+                                lang("player-action-gui.kill.action")
+                        )
                 )
-        ));
+        );
 
-        inv.setItem(16, createItem(
-                Material.RED_BANNER,
-                ChatColor.RED + "Team Rot",
-                List.of(
-                        ChatColor.GRAY + "Verschiebt den Spieler",
-                        ChatColor.GRAY + "ins rote Team.",
-                        "",
-                        ChatColor.GREEN + "Linksklick" + ChatColor.GRAY + " Team Rot zuweisen"
+        // Team Blau
+        inv.setItem(
+                14,
+                createItem(
+                        Material.BLUE_BANNER,
+                        lang("player-action-gui.team-blue.name"),
+                        List.of(
+                                lang("player-action-gui.team-blue.description-1"),
+                                lang("player-action-gui.team-blue.description-2"),
+                                Component.empty(),
+                                lang("player-action-gui.team-blue.action")
+                        )
                 )
-        ));
+        );
 
-        inv.setItem(22, createItem(
-                Material.CHEST,
-                ChatColor.GOLD + "Inventar ansehen",
-                List.of(
-                        ChatColor.GRAY + "Zeigt das Inventar",
-                        ChatColor.GRAY + "des Spielers.",
-                        "",
-                        ChatColor.GREEN + "Linksklick" + ChatColor.GRAY + " Inventar öffnen"
+        // Team Rot
+        inv.setItem(
+                16,
+                createItem(
+                        Material.RED_BANNER,
+                        lang("player-action-gui.team-red.name"),
+                        List.of(
+                                lang("player-action-gui.team-red.description-1"),
+                                lang("player-action-gui.team-red.description-2"),
+                                Component.empty(),
+                                lang("player-action-gui.team-red.action")
+                        )
                 )
-        ));
+        );
 
-        inv.setItem(40, createItem(
-                Material.ARROW,
-                ChatColor.DARK_AQUA + "Zurück"
-        ));
+        // Inventar ansehen
+        inv.setItem(
+                22,
+                createItem(
+                        Material.CHEST,
+                        lang("player-action-gui.inventory.name"),
+                        List.of(
+                                lang("player-action-gui.inventory.description-1"),
+                                lang("player-action-gui.inventory.description-2"),
+                                Component.empty(),
+                                lang("player-action-gui.inventory.action")
+                        )
+                )
+        );
+
+        inv.setItem(
+                40,
+                createBackButton()
+        );
 
         viewer.openInventory(inv);
     }
 
-    private ItemStack createItem(Material mat, String name, List<String> lore) {
-        ItemStack item = new ItemStack(mat);
+    private void openTargetInventory(
+            Player viewer,
+            Player target
+    ) {
+
+        PlayerActionHolder holder = new PlayerActionHolder(
+                target.getUniqueId(),
+                ViewType.INVENTORY
+        );
+
+        Inventory inv = Bukkit.createInventory(
+                holder,
+                54,
+                langPlayer(
+                        "player-action-gui.inventory-title",
+                        target.getName()
+                )
+        );
+
+        holder.setInventory(inv);
+
+        ItemStack[] contents =
+                target.getInventory().getContents();
+
+        for (int i = 0;
+             i < contents.length && i < 41;
+             i++) {
+
+            inv.setItem(i, contents[i]);
+        }
+
+        inv.setItem(
+                49,
+                createBackButton()
+        );
+
+        viewer.openInventory(inv);
+    }
+
+    private ItemStack createItem(
+            Material material,
+            Component name,
+            List<Component> lore
+    ) {
+
+        ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
 
-        if (meta == null) return item;
+        if (meta == null) {
+            return item;
+        }
 
-        meta.setDisplayName(name);
+        meta.displayName(name);
 
         if (lore != null) {
-            meta.setLore(lore);
+            meta.lore(lore);
         }
 
         meta.addItemFlags(
@@ -121,151 +203,200 @@ public class PlayerActionGUI implements Listener {
         return item;
     }
 
-    private ItemStack createItem(Material mat, String name) {
-        return createItem(mat, name, null);
-    }
-
-    private void openTargetInventory(Player viewer, Player target) {
-        Inventory inv = Bukkit.createInventory(
-                null,
-                54,
-                ChatColor.BLUE + "Inventar: " + ChatColor.YELLOW + target.getName()
-        );
-
-        ItemStack[] contents = target.getInventory().getContents();
-
-        for (int i = 0; i < contents.length && i < 41; i++) {
-            inv.setItem(i, contents[i]);
-        }
-
-        inv.setItem(49, createItem(
+    private ItemStack createBackButton() {
+        return createItem(
                 Material.ARROW,
-                ChatColor.DARK_AQUA + "Zurück"
-        ));
-
-        viewer.openInventory(inv);
+                lang("player-action-gui.back"),
+                null
+        );
     }
 
     @EventHandler
     public void onClick(InventoryClickEvent event) {
-        String title = ChatColor.stripColor(event.getView().getTitle());
 
-        if (title.startsWith("Inventar: ")) {
-            event.setCancelled(true);
+        Inventory top =
+                event.getView().getTopInventory();
 
-            if (!(event.getWhoClicked() instanceof Player viewer)) return;
+        if (!(top.getHolder()
+                instanceof PlayerActionHolder holder)) {
+            return;
+        }
 
-            ItemStack clicked = event.getCurrentItem();
-            if (clicked == null || !clicked.hasItemMeta()) return;
+        event.setCancelled(true);
 
-            String itemName = ChatColor.stripColor(clicked.getItemMeta().getDisplayName());
-            String targetName = title.replace("Inventar: ", "").trim();
+        if (!(event.getWhoClicked()
+                instanceof Player viewer)) {
+            return;
+        }
 
-            Player target = Bukkit.getPlayerExact(targetName);
+        if (event.getRawSlot() < 0
+                || event.getRawSlot() >= top.getSize()) {
+            return;
+        }
 
-            if (itemName.equalsIgnoreCase("Zurück")) {
-                Sounds.playBack(viewer);
+        int slot = event.getRawSlot();
 
-                if (target != null && target.isOnline()) {
-                    Bukkit.getScheduler().runTaskLater(plugin,
-                            () -> open(viewer, target),
-                            1L
-                    );
-                } else {
-                    viewer.sendMessage(ChatColor.RED + "Der Spieler ist nicht mehr online!");
-                    Sounds.playDanger(viewer);
+        UUID targetId = holder.getTargetId();
 
-                    Bukkit.getScheduler().runTaskLater(plugin,
-                            () -> plugin.getPlayerGUI().open(viewer),
-                            1L
-                    );
-                }
+        Player target =
+                Bukkit.getPlayer(targetId);
+
+        if (holder.getViewType() == ViewType.INVENTORY) {
+
+            if (slot != 49) {
+                return;
+            }
+
+            Sounds.playBack(viewer);
+
+            if (target != null && target.isOnline()) {
+
+                Bukkit.getScheduler().runTaskLater(
+                        plugin,
+                        () -> open(viewer, target),
+                        1L
+                );
+
+            } else {
+
+                viewer.sendMessage(
+                        lang("player-action-gui.messages.offline")
+                );
+
+                Sounds.playDanger(viewer);
+
+                Bukkit.getScheduler().runTaskLater(
+                        plugin,
+                        () -> plugin.getPlayerGUI().open(viewer),
+                        1L
+                );
             }
 
             return;
         }
 
-        if (!title.startsWith("Spieler: ")) return;
+        if (slot == 40) {
 
-        event.setCancelled(true);
-
-        if (!(event.getWhoClicked() instanceof Player viewer)) return;
-
-        ItemStack clicked = event.getCurrentItem();
-        if (clicked == null || !clicked.hasItemMeta()) return;
-
-        String itemName = ChatColor.stripColor(clicked.getItemMeta().getDisplayName());
-        String targetName = title.replace("Spieler: ", "").trim();
-
-        Player target = Bukkit.getPlayerExact(targetName);
-
-        if (itemName.equalsIgnoreCase("Zurück")) {
             Sounds.playBack(viewer);
 
-            Bukkit.getScheduler().runTaskLater(plugin,
+            Bukkit.getScheduler().runTaskLater(
+                    plugin,
                     () -> plugin.getPlayerGUI().open(viewer),
                     1L
             );
+
             return;
         }
 
         if (target == null || !target.isOnline()) {
-            viewer.sendMessage(ChatColor.RED + "Der Spieler ist nicht mehr online!");
+
+            viewer.sendMessage(
+                    lang("player-action-gui.messages.offline")
+            );
+
             Sounds.playDanger(viewer);
             return;
         }
 
-        switch (itemName.toLowerCase()) {
-            case "heilen" -> {
+        switch (slot) {
+
+            case 10 -> {
+
                 Sounds.playClick(viewer);
+
                 healPlayer(target);
 
-                viewer.sendMessage(ChatColor.GREEN + "✔ " + ChatColor.YELLOW + target.getName()
-                        + ChatColor.GRAY + " wurde geheilt und alle Effekte wurden entfernt.");
+                viewer.sendMessage(
+                        langPlayer(
+                                "player-action-gui.messages.healed-viewer",
+                                target.getName()
+                        )
+                );
 
-                target.sendMessage(ChatColor.GREEN + "✔ Du wurdest vollständig geheilt.");
+                target.sendMessage(
+                        lang("player-action-gui.messages.healed-target")
+                );
 
-                target.playSound(target.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.2f);
+                target.playSound(
+                        target.getLocation(),
+                        Sound.ENTITY_PLAYER_LEVELUP,
+                        1.0f,
+                        1.2f
+                );
             }
 
-            case "töten" -> {
-                Sounds.playClick(viewer);
-                killPlayer(viewer, target);
+            case 12 -> {
 
-                Bukkit.broadcastMessage(ChatColor.RED + "☠ " + ChatColor.YELLOW + target.getName()
-                        + ChatColor.GRAY + " wurde von "
-                        + ChatColor.GOLD + viewer.getName()
-                        + ChatColor.GRAY + " getötet.");
+                Sounds.playClick(viewer);
+
+                killPlayer(
+                        viewer,
+                        target
+                );
+
+                Component message = killedMessage(
+                        target,
+                        viewer
+                );
+
+                for (Player online :
+                        Bukkit.getOnlinePlayers()) {
+
+                    online.sendMessage(message);
+                }
             }
 
-            case "team blau" -> {
-                Sounds.playClick(viewer);
-                plugin.getTeamManager().assignTeam(target, "Blau");
+            case 14 -> {
 
-                viewer.sendMessage(ChatColor.BLUE + "✔ " + ChatColor.YELLOW + target.getName()
-                        + ChatColor.GRAY + " wurde ins Team Blau verschoben.");
+                Sounds.playClick(viewer);
+
+                plugin.getTeamManager()
+                        .assignTeam(target, "Blau");
+
+                viewer.sendMessage(
+                        langPlayer(
+                                "player-action-gui.messages.team-blue",
+                                target.getName()
+                        )
+                );
             }
 
-            case "team rot" -> {
-                Sounds.playClick(viewer);
-                plugin.getTeamManager().assignTeam(target, "Rot");
+            case 16 -> {
 
-                viewer.sendMessage(ChatColor.RED + "✔ " + ChatColor.YELLOW + target.getName()
-                        + ChatColor.GRAY + " wurde ins Team Rot verschoben.");
+                Sounds.playClick(viewer);
+
+                plugin.getTeamManager()
+                        .assignTeam(target, "Rot");
+
+                viewer.sendMessage(
+                        langPlayer(
+                                "player-action-gui.messages.team-red",
+                                target.getName()
+                        )
+                );
             }
 
-            case "inventar ansehen" -> {
+            case 22 -> {
+
                 Sounds.playClick(viewer);
-                openTargetInventory(viewer, target);
+
+                openTargetInventory(
+                        viewer,
+                        target
+                );
             }
         }
     }
 
     private void healPlayer(Player target) {
+
         double maxHealth = 20.0;
 
-        if (target.getAttribute(Attribute.MAX_HEALTH) != null) {
-            maxHealth = target.getAttribute(Attribute.MAX_HEALTH).getValue();
+        AttributeInstance maxHealthAttribute =
+                target.getAttribute(Attribute.MAX_HEALTH);
+
+        if (maxHealthAttribute != null) {
+            maxHealth = maxHealthAttribute.getValue();
         }
 
         target.setHealth(maxHealth);
@@ -281,16 +412,27 @@ public class PlayerActionGUI implements Listener {
         }
     }
 
-    private void killPlayer(Player viewer, Player target) {
+    private void killPlayer(
+            Player viewer,
+            Player target
+    ) {
+
         target.setInvulnerable(false);
         target.setAllowFlight(false);
         target.setFlying(false);
 
-        if (target.getGameMode() != GameMode.SURVIVAL) {
-            target.setGameMode(GameMode.SURVIVAL);
+        if (target.getGameMode()
+                != GameMode.SURVIVAL) {
+
+            target.setGameMode(
+                    GameMode.SURVIVAL
+            );
         }
 
-        target.damage(1000.0, viewer);
+        target.damage(
+                1000.0,
+                viewer
+        );
 
         if (!target.isDead()) {
             target.setHealth(0.0);
@@ -299,10 +441,89 @@ public class PlayerActionGUI implements Listener {
 
     @EventHandler
     public void onDrag(InventoryDragEvent event) {
-        String title = ChatColor.stripColor(event.getView().getTitle());
 
-        if (title.startsWith("Spieler: ") || title.startsWith("Inventar: ")) {
+        Inventory top =
+                event.getView().getTopInventory();
+
+        if (top.getHolder()
+                instanceof PlayerActionHolder) {
+
             event.setCancelled(true);
+        }
+    }
+
+    private Component lang(String path) {
+
+        return plugin.getLanguageManager()
+                .getComponent(path);
+    }
+
+    private Component langPlayer(
+            String path,
+            Object value
+    ) {
+
+        return plugin.getLanguageManager()
+                .getComponent(
+                        path,
+                        "player",
+                        value
+                );
+    }
+
+    private Component killedMessage(
+            Player target,
+            Player viewer
+    ) {
+
+        return plugin.getLanguageManager()
+                .getComponent(
+                        "player-action-gui.messages.killed",
+                        Map.of(
+                                "player", Component.text(target.getName()),
+                                "viewer", Component.text(viewer.getName())
+                        )
+                );
+    }
+
+    private enum ViewType {
+        ACTIONS,
+        INVENTORY
+    }
+
+    private static class PlayerActionHolder
+            implements InventoryHolder {
+
+        private final UUID targetId;
+        private final ViewType viewType;
+
+        private Inventory inventory;
+
+        private PlayerActionHolder(
+                UUID targetId,
+                ViewType viewType
+        ) {
+            this.targetId = targetId;
+            this.viewType = viewType;
+        }
+
+        private UUID getTargetId() {
+            return targetId;
+        }
+
+        private ViewType getViewType() {
+            return viewType;
+        }
+
+        private void setInventory(
+                Inventory inventory
+        ) {
+            this.inventory = inventory;
+        }
+
+        @Override
+        public @NotNull Inventory getInventory() {
+            return inventory;
         }
     }
 }

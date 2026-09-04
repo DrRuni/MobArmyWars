@@ -8,6 +8,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
 import runi.myddns.mobarmywars.Managers.Event.TimerManager;
 import runi.myddns.mobarmywars.MobArmyMain;
 import runi.myddns.mobarmywars.Utils.GradientText;
@@ -21,9 +23,41 @@ public class PlayerJoinListener implements Listener {
         this.plugin = plugin;
     }
 
+    private static final String RESOURCE_PACK_URL =
+            "https://github.com/DrRuni/MobArmyWars/releases/download/v1.7-beta/MobArmyWarsRP.zip";
+
+    private static final String RESOURCE_PACK_SHA1 =
+            "08509a806eaa15ad2bb206d990b2a3b462532d22";
+
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
+
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (!player.isOnline()) return;
+
+            Component prompt = Component.text()
+                    .append(
+                            Component.text("MobArmyWars\n")
+                                    .color(net.kyori.adventure.text.format.NamedTextColor.GOLD)
+                    )
+                    .append(
+                            Component.text("Lade das Ressourcenpaket für ")
+                                    .color(net.kyori.adventure.text.format.NamedTextColor.GRAY)
+                    )
+                    .append(
+                            Component.text("Scoreboard-Grafiken und Icons.")
+                                    .color(net.kyori.adventure.text.format.NamedTextColor.AQUA)
+                    )
+                    .build();
+
+            player.setResourcePack(
+                    RESOURCE_PACK_URL,
+                    RESOURCE_PACK_SHA1,
+                    false,
+                    prompt
+            );
+        }, 20L);
 
         Bukkit.getScheduler().runTask(plugin, () -> {
 
@@ -36,6 +70,7 @@ public class PlayerJoinListener implements Listener {
             plugin.getPlayerEffectManager().applyNightVision(player);
 
             showWelcomeSequence(player);
+            showProjectNotice(player);
 
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
                 if (!player.isOnline()) return;
@@ -49,9 +84,20 @@ public class PlayerJoinListener implements Listener {
                 for (Player online : Bukkit.getOnlinePlayers()) {
                     plugin.getScoreboardSwitcher().switchToTeam(online);
                 }
-
             }, 20L * 7);
         });
+
+        String language = plugin.getConfig().getString("language");
+
+        if (player.isOp() && (language == null || language.isBlank())) {
+            Bukkit.getScheduler().runTaskLater(plugin, () -> {
+
+                if (!player.isOnline()) return;
+
+                plugin.getLanguageSelectionGUI().open(player);
+
+            }, 190L);
+        }
     }
 
     @EventHandler
@@ -74,7 +120,9 @@ public class PlayerJoinListener implements Listener {
             player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_CHIME, 1.0f, 1.15f);
 
             Component welcomeTitle = GradientText.gradient(
-                    "Willkommen",
+                    plugin.getLanguageManager().get(
+                            "player-join-listener.welcome.title"
+                    ),
                     220, 50, 50,
                     50, 110, 255
             );
@@ -92,8 +140,15 @@ public class PlayerJoinListener implements Listener {
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
                 if (!player.isOnline()) return;
 
-                Component zuSubtitle = Component.text("zu")
-                        .color(net.kyori.adventure.text.format.TextColor.color(210, 210, 210));
+                Component zuSubtitle = Component.text(
+                        plugin.getLanguageManager().get(
+                                "player-join-listener.welcome.to"
+                        )
+                ).color(
+                        net.kyori.adventure.text.format.TextColor.color(
+                                210, 210, 210
+                        )
+                );
 
                 player.showTitle(net.kyori.adventure.title.Title.title(
                         welcomeTitle,
@@ -130,5 +185,61 @@ public class PlayerJoinListener implements Listener {
                 ));
             }, 60L);
         }, 20L);
+    }
+
+    public void showProjectNotice(Player player) {
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (!player.isOnline()) return;
+
+            Component clickText = plugin.getLanguageManager()
+                    .getComponent("player-join-listener.notice.line-1")
+                    .clickEvent(
+                            ClickEvent.callback(audience -> {
+                                if (!(audience instanceof Player clickedPlayer)) {
+                                    return;
+                                }
+
+                                clickedPlayer.sendMessage(Component.empty());
+
+                                clickedPlayer.sendMessage(
+                                        plugin.getLanguageManager().getComponent(
+                                                "player-join-listener.notice.details-1"
+                                        )
+                                );
+
+                                clickedPlayer.sendMessage(
+                                        plugin.getLanguageManager().getComponent(
+                                                "player-join-listener.notice.details-2"
+                                        )
+                                );
+
+                                clickedPlayer.sendMessage(
+                                        plugin.getLanguageManager().getComponent(
+                                                "player-join-listener.notice.details-3"
+                                        )
+                                );
+
+                                clickedPlayer.sendMessage(
+                                        plugin.getLanguageManager().getComponent(
+                                                "player-join-listener.notice.details-4"
+                                        )
+                                );
+
+                                clickedPlayer.sendMessage(Component.empty());
+                            })
+                    )
+                    .hoverEvent(
+                            HoverEvent.showText(
+                                    plugin.getLanguageManager().getComponent(
+                                            "player-join-listener.notice.hover"
+                                    )
+                            )
+                    );
+
+            player.sendMessage(Component.empty());
+            player.sendMessage(clickText);
+            player.sendMessage(Component.empty());
+
+        }, 100L);
     }
 }

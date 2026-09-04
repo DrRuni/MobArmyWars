@@ -126,44 +126,38 @@ public class WorldSettings {
         try {
             config.save(file);
         } catch (IOException e) {
-            e.printStackTrace();
+            plugin.getLogger().log(
+                    java.util.logging.Level.SEVERE,
+                    "Failed to save worldsettings.yml.",
+                    e
+            );
         }
     }
 
     public boolean isKeepInventoryEnabled() {
         return keepInventory;
     }
-
     public boolean isRandomizerEnabled() {
         return randomizerEnabled;
     }
-
     public boolean isNightVisionEnabled() {
         return nightVisionEnabled;
     }
-
     public boolean isMobSpawningEnabled() {
         return mobSpawningEnabled;
     }
-
     public boolean isDaylightCycleEnabled() {
         return daylightCycleEnabled;
     }
-
     public boolean isArenaCompassEnabled() {
         return arenaCompassEnabled;
     }
-
     public boolean isChestRandomizerEnabled() {
         return config.getBoolean("chest-randomizer-enabled", true);
     }
 
     public String getDifficulty() {
         return difficulty;
-    }
-
-    public long getWorldTime() {
-        return worldTime;
     }
 
     public long getCurrentWorldTime() {
@@ -218,11 +212,6 @@ public class WorldSettings {
     public void toggleChestRandomizer() {
         boolean current = isChestRandomizerEnabled();
         config.set("chest-randomizer-enabled", !current);
-        save();
-    }
-
-    public void setArenaCompassEnabled(boolean enabled) {
-        arenaCompassEnabled = enabled;
         save();
     }
 
@@ -375,7 +364,6 @@ public class WorldSettings {
         return switch (difficulty.toLowerCase(Locale.ROOT)) {
             case "peaceful" -> Difficulty.PEACEFUL;
             case "easy" -> Difficulty.EASY;
-            case "normal" -> Difficulty.NORMAL;
             case "hard", "ultra-ultra-hardcore" -> Difficulty.HARD;
             default -> Difficulty.NORMAL;
         };

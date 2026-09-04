@@ -32,9 +32,11 @@ public class PlayerLocationManager {
         if (player == null) return null;
 
         String base = "players." + player.getName() + ".last";
-        if (!config.contains(base + ".world")) return null;
 
-        World world = Bukkit.getWorld(config.getString(base + ".world"));
+        String worldName = config.getString(base + ".world");
+        if (worldName == null) return null;
+
+        World world = Bukkit.getWorld(worldName);
         if (world == null) return null;
 
         double x = config.getDouble(base + ".x");
@@ -63,9 +65,11 @@ public class PlayerLocationManager {
         if (player == null) return null;
 
         String base = "players." + player.getName() + ".spawn";
-        if (!config.contains(base + ".world")) return null;
 
-        World world = Bukkit.getWorld(config.getString(base + ".world"));
+        String worldName = config.getString(base + ".world");
+        if (worldName == null) return null;
+
+        World world = Bukkit.getWorld(worldName);
         if (world == null) return null;
 
         double x = config.getDouble(base + ".x");
@@ -75,55 +79,5 @@ public class PlayerLocationManager {
         float pitch = (float) config.getDouble(base + ".pitch");
 
         return new Location(world, x, y, z, yaw, pitch);
-    }
-
-    public Location getBestRespawn(Player player) {
-        if (player == null) return null;
-
-        Location bed = player.getBedSpawnLocation();
-        if (bed != null && bed.getWorld() != null) {
-            return bed;
-        }
-
-        Location spawn = getSpawn(player);
-        if (spawn != null && spawn.getWorld() != null) {
-            return spawn;
-        }
-
-        World world = player.getWorld();
-        return world != null ? world.getSpawnLocation() : null;
-    }
-
-    public void saveLastPortal(Player player, Location loc) {
-        String base = "players." + player.getName() + ".portal";
-        config.set(base + ".world", loc.getWorld().getName());
-        config.set(base + ".x", loc.getX());
-        config.set(base + ".y", loc.getY());
-        config.set(base + ".z", loc.getZ());
-    }
-
-    public Location getLastPortal(Player player) {
-        String base = "players." + player.getName() + ".portal";
-        if (!config.contains(base + ".world")) return null;
-
-        World w = Bukkit.getWorld(config.getString(base + ".world"));
-        if (w == null) return null;
-
-        return new Location(
-                w,
-                config.getDouble(base + ".x"),
-                config.getDouble(base + ".y"),
-                config.getDouble(base + ".z")
-        );
-    }
-
-    public boolean hasLastLocation(Player player) {
-        return player != null &&
-                config.contains("players." + player.getName() + ".last.world");
-    }
-
-    public boolean hasSpawn(Player player) {
-        return player != null &&
-                config.contains("players." + player.getName() + ".spawn.world");
     }
 }
