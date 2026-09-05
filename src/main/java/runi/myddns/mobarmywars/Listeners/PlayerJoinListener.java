@@ -24,7 +24,7 @@ public class PlayerJoinListener implements Listener {
     }
 
     private static final String RESOURCE_PACK_URL =
-            "https://github.com/DrRuni/MobArmyWars/releases/download/v1.7-beta/MobArmyWarsRP.zip";
+            "https://github.com/DrRuni/MobArmyWars/releases/download/v1.7/MobArmyWarsRP.zip";
 
     private static final String RESOURCE_PACK_SHA1 =
             "08509a806eaa15ad2bb206d990b2a3b462532d22";
