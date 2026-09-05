@@ -84,8 +84,6 @@ public class MobArmyMain extends JavaPlugin {
     public void onEnable() {
         instance = this;
 
-        saveDefaultConfig();
-
         getServer().motd(createMotd());
 
         PluginFileManager pluginFileManager = new PluginFileManager(this);

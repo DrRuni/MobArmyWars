@@ -1,6 +1,7 @@
 package runi.myddns.mobarmywars.Listeners;
 
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.entity.Player;
@@ -39,15 +40,15 @@ public class PlayerJoinListener implements Listener {
             Component prompt = Component.text()
                     .append(
                             Component.text("MobArmyWars\n")
-                                    .color(net.kyori.adventure.text.format.NamedTextColor.GOLD)
+                                    .color(NamedTextColor.GOLD)
                     )
                     .append(
-                            Component.text("Lade das Ressourcenpaket für ")
-                                    .color(net.kyori.adventure.text.format.NamedTextColor.GRAY)
+                            Component.text("Optional resource pack for ")
+                                    .color(NamedTextColor.GRAY)
                     )
                     .append(
-                            Component.text("Scoreboard-Grafiken und Icons.")
-                                    .color(net.kyori.adventure.text.format.NamedTextColor.AQUA)
+                            Component.text("custom graphics and icons.")
+                                    .color(NamedTextColor.AQUA)
                     )
                     .build();
 
@@ -59,15 +60,21 @@ public class PlayerJoinListener implements Listener {
             );
         }, 20L);
 
-        Bukkit.getScheduler().runTask(plugin, () -> {
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            if (!player.isOnline()) return;
 
-            boolean restored = plugin.getEventResume().restorePlayerPosition(player);
+            boolean restored =
+                    plugin.getEventResume().restorePlayerPosition(player);
 
             if (!restored) {
-                TeleportManager.teleport(player, "world_mobarmy_lobby");
+                TeleportManager.teleport(
+                        player,
+                        "world_mobarmy_lobby"
+                );
             }
 
-            plugin.getPlayerEffectManager().applyNightVision(player);
+            plugin.getPlayerEffectManager()
+                    .applyNightVision(player);
 
             showWelcomeSequence(player);
             showProjectNotice(player);
@@ -82,19 +89,24 @@ public class PlayerJoinListener implements Listener {
                 plugin.getTeamScoreboardManager().updateBoard();
 
                 for (Player online : Bukkit.getOnlinePlayers()) {
-                    plugin.getScoreboardSwitcher().switchToTeam(online);
+                    plugin.getScoreboardSwitcher()
+                            .switchToTeam(online);
                 }
             }, 20L * 7);
-        });
 
-        String language = plugin.getConfig().getString("language");
+        }, 80L);
 
-        if (player.isOp() && (language == null || language.isBlank())) {
+        String language =
+                plugin.getConfig().getString("language");
+
+        if (player.isOp()
+                && (language == null || language.isBlank())) {
+
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
-
                 if (!player.isOnline()) return;
 
-                plugin.getLanguageSelectionGUI().open(player);
+                plugin.getLanguageSelectionGUI()
+                        .open(player);
 
             }, 190L);
         }
